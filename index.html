@@ -341,7 +341,6 @@ table.data tr:hover td{background:var(--lime-soft);}
     <!-- ===================== TAB 2: MERCADO ===================== -->
     <section class="panel" id="panel-mercado">
       <div class="page-head">
-        <div class="kicker">Parte 2</div>
         <h2>🔎 Mercado de explicações (Fixando)</h2>
         <p>Regista cada pedido recebido no Fixando para obteres tendências de procura, horários e taxas de conversão.</p>
       </div>
@@ -379,26 +378,14 @@ table.data tr:hover td{background:var(--lime-soft);}
       </div>
 
       <div class="section">
-        <h3>📋 Colar texto do pedido</h3>
-        <p class="desc">Cola o assunto/corpo do email do Fixando (dá disciplina, nível e localidade). Para hora exata, copia também a hora que aparece junto do remetente no Gmail. Modalidade e ano exato normalmente só vêm dentro do pedido — abre o link se precisares deles.</p>
-        <div class="chart-card" style="padding:14px;">
-          <textarea id="paste-pedido" rows="4" placeholder="Cola aqui o texto da página do pedido..." style="width:100%; font-family:'Bahnschrift','Poppins',sans-serif; font-size:13px; padding:10px; border:1.5px solid var(--border); border-radius:10px; background:var(--bg); color:var(--ink); resize:vertical;"></textarea>
-          <div style="display:flex; justify-content:flex-end; margin-top:10px;">
-            <button class="btn secondary" id="btn-parse-pedido">Analisar texto ↓</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="section">
         <h3>✍️ Registar novo pedido</h3>
-        <p class="desc">🟢 preenchido pela análise automática · 🟤 precisa da tua confirmação</p>
+        <p class="desc">Modalidade nasce "Online" e Legível nasce "Sim" — muda se for diferente. Contacto não se preenche aqui: abordas o pedido diretamente na tabela abaixo.</p>
         <div class="entry-form" id="fixando-form">
           <div class="field" id="field-data"><label>Data do pedido</label><input type="date" id="f-data"></div>
           <div class="field" id="field-hora"><label>Hora (0–23)</label><input type="number" id="f-hora" min="0" max="23" placeholder="ex: 18"></div>
           <div class="field" id="field-disciplina"><label>Disciplina</label><input type="text" id="f-disciplina" placeholder="ex: Matemática"></div>
           <div class="field" id="field-ano"><label>Ano de ensino</label><input type="text" id="f-ano" placeholder="ex: 10º ano"></div>
           <div class="field" id="field-localidade"><label>Localidade</label><input type="text" id="f-localidade" placeholder="ex: Porto"></div>
-          <div class="field" id="field-contacto"><label>Contacto (telemóvel)</label><input type="text" id="f-contacto" placeholder="ex: 912345678"></div>
           <div class="field needs-input" id="field-modalidade"><label>Modalidade</label>
             <select id="f-modalidade"><option>Online</option><option>Presencial</option></select>
           </div>
@@ -410,8 +397,8 @@ table.data tr:hover td{background:var(--lime-soft);}
         </div>
       </div>
       <div class="notice" style="margin-top:-8px;">
-        <b>"Abordámos" e "Ficámos" são sempre automáticos, por telemóvel</b> — sem opção de forçar manualmente. Um pedido fica "Abordámos = Sim" se esse telemóvel apareceu alguma vez em "Clientes pendentes" (Plataforma Fixando); fica "Ficámos = Sim" se apareceu alguma vez em "Clientes Efetivos" (Plataforma Fixando). Quem "ficámos" conta sempre também como "abordámos".
-        O sistema guarda um histórico de todos os telemóveis já vistos — mesmo que apagues uma linha de "Clientes pendentes" mais tarde (ex: lead ficou frio), continua a contar como abordado.
+        <b>"Abordámos" marca-se à mão, na tabela abaixo</b> — clica em "Marcar abordámos" no pedido correspondente e indica o telemóvel do cliente (só o sabes depois de contactares o pedido no Fixando). Podes corrigir esse número a qualquer momento no link "editar".
+        <b>"Ficámos" continua 100% automático</b>: assim que esse mesmo telemóvel aparecer em "Clientes Efetivos" (Plataforma Fixando) no teu Excel, o pedido passa sozinho a "Ficámos = Sim" — sem precisares de fazer mais nada.
       </div>
 
       <div id="fixando-empty" class="empty-state">
@@ -514,7 +501,7 @@ table.data tr:hover td{background:var(--lime-soft);}
             <table class="data" id="table-fixando">
               <thead><tr>
                 <th>Data</th><th>Hora</th><th>Disciplina</th><th>Ano</th><th>Localidade</th>
-                <th>Contacto</th><th>Modalidade</th><th>Legível</th><th>Abordámos</th><th>Ficámos</th>
+                <th>Modalidade</th><th>Legível</th><th>Abordámos</th><th>Ficámos</th>
               </tr></thead>
               <tbody></tbody>
             </table>
@@ -1108,120 +1095,16 @@ document.getElementById('btn-add-fixando').addEventListener('click', ()=>{
     disciplina: normStr(document.getElementById('f-disciplina').value) || 'Não especificado',
     ano: normStr(document.getElementById('f-ano').value) || 'Não especificado',
     localidade: normStr(document.getElementById('f-localidade').value) || 'Não especificado',
-    contacto: normStr(document.getElementById('f-contacto').value),
+    contacto: '',
     modalidade: document.getElementById('f-modalidade').value,
     legivel: document.getElementById('f-legivel').value === 'Sim',
     source: 'manual'
   };
   pedidos.push(p); savePedidos(); renderFixando();
-  ['f-hora','f-disciplina','f-ano','f-localidade','f-contacto','f-modalidade','f-legivel'].forEach(id=>document.getElementById(id).value='');
+  ['f-hora','f-disciplina','f-ano','f-localidade'].forEach(id=>document.getElementById(id).value='');
   ['field-disciplina','field-localidade','field-ano','field-data','field-hora','field-modalidade'].forEach(id=>{
     const el=document.getElementById(id); if(el){ el.classList.remove('auto-filled','needs-input'); }
   });
-});
-
-function extractField(text, labels){
-  for(const label of labels){
-    const re = new RegExp(label + '\\s*[:\\-]?\\s*([^\\n\\r]+)', 'i');
-    const m = text.match(re);
-    if(m && m[1].trim()) return m[1].trim();
-  }
-  return '';
-}
-function todayISO(){
-  const d = new Date();
-  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-}
-function parsePedidoText(text){
-  let disciplina='', nivel='', localidade='';
-
-  // Assunto COM nível: "pedido de Explicações de X de Y (loc)"
-  let m = text.match(/pedido de (?:Explica[cç][oõ]es de\s+)?([^()]+?)\s+de\s+([^()]+?)\s*\(([^)]+)\)/i);
-  if(m){ disciplina = m[1].trim(); nivel = m[2].trim(); localidade = m[3].trim(); }
-
-  // Assunto SEM nível: "pedido de Explicações de X (loc)"
-  if(!disciplina){
-    m = text.match(/pedido de (?:Explica[cç][oõ]es de\s+)?([^()]+?)\s*\(([^)]+)\)/i);
-    if(m){ disciplina = m[1].trim(); localidade = m[2].trim(); }
-  }
-
-  // Corpo: "Explicador de X (Y)" ou "Explicador de X na sua zona" (sem nível)
-  if(!disciplina || !nivel){
-    m = text.match(/Explicador de\s+([^()\n]+?)\s*(?:\(([^)]+)\)|\s+na sua zona)/i);
-    if(m){
-      if(!disciplina) disciplina = m[1].trim();
-      if(!nivel && m[2]) nivel = m[2].trim();
-    }
-  }
-
-  if(!localidade){
-    m = text.match(/(\d{4}(?:-\d{3})?)\s*,\s*([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\-\s]*)/);
-    if(m) localidade = (m[1] + ', ' + m[2]).trim();
-  }
-
-  if(!disciplina) disciplina = extractField(text, ['Disciplina','Categoria','Servi[cç]o']);
-  if(!localidade) localidade = extractField(text, ['Localiza[cç][aã]o','Localidade','Zona','Concelho']);
-  if(!nivel) nivel = extractField(text, ['Ano de (?:ensino|escolaridade)','Ano escolar','N[ií]vel']);
-
-  // Data + hora do cabeçalho do email: "terça, 11/08, 23:01" ou "11/08/2026, 23:01"
-  let date=null, hour=null;
-  m = text.match(/(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?,?\s*(\d{1,2}):(\d{2})/);
-  if(m){
-    const year = m[3] ? (m[3].length===2 ? '20'+m[3] : m[3]) : String(new Date().getFullYear());
-    date = [null, m[1], m[2], year];
-    hour = [null, m[4], m[5]];
-  } else {
-    const dateMatch = text.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
-    if(dateMatch) date = dateMatch;
-    const hourMatch = text.match(/(\d{1,2})[:h](\d{2})/);
-    if(hourMatch) hour = hourMatch;
-  }
-
-  const hasOnline = /\bonline\b/i.test(text);
-  const hasPresencial = /\bpresencial\b/i.test(text);
-
-  return {disciplina, nivel, localidade, date, hour, hasOnline, hasPresencial};
-}
-function markField(fieldId, filled){
-  const el = document.getElementById(fieldId);
-  if(!el) return;
-  el.classList.toggle('auto-filled', filled);
-  el.classList.toggle('needs-input', !filled);
-}
-document.getElementById('btn-parse-pedido').addEventListener('click', ()=>{
-  const text = document.getElementById('paste-pedido').value;
-  if(!text.trim()){ alert('Cola primeiro o texto do email/pedido.'); return; }
-  const p = parsePedidoText(text);
-
-  markField('field-disciplina', !!p.disciplina);
-  if(p.disciplina) document.getElementById('f-disciplina').value = p.disciplina;
-  markField('field-localidade', !!p.localidade);
-  if(p.localidade) document.getElementById('f-localidade').value = p.localidade;
-  markField('field-ano', !!p.nivel);
-  if(p.nivel) document.getElementById('f-ano').value = p.nivel;
-
-  let gotDate = false;
-  if(p.date){
-    const [_, d, m, y] = p.date;
-    const yyyy = y.length===2? '20'+y : y;
-    document.getElementById('f-data').value = `${yyyy}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`;
-    gotDate = true;
-  } else {
-    document.getElementById('f-data').value = todayISO(); // o email não traz data — assume hoje, ajusta se for diferente
-  }
-  markField('field-data', gotDate);
-
-  markField('field-hora', !!p.hour);
-  if(p.hour) document.getElementById('f-hora').value = p.hour[1];
-
-  const gotModalidade = (p.hasOnline && !p.hasPresencial) || (p.hasPresencial && !p.hasOnline);
-  if(p.hasPresencial && !p.hasOnline) document.getElementById('f-modalidade').value = 'Presencial';
-  else document.getElementById('f-modalidade').value = 'Online'; // valor por defeito — ajusta se for presencial
-  markField('field-modalidade', gotModalidade);
-  // Legível por defeito "Sim" — ajusta se não for; nunca vem do email. Abordámos/Ficámos são sempre automáticos por contacto
-  document.getElementById('f-legivel').value='Sim';
-
-  document.getElementById('fixando-form').scrollIntoView({behavior:'smooth', block:'center'});
 });
 
 
@@ -1263,12 +1146,8 @@ function updatePhoneHistory(){
   crm.efetivos.forEach(a=>{ if(normStr(a.plataforma).toLowerCase().includes('fixando')) add(phoneHistory.efetivos, a.contacto, a.nome); });
   savePhoneHistory();
 }
-function resolveAbordamos(pedido){
-  const k = normalizePhone(pedido.contacto);
-  if(!k) return {value:false, nome:null};
-  if(phoneHistory.pendentes[k]) return {value:true, nome:phoneHistory.pendentes[k]};
-  if(phoneHistory.efetivos[k]) return {value:true, nome:phoneHistory.efetivos[k]}; // quem ficou também foi abordado
-  return {value:false, nome:null};
+function isAbordado(pedido){
+  return !!pedido.contacto;
 }
 function resolveFicamos(pedido){
   const k = normalizePhone(pedido.contacto);
@@ -1278,6 +1157,12 @@ function resolveFicamos(pedido){
 function flagCellHtml(r){
   if(r.value) return `<span class="badge green">Sim 🔗 ${r.nome}</span>`;
   return `<span class="badge mustard">Não</span>`;
+}
+function abordamosCellHtml(idx, pedido){
+  if(pedido.contacto){
+    return `<span class="badge green">Sim — ${pedido.contacto}</span> <a href="#" class="override-link" data-idx="${idx}" data-action="editar-contacto">editar</a>`;
+  }
+  return `<button class="btn secondary" data-idx="${idx}" data-action="marcar-abordado" style="padding:5px 12px; font-size:11px;">Marcar abordámos</button>`;
 }
 
 let lastResolvedPedidos = []; // cache para os filtros não terem de recalcular gráficos
@@ -1292,7 +1177,7 @@ function renderFixando(){
   updatePhoneHistory();
   const resolved = pedidos.map(p=>({
     p,
-    abordamos: resolveAbordamos(p),
+    abordamos: {value: isAbordado(p), nome: p.contacto || null},
     ficamos: resolveFicamos(p)
   }));
   lastResolvedPedidos = resolved;
@@ -1417,7 +1302,7 @@ function renderFixandoTable(){
   document.getElementById('filter-count').textContent = rows.length+' de '+pedidos.length+' pedidos';
 
   const opt = (val, current) => `<option value="${val}" ${current===val?'selected':''}>${val||'—'}</option>`;
-  tbody.innerHTML = rows.map(({p, abordamos, ficamos})=>{
+  tbody.innerHTML = rows.map(({p, ficamos})=>{
     const idx = pedidos.indexOf(p);
     const dataISO = p.data.getFullYear()+'-'+String(p.data.getMonth()+1).padStart(2,'0')+'-'+String(p.data.getDate()).padStart(2,'0');
     return `<tr>
@@ -1426,10 +1311,9 @@ function renderFixandoTable(){
       <td><input class="cell-edit" type="text" data-idx="${idx}" data-field="disciplina" value="${p.disciplina}" placeholder="ex: Matemática, Português"></td>
       <td><input class="cell-edit" type="text" data-idx="${idx}" data-field="ano" value="${p.ano}"></td>
       <td><input class="cell-edit" type="text" data-idx="${idx}" data-field="localidade" value="${p.localidade}"></td>
-      <td><input class="cell-edit" type="text" data-idx="${idx}" data-field="contacto" value="${p.contacto||''}" placeholder="telemóvel"></td>
       <td><select class="cell-edit" data-idx="${idx}" data-field="modalidade">${opt('Online',p.modalidade)}${opt('Presencial',p.modalidade)}</select></td>
       <td><select class="cell-edit" data-idx="${idx}" data-field="legivel">${opt('Sim', p.legivel?'Sim':'Não')}${opt('Não', p.legivel?'Sim':'Não')}</select></td>
-      <td>${flagCellHtml(abordamos)}</td>
+      <td>${abordamosCellHtml(idx, p)}</td>
       <td>${flagCellHtml(ficamos)}</td>
     </tr>`;
   }).join('');
@@ -1443,9 +1327,20 @@ function renderFixandoTable(){
       else if(field==='disciplina') pedidos[idx].disciplina = normStr(el.value) || 'Não especificado';
       else if(field==='ano') pedidos[idx].ano = normStr(el.value) || 'Não especificado';
       else if(field==='localidade') pedidos[idx].localidade = normStr(el.value) || 'Não especificado';
-      else if(field==='contacto') pedidos[idx].contacto = normStr(el.value);
       else if(field==='modalidade') pedidos[idx].modalidade = el.value;
       else if(field==='legivel') pedidos[idx].legivel = (el.value==='Sim');
+      savePedidos(); renderFixando();
+    });
+  });
+
+  tbody.querySelectorAll('[data-action="marcar-abordado"], [data-action="editar-contacto"]').forEach(el=>{
+    el.addEventListener('click', (e)=>{
+      e.preventDefault();
+      const idx = Number(el.dataset.idx);
+      const atual = pedidos[idx].contacto || '';
+      const valor = window.prompt('Número de telemóvel do cliente (este pedido fica marcado como "Abordámos"):', atual);
+      if(valor === null) return; // cancelado
+      pedidos[idx].contacto = normStr(valor);
       savePedidos(); renderFixando();
     });
   });

@@ -177,7 +177,14 @@ input[type=file]{display:none;}
 .two-col{display:grid; grid-template-columns:1fr 1fr; gap:18px;}
 @media (max-width:900px){.two-col{grid-template-columns:1fr;} .app{flex-direction:column;} .rail{width:100%;}}
 
+.table-scroll{max-height:520px; overflow-y:auto; border-radius:8px;}
 table.data{width:100%; border-collapse:collapse; font-size:12.5px;}
+table.data thead th{position:sticky; top:0; background:var(--card); z-index:1;}
+table.data .cell-edit{
+  font-family:'Bahnschrift','Poppins',sans-serif; font-size:12px; padding:4px 6px;
+  border:1px solid var(--border); border-radius:6px; background:var(--bg); color:var(--ink); width:100%;
+}
+table.data select.cell-edit{cursor:pointer;}
 table.data th{
   text-align:left; font-family:'IBM Plex Mono',monospace; font-size:10.5px; letter-spacing:.04em;
   text-transform:uppercase; color:var(--muted); font-weight:600;
@@ -398,8 +405,9 @@ table.data tr:hover td{background:var(--lime-soft);}
           <div class="field needs-input" id="field-legivel"><label>Pedido legível?</label>
             <select id="f-legivel"><option value="">—</option><option>Sim</option><option>Não</option></select>
           </div>
-          <div class="field needs-input" id="field-abordamos"><label>Abordámos?</label>
-            <select id="f-abordamos"><option value="">—</option><option>Sim</option><option>Não</option></select>
+          <div class="field" id="field-abordamos">
+            <label>Abordámos?</label>
+            <select id="f-abordamos"><option value="auto">Automático (por contacto)</option><option value="sim">Forçar Sim</option><option value="nao">Forçar Não</option></select>
           </div>
           <div class="field" id="field-ficamos">
             <label>Ficámos com o aluno?</label>
@@ -469,8 +477,41 @@ table.data tr:hover td{background:var(--lime-soft);}
 
         <div class="section">
           <h3>🗂️ Registo de pedidos</h3>
-          <p class="desc">Últimos pedidos registados</p>
+          <p class="desc">Todos os pedidos registados — Contacto, Modalidade e Legível são editáveis diretamente aqui; Abordámos/Ficámos têm associação automática com link "anular"/"marcar Sim"</p>
+
+          <div class="chart-card" style="padding:14px; margin-bottom:14px;">
+            <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:10px;">
+              <input type="text" id="filter-search" placeholder="🔍 Procurar disciplina, localidade, contacto..." style="grid-column:span 2; font-family:'Bahnschrift','Poppins',sans-serif; font-size:13px; padding:8px 10px; border:1.5px solid var(--border); border-radius:8px; background:var(--bg); color:var(--ink);">
+              <select id="filter-disciplina" style="font-family:'Bahnschrift','Poppins',sans-serif; font-size:13px; padding:8px 10px; border:1.5px solid var(--border); border-radius:8px; background:var(--bg); color:var(--ink);"><option value="">Todas as disciplinas</option></select>
+              <select id="filter-modalidade" style="font-family:'Bahnschrift','Poppins',sans-serif; font-size:13px; padding:8px 10px; border:1.5px solid var(--border); border-radius:8px; background:var(--bg); color:var(--ink);">
+                <option value="">Todas as modalidades</option><option value="Online">Online</option><option value="Presencial">Presencial</option>
+              </select>
+              <select id="filter-legivel" style="font-family:'Bahnschrift','Poppins',sans-serif; font-size:13px; padding:8px 10px; border:1.5px solid var(--border); border-radius:8px; background:var(--bg); color:var(--ink);">
+                <option value="">Legível: todos</option><option value="Sim">Legível: Sim</option><option value="Não">Legível: Não</option>
+              </select>
+              <select id="filter-abordamos" style="font-family:'Bahnschrift','Poppins',sans-serif; font-size:13px; padding:8px 10px; border:1.5px solid var(--border); border-radius:8px; background:var(--bg); color:var(--ink);">
+                <option value="">Abordámos: todos</option><option value="Sim">Abordámos: Sim</option><option value="Não">Abordámos: Não</option>
+              </select>
+              <select id="filter-ficamos" style="font-family:'Bahnschrift','Poppins',sans-serif; font-size:13px; padding:8px 10px; border:1.5px solid var(--border); border-radius:8px; background:var(--bg); color:var(--ink);">
+                <option value="">Ficámos: todos</option><option value="Sim">Ficámos: Sim</option><option value="Não">Ficámos: Não</option>
+              </select>
+              <div style="display:flex; gap:8px; align-items:center;">
+                <label style="font-size:11px; color:var(--muted); white-space:nowrap;">De</label>
+                <input type="date" id="filter-data-de" style="flex:1; font-family:'Bahnschrift','Poppins',sans-serif; font-size:13px; padding:7px 8px; border:1.5px solid var(--border); border-radius:8px; background:var(--bg); color:var(--ink);">
+              </div>
+              <div style="display:flex; gap:8px; align-items:center;">
+                <label style="font-size:11px; color:var(--muted); white-space:nowrap;">Até</label>
+                <input type="date" id="filter-data-ate" style="flex:1; font-family:'Bahnschrift','Poppins',sans-serif; font-size:13px; padding:7px 8px; border:1.5px solid var(--border); border-radius:8px; background:var(--bg); color:var(--ink);">
+              </div>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
+              <span id="filter-count" style="font-size:12px; color:var(--muted);"></span>
+              <button class="btn secondary" id="btn-clear-filters">Limpar filtros</button>
+            </div>
+          </div>
+
           <div class="chart-card" id="card-table-fixando">
+            <div class="table-scroll">
             <table class="data" id="table-fixando">
               <thead><tr>
                 <th>Data</th><th>Hora</th><th>Disciplina</th><th>Ano</th><th>Localidade</th>
@@ -478,6 +519,7 @@ table.data tr:hover td{background:var(--lime-soft);}
               </tr></thead>
               <tbody></tbody>
             </table>
+            </div>
           </div>
         </div>
 
@@ -931,10 +973,10 @@ function renderAlunos(){
    PART 2 — MERCADO / FIXANDO
    ============================================================ */
 const FIXANDO_HEADERS = ['Data do Pedido','Hora do Pedido (0-23)','Disciplina','Ano de Ensino','Localidade',
-  'Contacto (opcional)','Modalidade (Online/Presencial)','Pedido Legível (Sim/Não)','Abordámos (Sim/Não)','Ficámos com o Aluno (Sim/Não/vazio=automático)'];
+  'Contacto (opcional)','Modalidade (Online/Presencial)','Pedido Legível (Sim/Não)','Abordámos (Sim/Não/vazio=automático)','Ficámos com o Aluno (Sim/Não/vazio=automático)'];
 
 document.getElementById('btn-template-fixando').addEventListener('click', ()=>{
-  const example = ['05/09/2025','18','Matemática','9º ano','Porto','912345678','Online','Sim','Sim',''];
+  const example = ['05/09/2025','18','Matemática','9º ano','Porto','912345678','Online','Sim','',''];
   const ws = XLSX.utils.aoa_to_sheet([FIXANDO_HEADERS, example]);
   ws['!cols'] = FIXANDO_HEADERS.map(()=>({wch:22}));
   const wb = XLSX.utils.book_new();
@@ -945,6 +987,8 @@ function mapRowsToPedidos(rows, source){
   return rows.map(r=>{
     const ficamosRaw = normStr(r['Ficámos com o Aluno (Sim/Não/vazio=automático)'] !== undefined
       ? r['Ficámos com o Aluno (Sim/Não/vazio=automático)'] : r['Ficámos com o Aluno (Sim/Não)']);
+    const abordamosRaw = normStr(r['Abordámos (Sim/Não/vazio=automático)'] !== undefined
+      ? r['Abordámos (Sim/Não/vazio=automático)'] : r['Abordámos (Sim/Não)']);
     return {
       data: parseDate(r['Data do Pedido']),
       hora: Number(r['Hora do Pedido (0-23)']) || 0,
@@ -954,7 +998,7 @@ function mapRowsToPedidos(rows, source){
       contacto: normStr(r['Contacto (opcional)'] !== undefined ? r['Contacto (opcional)'] : r['Contacto']),
       modalidade: normStr(r['Modalidade (Online/Presencial)']) || 'Presencial',
       legivel: isTrue(normStr(r['Pedido Legível (Sim/Não)'])),
-      abordamos: isTrue(normStr(r['Abordámos (Sim/Não)'])),
+      abordamosOverride: abordamosRaw ? isTrue(abordamosRaw) : null,
       ficamosOverride: ficamosRaw ? isTrue(ficamosRaw) : null,
       source: source || 'manual'
     };
@@ -1051,11 +1095,12 @@ document.getElementById('btn-sync-now').addEventListener('click', async ()=>{
 document.getElementById('btn-add-fixando').addEventListener('click', ()=>{
   const dataVal = document.getElementById('f-data').value;
   if(!dataVal){ alert('Indica a data do pedido.'); return; }
-  const camposManuais = [['f-modalidade','Modalidade'],['f-legivel','Pedido legível'],['f-abordamos','Abordámos']];
+  const camposManuais = [['f-modalidade','Modalidade'],['f-legivel','Pedido legível']];
   const emFalta = camposManuais.filter(([id])=> !document.getElementById(id).value);
   if(emFalta.length){ alert('Falta preencher: '+emFalta.map(f=>f[1]).join(', ')+'.'); return; }
   const [y,m,d] = dataVal.split('-').map(Number);
   const ficamosSel = document.getElementById('f-ficamos').value; // 'auto' | 'sim' | 'nao'
+  const abordamosSel = document.getElementById('f-abordamos').value; // 'auto' | 'sim' | 'nao'
   const p = {
     data: new Date(y, m-1, d),
     hora: Number(document.getElementById('f-hora').value) || 0,
@@ -1065,13 +1110,14 @@ document.getElementById('btn-add-fixando').addEventListener('click', ()=>{
     contacto: normStr(document.getElementById('f-contacto').value),
     modalidade: document.getElementById('f-modalidade').value,
     legivel: document.getElementById('f-legivel').value === 'Sim',
-    abordamos: document.getElementById('f-abordamos').value === 'Sim',
+    abordamosOverride: abordamosSel==='sim' ? true : (abordamosSel==='nao' ? false : null),
     ficamosOverride: ficamosSel==='sim' ? true : (ficamosSel==='nao' ? false : null),
     source: 'manual'
   };
   pedidos.push(p); savePedidos(); renderFixando();
-  ['f-hora','f-disciplina','f-ano','f-localidade','f-contacto','f-modalidade','f-legivel','f-abordamos'].forEach(id=>document.getElementById(id).value='');
+  ['f-hora','f-disciplina','f-ano','f-localidade','f-contacto','f-modalidade','f-legivel'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('f-ficamos').value = 'auto';
+  document.getElementById('f-abordamos').value = 'auto';
   ['field-disciplina','field-localidade','field-ano','field-data','field-hora','field-modalidade'].forEach(id=>{
     const el=document.getElementById(id); if(el){ el.classList.remove('auto-filled','needs-input'); }
   });
@@ -1177,17 +1223,19 @@ document.getElementById('btn-parse-pedido').addEventListener('click', ()=>{
   else document.getElementById('f-modalidade').value = '';
   markField('field-modalidade', gotModalidade);
   // Legível / Abordámos são sempre decisão vossa — nunca vêm do email; Ficámos passa a ser automático por contacto
-  document.getElementById('f-legivel').value=''; document.getElementById('f-abordamos').value=''; document.getElementById('f-ficamos').value='auto';
+  document.getElementById('f-legivel').value=''; document.getElementById('f-abordamos').value='auto'; document.getElementById('f-ficamos').value='auto';
 
   document.getElementById('fixando-form').scrollIntoView({behavior:'smooth', block:'center'});
 });
 
 
 function periodo(hora){
-  if(hora>=0 && hora<6) return 'Madrugada';
-  if(hora<12) return 'Manhã';
-  if(hora<19) return 'Tarde';
-  return 'Noite';
+  if(hora>=0 && hora<8) return '0h–8h';
+  if(hora<12) return '8h–12h';
+  if(hora<15) return '12h–15h';
+  if(hora<18) return '15h–18h';
+  if(hora<21) return '18h–21h';
+  return '21h–24h';
 }
 function weekdayLabel(d){
   const js = d.getDay(); // 0=Dom
@@ -1199,23 +1247,30 @@ function normalizePhone(v){
   const digits = String(v||'').replace(/\D/g,'');
   return digits.length>=9 ? digits.slice(-9) : digits; // últimos 9 dígitos (nº móvel PT)
 }
-function buildFixandoPhoneIndex(){
-  const idx = {};
-  const add = (nome, contacto)=>{
+function buildFixandoPhoneIndexes(){
+  const pend = {}, efet = {};
+  const add = (idx, nome, contacto)=>{
     const k = normalizePhone(contacto);
     if(k && k.length===9 && !idx[k]) idx[k] = nome;
   };
-  crm.pendentes.forEach(p=>{ if(normStr(p.plataforma).toLowerCase().includes('fixando')) add(p.nome, p.contacto); });
-  crm.efetivos.forEach(a=>{ if(normStr(a.plataforma).toLowerCase().includes('fixando')) add(a.nome, a.contacto); });
-  return idx;
+  crm.pendentes.forEach(p=>{ if(normStr(p.plataforma).toLowerCase().includes('fixando')) add(pend, p.nome, p.contacto); });
+  crm.efetivos.forEach(a=>{ if(normStr(a.plataforma).toLowerCase().includes('fixando')) add(efet, a.nome, a.contacto); });
+  return {pend, efet};
 }
-function resolveFicamos(pedido, phoneIndex){
-  if(pedido.ficamosOverride === true) return {value:true, source:'manual'};
-  if(pedido.ficamosOverride === false) return {value:false, source:'manual'};
+function resolveFlag(pedido, overrideField, phoneIdx){
+  if(pedido[overrideField] === true) return {value:true, source:'manual'};
+  if(pedido[overrideField] === false) return {value:false, source:'manual'};
   const k = normalizePhone(pedido.contacto);
-  if(k && phoneIndex[k]) return {value:true, source:'auto', nome:phoneIndex[k]};
+  if(k && phoneIdx[k]) return {value:true, source:'auto', nome:phoneIdx[k]};
   return {value:false, source:'sem-associação'};
 }
+function flagCellHtml(idx, r, actionPrefix){
+  if(r.source==='auto') return `<span class="badge green">Sim 🔗 ${r.nome}</span> <a href="#" data-idx="${idx}" data-action="${actionPrefix}-nao" class="override-link">anular</a>`;
+  if(r.source==='manual') return `<span class="badge ${r.value?'green':'red'}">${r.value?'Sim':'Não'} (manual)</span> <a href="#" data-idx="${idx}" data-action="${actionPrefix}-clear" class="override-link">automático</a>`;
+  return `<span class="badge mustard">Sem associação</span> <a href="#" data-idx="${idx}" data-action="${actionPrefix}-sim" class="override-link">marcar Sim</a>`;
+}
+
+let lastResolvedPedidos = []; // cache para os filtros não terem de recalcular gráficos
 
 function renderFixando(){
   const empty = document.getElementById('fixando-empty');
@@ -1223,8 +1278,13 @@ function renderFixando(){
   if(pedidos.length===0){ empty.style.display='block'; content.style.display='none'; return; }
   empty.style.display='none'; content.style.display='block';
 
-  const phoneIndex = buildFixandoPhoneIndex();
-  const resolved = pedidos.map(p=>({ p, r: resolveFicamos(p, phoneIndex) }));
+  const {pend, efet} = buildFixandoPhoneIndexes();
+  const resolved = pedidos.map(p=>({
+    p,
+    abordamos: resolveFlag(p, 'abordamosOverride', pend),
+    ficamos: resolveFlag(p, 'ficamosOverride', efet)
+  }));
+  lastResolvedPedidos = resolved;
 
   const total = pedidos.length;
   const online = pedidos.filter(p=>p.modalidade==='Online');
@@ -1233,19 +1293,20 @@ function renderFixando(){
   const mediaMes = (total/nMeses).toFixed(1);
   const mediaMesOnline = (online.length/nMeses).toFixed(1);
 
-  const legiveis = pedidos.filter(p=>p.legivel);
-  const abordados = pedidos.filter(p=>p.abordamos);
-  const ficadosCount = resolved.filter(x=>x.r.value).length;
-  const associadosAuto = resolved.filter(x=>x.r.source==='auto').length;
-  const pctAbordAmosLegiveis = legiveis.length? 100*pedidos.filter(p=>p.legivel&&p.abordamos).length/legiveis.length : null;
-  const pctFicamosAbordados = abordados.length? 100*resolved.filter(x=>x.p.abordamos&&x.r.value).length/abordados.length : null;
-  const pctFicamosLegiveis = legiveis.length? 100*resolved.filter(x=>x.p.legivel&&x.r.value).length/legiveis.length : null;
+  const legiveis = resolved.filter(x=>x.p.legivel);
+  const abordadosArr = resolved.filter(x=>x.abordamos.value);
+  const ficadosCount = resolved.filter(x=>x.ficamos.value).length;
+  const abordadosAuto = resolved.filter(x=>x.abordamos.source==='auto').length;
+  const ficamosAuto = resolved.filter(x=>x.ficamos.source==='auto').length;
+  const pctAbordAmosLegiveis = legiveis.length? 100*legiveis.filter(x=>x.abordamos.value).length/legiveis.length : null;
+  const pctFicamosAbordados = abordadosArr.length? 100*abordadosArr.filter(x=>x.ficamos.value).length/abordadosArr.length : null;
+  const pctFicamosLegiveis = legiveis.length? 100*legiveis.filter(x=>x.ficamos.value).length/legiveis.length : null;
 
   document.getElementById('fixando-kpis').innerHTML = [
     kpiCard('Pedidos / mês (média)', mediaMes, total+' pedidos registados no total', true, 'card-table-fixando'),
     kpiCard('Pedidos online / mês (média)', mediaMesOnline, online.length+' pedidos online no total', false, 'card-chart-loc-online'),
-    kpiCard('% abordados sobre legíveis', pctAbordAmosLegiveis!==null? pctAbordAmosLegiveis.toFixed(0)+'%':'—', null, false, 'card-table-fixando'),
-    kpiCard('% ficámos sobre abordados', pctFicamosAbordados!==null? pctFicamosAbordados.toFixed(0)+'%':'—', ficadosCount+' ficámos no total ('+associadosAuto+' associados automaticamente)', false, 'card-table-fixando'),
+    kpiCard('% abordados sobre legíveis', pctAbordAmosLegiveis!==null? pctAbordAmosLegiveis.toFixed(0)+'%':'—', abordadosAuto+' associados automaticamente (via Clientes pendentes)', false, 'card-table-fixando'),
+    kpiCard('% ficámos sobre abordados', pctFicamosAbordados!==null? pctFicamosAbordados.toFixed(0)+'%':'—', ficadosCount+' ficámos no total ('+ficamosAuto+' via Clientes Efetivos)', false, 'card-table-fixando'),
     kpiCard('% ficámos sobre legíveis', pctFicamosLegiveis!==null? pctFicamosLegiveis.toFixed(0)+'%':'—', null, false, 'card-table-fixando')
   ].join('');
 
@@ -1255,7 +1316,7 @@ function renderFixando(){
   const locOnline = sortedEntries(groupCount(online, p=>p.localidade), 10);
   barChart('chart-loc-online', locOnline.map(e=>e[0]), locOnline.map(e=>e[1]), '#258730', true);
 
-  const periodos = ['Madrugada','Manhã','Tarde','Noite'];
+  const periodos = ['0h–8h','8h–12h','12h–15h','15h–18h','18h–21h','21h–24h'];
   const perCount = groupCount(pedidos, p=>periodo(p.hora));
   barChart('chart-periodo', periodos, periodos.map(p=>perCount[p]||0), '#8C9C3B');
 
@@ -1268,40 +1329,97 @@ function renderFixando(){
   const anoE = sortedEntries(groupCount(pedidos, p=>p.ano), 10);
   barChart('chart-ano-mercado', anoE.map(e=>e[0]), anoE.map(e=>e[1]), '#258730');
 
+  populateFilterOptions();
+  renderFixandoTable();
+}
+
+function populateFilterOptions(){
+  const discSel = document.getElementById('filter-disciplina');
+  if(!discSel) return;
+  const current = discSel.value;
+  const discs = Array.from(new Set(pedidos.map(p=>p.disciplina))).sort();
+  discSel.innerHTML = '<option value="">Todas as disciplinas</option>' + discs.map(d=>`<option value="${d}" ${d===current?'selected':''}>${d}</option>`).join('');
+}
+
+function renderFixandoTable(){
   const tbody = document.querySelector('#table-fixando tbody');
-  const sortedRows = [...resolved].sort((a,b)=>b.p.data-a.p.data).slice(0,60);
-  tbody.innerHTML = sortedRows.map(({p,r}, i)=>{
+  if(!tbody) return;
+
+  const fSearch = (document.getElementById('filter-search')?.value || '').toLowerCase().trim();
+  const fDisc = document.getElementById('filter-disciplina')?.value || '';
+  const fModalidade = document.getElementById('filter-modalidade')?.value || '';
+  const fLegivel = document.getElementById('filter-legivel')?.value || '';
+  const fAbordamos = document.getElementById('filter-abordamos')?.value || '';
+  const fFicamos = document.getElementById('filter-ficamos')?.value || '';
+  const fDe = document.getElementById('filter-data-de')?.value || '';
+  const fAte = document.getElementById('filter-data-ate')?.value || '';
+
+  let rows = [...lastResolvedPedidos];
+
+  if(fSearch) rows = rows.filter(({p})=> (p.disciplina+' '+p.localidade+' '+(p.contacto||'')+' '+p.ano).toLowerCase().includes(fSearch));
+  if(fDisc) rows = rows.filter(({p})=>p.disciplina===fDisc);
+  if(fModalidade) rows = rows.filter(({p})=>p.modalidade===fModalidade);
+  if(fLegivel) rows = rows.filter(({p})=> (fLegivel==='Sim') === !!p.legivel);
+  if(fAbordamos) rows = rows.filter(({abordamos})=> (fAbordamos==='Sim') === abordamos.value);
+  if(fFicamos) rows = rows.filter(({ficamos})=> (fFicamos==='Sim') === ficamos.value);
+  if(fDe){ const d=new Date(fDe+'T00:00:00'); rows = rows.filter(({p})=>p.data>=d); }
+  if(fAte){ const d=new Date(fAte+'T23:59:59'); rows = rows.filter(({p})=>p.data<=d); }
+
+  rows.sort((a,b)=>b.p.data-a.p.data);
+
+  document.getElementById('filter-count').textContent = rows.length+' de '+pedidos.length+' pedidos';
+
+  const opt = (val, current) => `<option value="${val}" ${current===val?'selected':''}>${val||'—'}</option>`;
+  tbody.innerHTML = rows.map(({p, abordamos, ficamos})=>{
     const idx = pedidos.indexOf(p);
-    let ficamosCell;
-    if(r.source==='auto'){
-      ficamosCell = `<span class="badge green">Sim 🔗 ${r.nome}</span> <a href="#" data-idx="${idx}" data-action="override-nao" class="override-link">anular</a>`;
-    } else if(r.source==='manual'){
-      ficamosCell = `<span class="badge ${r.value?'green':'red'}">${r.value?'Sim':'Não'} (manual)</span> <a href="#" data-idx="${idx}" data-action="clear" class="override-link">automático</a>`;
-    } else {
-      ficamosCell = `<span class="badge mustard">Sem associação</span> <a href="#" data-idx="${idx}" data-action="override-sim" class="override-link">marcar Sim</a>`;
-    }
     return `<tr>
       <td>${p.data.toLocaleDateString('pt-PT')}</td><td>${p.hora}h</td><td>${p.disciplina}</td><td>${p.ano}</td><td>${p.localidade}</td>
-      <td>${p.contacto||'—'}</td>
-      <td>${p.modalidade}</td>
-      <td>${p.legivel? '<span class="badge green">Sim</span>':'<span class="badge red">Não</span>'}</td>
-      <td>${p.abordamos? '<span class="badge green">Sim</span>':'<span class="badge red">Não</span>'}</td>
-      <td>${ficamosCell}</td>
+      <td><input class="cell-edit" type="text" data-idx="${idx}" data-field="contacto" value="${p.contacto||''}" placeholder="telemóvel"></td>
+      <td><select class="cell-edit" data-idx="${idx}" data-field="modalidade">${opt('',p.modalidade)}${opt('Online',p.modalidade)}${opt('Presencial',p.modalidade)}</select></td>
+      <td><select class="cell-edit" data-idx="${idx}" data-field="legivel">${opt('Não', p.legivel?'Sim':'Não')}${opt('Sim', p.legivel?'Sim':'Não')}</select></td>
+      <td>${flagCellHtml(idx, abordamos, 'abord')}</td>
+      <td>${flagCellHtml(idx, ficamos, 'fica')}</td>
     </tr>`;
   }).join('');
 
+  tbody.querySelectorAll('.cell-edit').forEach(el=>{
+    el.addEventListener('change', ()=>{
+      const idx = Number(el.dataset.idx);
+      const field = el.dataset.field;
+      if(field==='contacto') pedidos[idx].contacto = normStr(el.value);
+      else if(field==='modalidade') pedidos[idx].modalidade = el.value;
+      else if(field==='legivel') pedidos[idx].legivel = (el.value==='Sim');
+      savePedidos(); renderFixando();
+    });
+  });
   tbody.querySelectorAll('.override-link').forEach(link=>{
     link.addEventListener('click', (e)=>{
       e.preventDefault();
       const idx = Number(link.dataset.idx);
-      const action = link.dataset.action;
-      if(action==='override-sim') pedidos[idx].ficamosOverride = true;
-      else if(action==='override-nao') pedidos[idx].ficamosOverride = false;
-      else if(action==='clear') pedidos[idx].ficamosOverride = null;
+      const action = link.dataset.action; // abord-sim | abord-nao | abord-clear | fica-sim | fica-nao | fica-clear
+      const [prefix, op] = action.split('-');
+      const field = prefix==='abord' ? 'abordamosOverride' : 'ficamosOverride';
+      if(op==='sim') pedidos[idx][field] = true;
+      else if(op==='nao') pedidos[idx][field] = false;
+      else if(op==='clear') pedidos[idx][field] = null;
       savePedidos(); renderFixando();
     });
   });
 }
+
+  ['filter-search','filter-disciplina','filter-modalidade','filter-legivel','filter-abordamos','filter-ficamos','filter-data-de','filter-data-ate'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.addEventListener('input', renderFixandoTable);
+  });
+  const clearBtn = document.getElementById('btn-clear-filters');
+  if(clearBtn) clearBtn.addEventListener('click', ()=>{
+    ['filter-search','filter-disciplina','filter-modalidade','filter-legivel','filter-abordamos','filter-ficamos','filter-data-de','filter-data-ate'].forEach(id=>{
+      const el = document.getElementById(id); if(el) el.value='';
+    });
+    renderFixandoTable();
+  });
+}
+wireFilterListeners();
 
 loadState();
 </script>

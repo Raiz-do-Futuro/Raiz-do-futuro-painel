@@ -1023,8 +1023,7 @@ async function syncFromSheet(url){
   if(!url){ setSyncStatus('Ainda sem fonte automática ligada.'); return; }
   setSyncStatus('A sincronizar…');
   try{
-    const bust = (url.includes('?')?'&':'?') + '_ts=' + Date.now();
-    const res = await fetch(url + bust, {cache:'no-store'});
+    const res = await fetch(url, {cache:'no-store'});
     if(!res.ok) throw new Error('HTTP '+res.status);
     const text = await res.text();
     if(text.trim().startsWith('<')){

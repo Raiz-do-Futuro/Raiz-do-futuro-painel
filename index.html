@@ -1407,6 +1407,7 @@ function renderFixandoTable(){
   });
 }
 
+function wireFilterListeners(){
   ['filter-search','filter-disciplina','filter-modalidade','filter-legivel','filter-abordamos','filter-ficamos','filter-data-de','filter-data-ate'].forEach(id=>{
     const el = document.getElementById(id);
     if(el) el.addEventListener('input', renderFixandoTable);

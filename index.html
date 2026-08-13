@@ -7,7 +7,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/topojson-client/3.1.0/topojson-client.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Stardos+Stencil:wght@400;700&family=Poppins:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap');
 
@@ -990,7 +990,11 @@ function renderAlunos(){
   barChart('chart-funil', funilLabels, funilLabels.map(l=>estadoCount[l]||0), '#8C9C3B');
 
   // tabela por professor (usa a aba AEs para tempos + taxa de conversão)
-  const profNames = Array.from(new Set(efetivos.map(a=>a.professor)));
+  const profNames = Array.from(new Set([
+    ...efetivos.map(a=>a.professor),
+    ...pendentes.map(p=>p.professor),
+    ...aes.map(a=>a.professor)
+  ])).filter(p=>p && p!=='Não especificado').sort();
   const tbody = document.querySelector('#table-professores tbody');
   tbody.innerHTML = profNames.map(p=>{
     const rowsUnicos = unicos.filter(a=>a.professor===p || efetivos.some(e=>e.professor===p && normKey(e.nome)===normKey(a.nome)));

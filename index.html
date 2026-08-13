@@ -994,16 +994,43 @@ async function saveSyncUrl(url){
 function setSyncStatus(msg){
   const el = document.getElementById('sync-status'); if(el) el.textContent = msg;
 }
+function parseCSVText(text){
+  const rows = [];
+  let i=0, field='', row=[], inQuotes=false;
+  const pushField=()=>{ row.push(field); field=''; };
+  const pushRow=()=>{ rows.push(row); row=[]; };
+  while(i<text.length){
+    const c = text[i];
+    if(inQuotes){
+      if(c==='"'){ if(text[i+1]==='"'){ field+='"'; i+=2; continue; } inQuotes=false; i++; continue; }
+      field+=c; i++; continue;
+    } else {
+      if(c==='"'){ inQuotes=true; i++; continue; }
+      if(c===','){ pushField(); i++; continue; }
+      if(c==='\r'){ i++; continue; }
+      if(c==='\n'){ pushField(); pushRow(); i++; continue; }
+      field+=c; i++; continue;
+    }
+  }
+  if(field.length || row.length){ pushField(); pushRow(); }
+  if(!rows.length) return [];
+  const headers = rows[0].map(h=>String(h).trim());
+  return rows.slice(1).filter(r=>r.some(v=>v!=='')).map(r=>{
+    const o={}; headers.forEach((h,idx)=>{ if(h) o[h] = r[idx]!==undefined ? r[idx] : ''; }); return o;
+  });
+}
 async function syncFromSheet(url){
   if(!url){ setSyncStatus('Ainda sem fonte automática ligada.'); return; }
   setSyncStatus('A sincronizar…');
   try{
-    const res = await fetch(url);
+    const bust = (url.includes('?')?'&':'?') + '_ts=' + Date.now();
+    const res = await fetch(url + bust, {cache:'no-store'});
     if(!res.ok) throw new Error('HTTP '+res.status);
     const text = await res.text();
-    const wb = XLSX.read(text, {type:'string'});
-    const sheet = wb.Sheets[wb.SheetNames[0]];
-    const rows = XLSX.utils.sheet_to_json(sheet, {defval:''});
+    if(text.trim().startsWith('<')){
+      throw new Error('A resposta não é CSV (parece uma página HTML). Volta ao Google Sheets → Ficheiro → Partilhar → Publicar na Web, republica e copia o link outra vez.');
+    }
+    const rows = parseCSVText(text);
     const autoRows = mapRowsToPedidos(rows, 'auto');
     pedidos = pedidos.filter(p=>p.source!=='auto').concat(autoRows);
     savePedidos(); renderFixando();

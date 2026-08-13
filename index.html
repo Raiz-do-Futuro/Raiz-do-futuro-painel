@@ -6,6 +6,8 @@
 <title>Raiz do Futuro — Painel de Análise</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/topojson-client/3.1.0/topojson-client.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Stardos+Stencil:wght@400;700&family=Poppins:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap');
 
@@ -246,7 +248,6 @@ table.data tr:hover td{background:var(--lime-soft);}
     <!-- ===================== TAB 1: ALUNOS ===================== -->
     <section class="panel active" id="panel-alunos">
       <div class="page-head">
-        <div class="kicker">Parte 1</div>
         <h2>🌳 Alunos efetivos</h2>
         <p>Importa o teu Excel de alunos para obteres distribuição geográfica, conversão, retenção e desempenho por professor.</p>
       </div>
@@ -284,6 +285,22 @@ table.data tr:hover td{background:var(--lime-soft);}
             <h3>📚 Alunos por disciplina</h3>
             <p class="desc">Contagem de alunos efetivos</p>
             <div class="chart-card" id="card-chart-disciplina"><div class="chart-wrap"><canvas id="chart-disciplina"></canvas></div></div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h3>🌍 Mapa interativo</h3>
+          <p class="desc">Clica num país para veres Portugal; clica num distrito para veres os concelhos com alunos.</p>
+          <div class="chart-card" id="card-geo-interactive-map">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px;">
+              <div id="map-breadcrumb" style="font-size:13px; color:var(--ink); font-weight:600;">🌍 Mundo</div>
+              <button class="btn secondary" id="btn-map-back" style="display:none; padding:6px 14px; font-size:12px;">← Voltar</button>
+            </div>
+            <div id="geo-map-svg-wrap" style="position:relative; height:420px; background:var(--sage-soft); border-radius:12px; overflow:hidden;"></div>
+            <div id="geo-map-list"></div>
+            <div style="font-size:11px; color:var(--muted); margin-top:10px;">
+              Mundo e distritos usam fronteiras geográficas reais. Ao nível de concelho mostramos uma lista ordenada (em vez de polígonos) porque os ficheiros de fronteiras de concelho são demasiado pesados para carregar de forma fiável no dia a dia. A associação a distrito/concelho é feita por reconhecimento do texto em "Localização" — localidades menos comuns podem cair em "Não classificado".
+            </div>
           </div>
         </div>
 
@@ -328,7 +345,7 @@ table.data tr:hover td{background:var(--lime-soft);}
             <table class="data" id="table-professores">
               <thead><tr>
                 <th>Professor</th><th>Nº Alunos</th><th>Retenção média</th>
-                <th>Tempo em conversações</th><th>AE → Efetivação</th><th>Nº AE</th><th>Taxa conversão AE</th>
+                <th>Tempo médio em conversações</th><th>Tempo médio AE → Efetivação</th><th>Nº AE</th><th>Taxa conversão AE</th>
               </tr></thead>
               <tbody></tbody>
             </table>
@@ -724,10 +741,18 @@ function doughnutChart(id, labels, data){
   destroyChart(id);
   const ctx = document.getElementById(id);
   if(!ctx) return;
+  const total = data.reduce((a,b)=>a+b,0) || 1;
+  const labelsPct = labels.map((l,i)=> `${l} — ${Math.round(100*data[i]/total)}%`);
   charts[id] = new Chart(ctx, {
     type:'doughnut',
-    data:{labels, datasets:[{data, backgroundColor:PALETTE}]},
-    options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'right', labels:{font:{family:'Inter', size:11}, boxWidth:11}}}}
+    data:{labels: labelsPct, datasets:[{data, backgroundColor:PALETTE}]},
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{position:'right', labels:{font:{family:'Bahnschrift', size:11}, boxWidth:11}},
+        tooltip:{callbacks:{ label: ctx => `${labels[ctx.dataIndex]}: ${ctx.raw} (${Math.round(100*ctx.raw/total)}%)` }}
+      }
+    }
   });
 }
 
@@ -814,19 +839,44 @@ function parseCrmWorkbook(wb){
     momentoContacto: parseDate(o['Momento do contacto'])
   })).filter(p=>p.nome);
 
-  // --- AEs ---
-  const aesRaw = readSheetFrom(findSheet(wb,'ae'), 'Aluno');
-  const aes = aesRaw.map(o=>({
-    nome: normStr(o['Aluno']),
-    professor: normStr(o['Professor']) || 'Não especificado',
-    tiConv: parseDate(o['T/i Conversações']),
-    tfConv: parseDate(o['T/f Conversações']),
-    tiAE: parseDate(o['T/i AE']),
-    tfAE: parseDate(o['T/f AE']),
-    estado: normStr(o['Estado'])
-  })).filter(a=>a.nome);
+  // --- AEs (cabeçalho em 2 linhas: grupo + Dia/Hora repetido — precisa de leitura posicional) ---
+  const aes = readAEsSheet(findSheet(wb,'ae'));
 
   return {efetivos, pendentes, aes};
+}
+
+function combineDiaHora(diaVal, horaVal){
+  const d = parseDate(diaVal);
+  if(!d) return null;
+  if(horaVal instanceof Date){ d.setHours(horaVal.getHours(), horaVal.getMinutes(), horaVal.getSeconds(), 0); }
+  else if(typeof horaVal === 'number'){ const totalSec = Math.round(horaVal*86400); d.setHours(0,0,0,0); d.setSeconds(totalSec); }
+  else if(typeof horaVal === 'string' && horaVal.trim()){
+    const m = horaVal.match(/(\d{1,2}):(\d{2})/);
+    if(m) d.setHours(+m[1], +m[2], 0, 0);
+  }
+  return d;
+}
+function readAEsSheet(sheet){
+  if(!sheet) return [];
+  const aoa = XLSX.utils.sheet_to_json(sheet, {header:1, defval:''});
+  const headerRowIdx = aoa.findIndex(row => row.some(c=>String(c).trim()==='Aluno'));
+  if(headerRowIdx === -1) return [];
+  const headerRow = aoa[headerRowIdx];
+  const c0 = headerRow.findIndex(c=>String(c).trim()==='Aluno'); // coluna âncora
+  // offsets fixos observados no modelo: Aluno, Professor, [Dia,Hora]x4 (Ti/Tf Conversações, Ti/Tf AE), Estado
+  return aoa.slice(headerRowIdx+1).map(r=>{
+    const nome = normStr(r[c0]);
+    if(!nome) return null;
+    return {
+      nome,
+      professor: normStr(r[c0+1]) || 'Não especificado',
+      tiConv: combineDiaHora(r[c0+2], r[c0+3]),
+      tfConv: combineDiaHora(r[c0+4], r[c0+5]),
+      tiAE: combineDiaHora(r[c0+6], r[c0+7]),
+      tfAE: combineDiaHora(r[c0+8], r[c0+9]),
+      estado: normStr(r[c0+10])
+    };
+  }).filter(Boolean);
 }
 
 document.getElementById('file-alunos').addEventListener('change', (e)=>{
@@ -862,6 +912,7 @@ function renderAlunos(){
 
   const nomesEfetivos = new Set(unicos.map(a=>normKey(a.nome)));
   const ativos = unicos.filter(a=>!a.dataFim).length;
+  lastUnicosAlunos = unicos; // cache para o mapa interativo
 
   // conversão AE -> Efetivo (por correspondência de nome entre a aba AEs e Clientes Efetivos)
   const aeConvertidos = aes.filter(a=>nomesEfetivos.has(normKey(a.nome)));
@@ -898,7 +949,7 @@ function renderAlunos(){
   barChart('chart-geo', geoE.map(e=>e[0]), geoE.map(e=>e[1]), '#4C7C63', true);
 
   // disciplina (nível matrícula)
-  const discE = sortedEntries(groupCount(efetivos, a=>a.disciplina), 10);
+  const discE = sortedEntries(groupCountMulti(efetivos, a=>a.disciplina), 10);
   barChart('chart-disciplina', discE.map(e=>e[0]), discE.map(e=>e[1]), '#258730');
 
   // inicio vs fim por mes (nível aluno único)
@@ -965,7 +1016,188 @@ function renderAlunos(){
 
     return `<tr><td><b>${p}</b></td><td>${nAlunos}</td><td>${fmtDuration(retMed)}</td><td>${fmtDuration(convMedP)}</td><td>${fmtDuration(aeMedP)}</td><td>${aesProf.length}</td><td>${taxaP}</td></tr>`;
   }).join('');
+
+  renderGeoMap();
 }
+
+/* ============================================================
+   MAPA INTERATIVO — Mundo → Portugal (distritos) → Concelhos (lista)
+   ============================================================ */
+let lastUnicosAlunos = [];
+let mapLevel = 'world'; // 'world' | 'portugal' | 'distrito'
+let mapSelectedDistrito = null;
+let worldTopoCache = null;
+let portugalGeoCache = null;
+
+const DISTRITO_LOCALIDADES = {
+  'Aveiro': ['aveiro','agueda','ilhavo','oliveira de azemeis','ovar','santa maria da feira','sao joao da madeira','espinho','anadia','vale de cambra'],
+  'Beja': ['beja','moura','odemira','serpa','ourique'],
+  'Braga': ['braga','guimaraes','barcelos','famalicao','fafe','povoa de lanhoso','esposende','vieira do minho'],
+  'Bragança': ['braganca','mirandela','macedo de cavaleiros','vinhais'],
+  'Castelo Branco': ['castelo branco','covilha','fundao','serta','idanha-a-nova'],
+  'Coimbra': ['coimbra','figueira da foz','cantanhede','penacova','lousa','montemor-o-velho','condeixa'],
+  'Évora': ['evora','montemor-o-novo','reguengos de monsaraz','vendas novas'],
+  'Faro': ['faro','portimao','loule','lagos','albufeira','olhao','tavira','silves','vila real de santo antonio','lagoa','alcoutim','sao bras de alportel','monchique','aljezur','castro marim','ferreiras','quarteira','alvor'],
+  'Guarda': ['guarda','seia','gouveia','trancoso'],
+  'Leiria': ['leiria','marinha grande','pombal','alcobaca','caldas da rainha','batalha','nazare','peniche','porto de mos','figueiro dos vinhos'],
+  'Lisboa': ['lisboa','sintra','cascais','oeiras','amadora','loures','odivelas','mafra','vila franca de xira','torres vedras','alenquer','arruda dos vinhos','lourinha','arroios','alvalade','belem','avenidas novas','lumiar','beato','santa maria maior','encarnacao','venteira','parque das nacoes','sao vicente'],
+  'Portalegre': ['portalegre','elvas','ponte de sor','nisa','campo maior'],
+  'Porto': ['porto','vila nova de gaia','matosinhos','gondomar','maia','valongo','paredes','penafiel','amarante','povoa de varzim','vila do conde','santo tirso','trofa','marco de canaveses','felgueiras','lousada','pacos de ferreira','baiao','ermesinde','rio tinto','cedofeita','aldoar','ramalde','paranhos','canidelo','foz do sousa','grijo','sermonde','arcozelo'],
+  'Santarém': ['santarem','tomar','torres novas','abrantes','entroncamento','ourem','rio maior','alcanena','cartaxo','almeirim','coruche','salvaterra de magos','chamusca','golega','alpiarca','constancia','macao','ferreira do zezere','vila nova da barquinha','sardoal','benavente'],
+  'Setúbal': ['setubal','almada','seixal','barreiro','montijo','palmela','sesimbra','moita','alcochete','grandola','santiago do cacem','sines','alcacer do sal','corroios','amora','charneca de caparica','costa da caparica','laranjeiro','feijo','alto do seixalinho','quinta do conde','arrentela'],
+  'Viana do Castelo': ['viana do castelo','ponte de lima','valenca','moncao','arcos de valdevez','caminha','melgaco','vila nova de cerveira','paredes de coura','ponte da barca'],
+  'Vila Real': ['vila real','chaves','peso da regua','sabrosa','alijo','valpacos','mesao frio','murca'],
+  'Viseu': ['viseu','lamego','tondela','mangualde','nelas','resende','tarouca','sao pedro do sul','satao','oliveira de frades','cinfaes','vouzela'],
+  'Açores': ['acores','ponta delgada','angra do heroismo','horta'],
+  'Madeira': ['madeira','funchal']
+};
+const COUNTRY_KEYWORDS = {
+  'Brasil': ['brasil','brazil','sao paulo','rio de janeiro'],
+  'Espanha': ['espanha','spain','madrid','barcelona'],
+  'França': ['franca','france','paris'],
+  'Reino Unido': ['reino unido','united kingdom','londres','london'],
+  'Estados Unidos': ['estados unidos','usa','united states']
+};
+function stripAccents(s){ return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
+function classifyLocalidade(raw){
+  let text = stripAccents(raw).toLowerCase().replace(/^\d{4}(-\d{3})?,?\s*/, '').trim();
+  if(!text) return {distrito:null, concelho:null};
+  for(const [distrito, locs] of Object.entries(DISTRITO_LOCALIDADES)){
+    for(const loc of locs){
+      if(text.includes(loc)) return {distrito, concelho: text.replace(/^./, c=>c.toUpperCase())};
+    }
+  }
+  return {distrito:null, concelho: text.replace(/^./, c=>c.toUpperCase())};
+}
+function classifyCountry(raw){
+  const text = stripAccents(raw).toLowerCase();
+  for(const [country, kws] of Object.entries(COUNTRY_KEYWORDS)){
+    for(const k of kws){ if(text.includes(k)) return country; }
+  }
+  return 'Portugal';
+}
+
+async function renderGeoMap(){
+  const svgWrap = document.getElementById('geo-map-svg-wrap');
+  if(!svgWrap || typeof d3 === 'undefined') return;
+  const listEl = document.getElementById('geo-map-list');
+  const backBtn = document.getElementById('btn-map-back');
+  const breadcrumb = document.getElementById('map-breadcrumb');
+
+  backBtn.style.display = mapLevel==='world' ? 'none' : 'inline-block';
+  backBtn.onclick = ()=>{
+    if(mapLevel==='distrito'){ mapLevel='portugal'; mapSelectedDistrito=null; }
+    else if(mapLevel==='portugal'){ mapLevel='world'; }
+    renderGeoMap();
+  };
+
+  const alunosComLocal = lastUnicosAlunos.filter(a=>a.localizacao && a.localizacao!=='Não especificado');
+
+  if(mapLevel==='world'){
+    breadcrumb.textContent = '🌍 Mundo';
+    listEl.innerHTML = '';
+    await renderWorldMap(svgWrap, alunosComLocal);
+  } else {
+    breadcrumb.textContent = mapLevel==='distrito' ? `🌍 Mundo → 🇵🇹 Portugal → 📍 ${mapSelectedDistrito}` : '🌍 Mundo → 🇵🇹 Portugal';
+    await renderPortugalMap(svgWrap, alunosComLocal);
+    renderConcelhoList(listEl, alunosComLocal);
+  }
+}
+
+async function renderWorldMap(svgWrap, alunos){
+  svgWrap.innerHTML = '<div style="display:flex; align-items:center; justify-content:center; height:100%; color:var(--muted); font-size:12px;">A carregar mapa…</div>';
+  try{
+    if(!worldTopoCache){
+      const res = await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json');
+      worldTopoCache = await res.json();
+    }
+    const countries = topojson.feature(worldTopoCache, worldTopoCache.objects.countries);
+    const counts = {};
+    alunos.forEach(a=>{ const c = classifyCountry(a.localizacao); counts[c] = (counts[c]||0)+1; });
+
+    const w = svgWrap.clientWidth || 700, h = 420;
+    svgWrap.innerHTML = '';
+    const svg = d3.select(svgWrap).append('svg').attr('width', w).attr('height', h).attr('viewBox', `0 0 ${w} ${h}`);
+    const projection = d3.geoNaturalEarth1().fitSize([w, h], countries);
+    const path = d3.geoPath(projection);
+
+    svg.append('g').selectAll('path').data(countries.features).join('path')
+      .attr('d', path)
+      .attr('fill', d => d.properties.name === 'Portugal' ? '#258730' : (counts[d.properties.name] ? '#CBE170' : '#DDEBD9'))
+      .attr('stroke', '#fff').attr('stroke-width', 0.5)
+      .style('cursor', 'pointer')
+      .on('click', (event, d) => {
+        if(d.properties.name === 'Portugal'){ mapLevel = 'portugal'; renderGeoMap(); }
+        else {
+          const n = counts[d.properties.name] || 0;
+          document.getElementById('geo-map-list').innerHTML = `<div class="notice" style="margin-top:10px;">📍 <b>${d.properties.name}</b>: ${n} aluno(s) associado(s) por texto de localização.</div>`;
+        }
+      })
+      .append('title').text(d => `${d.properties.name}${counts[d.properties.name]? ' — '+counts[d.properties.name]+' aluno(s)' : ''}`);
+  }catch(err){
+    svgWrap.innerHTML = `<div style="display:flex; align-items:center; justify-content:center; height:100%; color:var(--muted); font-size:12px; text-align:center; padding:20px;">Não foi possível carregar o mapa do mundo (${err.message}). Confirma a ligação à internet.</div>`;
+  }
+}
+
+async function renderPortugalMap(svgWrap, alunos){
+  svgWrap.innerHTML = '<div style="display:flex; align-items:center; justify-content:center; height:100%; color:var(--muted); font-size:12px;">A carregar mapa de Portugal (ficheiro grande, pode demorar uns segundos)…</div>';
+  try{
+    if(!portugalGeoCache){
+      const res = await fetch('https://raw.githubusercontent.com/nmota/caop_GeoJSON/master/ContinenteDistritos.geojson');
+      portugalGeoCache = await res.json();
+    }
+    const getDistritoName = f => f.properties.Distrito || f.properties.NAME_1 || f.properties.distrito || f.properties.NAME || 'Desconhecido';
+    const normDistrito = s => stripAccents(s).trim().toLowerCase();
+
+    const counts = {};
+    alunos.forEach(a=>{ const {distrito} = classifyLocalidade(a.localizacao); if(distrito) counts[normDistrito(distrito)] = (counts[normDistrito(distrito)]||0)+1; });
+    const maxCount = Math.max(1, ...Object.values(counts));
+
+    const w = svgWrap.clientWidth || 700, h = 420;
+    svgWrap.innerHTML = '';
+    const svg = d3.select(svgWrap).append('svg').attr('width', w).attr('height', h).attr('viewBox', `0 0 ${w} ${h}`);
+    const projection = d3.geoMercator().fitSize([w, h], portugalGeoCache);
+    const path = d3.geoPath(projection);
+    const colorScale = d3.scaleLinear().domain([0, maxCount]).range(['#ECF4EE', '#258730']);
+    const isSelected = f => mapLevel==='distrito' && normDistrito(getDistritoName(f))===normDistrito(mapSelectedDistrito||'');
+
+    svg.append('g').selectAll('path').data(portugalGeoCache.features).join('path')
+      .attr('d', path)
+      .attr('fill', d => isSelected(d) ? '#CBE170' : colorScale(counts[normDistrito(getDistritoName(d))]||0))
+      .attr('stroke', d => isSelected(d) ? '#8C9C3B' : '#fff')
+      .attr('stroke-width', d => isSelected(d) ? 2.5 : 0.6)
+      .style('cursor', 'pointer')
+      .on('click', (event, d) => { mapLevel = 'distrito'; mapSelectedDistrito = getDistritoName(d); renderGeoMap(); })
+      .append('title').text(d => { const n = counts[normDistrito(getDistritoName(d))]; return `${getDistritoName(d)}${n? ' — '+n+' aluno(s)' : ' — sem alunos classificados'}`; });
+  }catch(err){
+    svgWrap.innerHTML = `<div style="display:flex; align-items:center; justify-content:center; height:100%; color:var(--muted); font-size:12px; text-align:center; padding:20px;">Não foi possível carregar o mapa de Portugal (${err.message}). Confirma a ligação à internet.</div>`;
+  }
+}
+
+function renderConcelhoList(listEl, alunos){
+  if(mapLevel !== 'distrito'){
+    // nível Portugal: pequena tabela-resumo por distrito, como apoio às cores do mapa
+    const counts = {};
+    alunos.forEach(a=>{ const {distrito} = classifyLocalidade(a.localizacao); counts[distrito || 'Não classificado'] = (counts[distrito || 'Não classificado']||0)+1; });
+    const rows = Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+    listEl.innerHTML = rows.length ? `<table class="data" style="margin-top:12px;"><thead><tr><th>Distrito</th><th>Alunos</th></tr></thead><tbody>${
+      rows.map(([d,n])=>`<tr><td>${d}</td><td>${n}</td></tr>`).join('')
+    }</tbody></table>` : '<div class="empty-state" style="margin-top:12px;">Sem localizações classificadas ainda — preenche "Localização" no Excel.</div>';
+    return;
+  }
+  const counts = {};
+  alunos.forEach(a=>{
+    const {distrito, concelho} = classifyLocalidade(a.localizacao);
+    if(distrito && stripAccents(distrito).toLowerCase()===stripAccents(mapSelectedDistrito||'').toLowerCase()) counts[concelho||'Não especificado'] = (counts[concelho||'Não especificado']||0)+1;
+  });
+  const rows = Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+  listEl.innerHTML = `<h4 style="font-family:'Stardos Stencil','Bahnschrift',sans-serif; font-size:14px; margin:14px 0 8px;">Concelhos em ${mapSelectedDistrito}</h4>` + (
+    rows.length ? `<table class="data"><thead><tr><th>Concelho / Localidade</th><th>Alunos</th></tr></thead><tbody>${
+      rows.map(([c,n])=>`<tr><td>${c}</td><td>${n}</td></tr>`).join('')
+    }</tbody></table>` : '<div class="empty-state">Sem alunos classificados neste distrito ainda.</div>'
+  );
+}
+
 
 /* ============================================================
    PART 2 — MERCADO / FIXANDO

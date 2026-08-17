@@ -290,10 +290,10 @@ table.data tr:hover td{background:var(--lime-soft);}
 
         <div class="section">
           <h3>🌍 Mapa interativo</h3>
-          <p class="desc">Clica num país para veres Portugal; clica num distrito para veres os concelhos com alunos.</p>
+          <p class="desc">Clica num distrito para veres os concelhos com alunos.</p>
           <div class="chart-card" id="card-geo-interactive-map">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px;">
-              <div id="map-breadcrumb" style="font-size:13px; color:var(--ink); font-weight:600;">🌍 Mundo</div>
+              <div id="map-breadcrumb" style="font-size:13px; color:var(--ink); font-weight:600;">🇵🇹 Portugal</div>
               <button class="btn secondary" id="btn-map-back" style="display:none; padding:6px 14px; font-size:12px;">← Voltar</button>
             </div>
             <div id="geo-map-svg-wrap" style="position:relative; height:420px; background:var(--sage-soft); border-radius:12px; overflow:hidden;"></div>
@@ -1028,9 +1028,8 @@ function renderAlunos(){
    MAPA INTERATIVO — Mundo → Portugal (distritos) → Concelhos (lista)
    ============================================================ */
 let lastUnicosAlunos = [];
-let mapLevel = 'world'; // 'world' | 'portugal' | 'distrito'
+let mapLevel = 'portugal'; // 'portugal' | 'distrito'
 let mapSelectedDistrito = null;
-let worldTopoCache = null;
 let portugalGeoCache = null;
 
 const DISTRITO_LOCALIDADES = {
@@ -1055,13 +1054,6 @@ const DISTRITO_LOCALIDADES = {
   'Açores': ['acores','ponta delgada','angra do heroismo','horta'],
   'Madeira': ['madeira','funchal']
 };
-const COUNTRY_KEYWORDS = {
-  'Brasil': ['brasil','brazil','sao paulo','rio de janeiro'],
-  'Espanha': ['espanha','spain','madrid','barcelona'],
-  'França': ['franca','france','paris'],
-  'Reino Unido': ['reino unido','united kingdom','londres','london'],
-  'Estados Unidos': ['estados unidos','usa','united states']
-};
 function stripAccents(s){ return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
 function classifyLocalidade(raw){
   let text = stripAccents(raw).toLowerCase().replace(/^\d{4}(-\d{3})?,?\s*/, '').trim();
@@ -1073,13 +1065,6 @@ function classifyLocalidade(raw){
   }
   return {distrito:null, concelho: text.replace(/^./, c=>c.toUpperCase())};
 }
-function classifyCountry(raw){
-  const text = stripAccents(raw).toLowerCase();
-  for(const [country, kws] of Object.entries(COUNTRY_KEYWORDS)){
-    for(const k of kws){ if(text.includes(k)) return country; }
-  }
-  return 'Portugal';
-}
 
 async function renderGeoMap(){
   const svgWrap = document.getElementById('geo-map-svg-wrap');
@@ -1088,59 +1073,17 @@ async function renderGeoMap(){
   const backBtn = document.getElementById('btn-map-back');
   const breadcrumb = document.getElementById('map-breadcrumb');
 
-  backBtn.style.display = mapLevel==='world' ? 'none' : 'inline-block';
+  backBtn.style.display = mapLevel==='portugal' ? 'none' : 'inline-block';
   backBtn.onclick = ()=>{
-    if(mapLevel==='distrito'){ mapLevel='portugal'; mapSelectedDistrito=null; }
-    else if(mapLevel==='portugal'){ mapLevel='world'; }
+    mapLevel='portugal'; mapSelectedDistrito=null;
     renderGeoMap();
   };
 
   const alunosComLocal = lastUnicosAlunos.filter(a=>a.localizacao && a.localizacao!=='Não especificado');
 
-  if(mapLevel==='world'){
-    breadcrumb.textContent = '🌍 Mundo';
-    listEl.innerHTML = '';
-    await renderWorldMap(svgWrap, alunosComLocal);
-  } else {
-    breadcrumb.textContent = mapLevel==='distrito' ? `🌍 Mundo → 🇵🇹 Portugal → 📍 ${mapSelectedDistrito}` : '🌍 Mundo → 🇵🇹 Portugal';
-    await renderPortugalMap(svgWrap, alunosComLocal);
-    renderConcelhoList(listEl, alunosComLocal);
-  }
-}
-
-async function renderWorldMap(svgWrap, alunos){
-  svgWrap.innerHTML = '<div style="display:flex; align-items:center; justify-content:center; height:100%; color:var(--muted); font-size:12px;">A carregar mapa…</div>';
-  try{
-    if(!worldTopoCache){
-      const res = await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json');
-      worldTopoCache = await res.json();
-    }
-    const countries = topojson.feature(worldTopoCache, worldTopoCache.objects.countries);
-    const counts = {};
-    alunos.forEach(a=>{ const c = classifyCountry(a.localizacao); counts[c] = (counts[c]||0)+1; });
-
-    const w = svgWrap.clientWidth || 700, h = 420;
-    svgWrap.innerHTML = '';
-    const svg = d3.select(svgWrap).append('svg').attr('width', w).attr('height', h).attr('viewBox', `0 0 ${w} ${h}`);
-    const projection = d3.geoNaturalEarth1().fitSize([w, h], countries);
-    const path = d3.geoPath(projection);
-
-    svg.append('g').selectAll('path').data(countries.features).join('path')
-      .attr('d', path)
-      .attr('fill', d => d.properties.name === 'Portugal' ? '#258730' : (counts[d.properties.name] ? '#CBE170' : '#DDEBD9'))
-      .attr('stroke', '#fff').attr('stroke-width', 0.5)
-      .style('cursor', 'pointer')
-      .on('click', (event, d) => {
-        if(d.properties.name === 'Portugal'){ mapLevel = 'portugal'; renderGeoMap(); }
-        else {
-          const n = counts[d.properties.name] || 0;
-          document.getElementById('geo-map-list').innerHTML = `<div class="notice" style="margin-top:10px;">📍 <b>${d.properties.name}</b>: ${n} aluno(s) associado(s) por texto de localização.</div>`;
-        }
-      })
-      .append('title').text(d => `${d.properties.name}${counts[d.properties.name]? ' — '+counts[d.properties.name]+' aluno(s)' : ''}`);
-  }catch(err){
-    svgWrap.innerHTML = `<div style="display:flex; align-items:center; justify-content:center; height:100%; color:var(--muted); font-size:12px; text-align:center; padding:20px;">Não foi possível carregar o mapa do mundo (${err.message}). Confirma a ligação à internet.</div>`;
-  }
+  breadcrumb.textContent = mapLevel==='distrito' ? `🇵🇹 Portugal → 📍 ${mapSelectedDistrito}` : '🇵🇹 Portugal';
+  await renderPortugalMap(svgWrap, alunosComLocal);
+  renderConcelhoList(listEl, alunosComLocal);
 }
 
 async function loadPortugalDistritos(){
@@ -1162,6 +1105,9 @@ async function renderPortugalMap(svgWrap, alunos){
     }
     const getDistritoName = f => f.properties.shapeName || f.properties.Distrito || f.properties.NAME_1 || f.properties.distrito || f.properties.NAME || 'Desconhecido';
     const normDistrito = s => stripAccents(s).trim().toLowerCase();
+    const isIlha = f => { const n = normDistrito(getDistritoName(f)); return n.includes('acores') || n.includes('madeira') || n.includes('autonoma'); };
+    const mainlandFeatures = portugalGeoCache.features.filter(f => !isIlha(f));
+    const mainlandFC = {type:'FeatureCollection', features: mainlandFeatures};
 
     const counts = {};
     alunos.forEach(a=>{ const {distrito} = classifyLocalidade(a.localizacao); if(distrito) counts[normDistrito(distrito)] = (counts[normDistrito(distrito)]||0)+1; });
@@ -1170,7 +1116,7 @@ async function renderPortugalMap(svgWrap, alunos){
     const w = svgWrap.clientWidth || 700, h = 420;
     svgWrap.innerHTML = '';
     const svg = d3.select(svgWrap).append('svg').attr('width', w).attr('height', h).attr('viewBox', `0 0 ${w} ${h}`);
-    const projection = d3.geoMercator().fitSize([w, h], portugalGeoCache);
+    const projection = d3.geoMercator().fitSize([w, h], mainlandFC);
     const path = d3.geoPath(projection);
     const colorScale = d3.scaleLinear().domain([0, maxCount]).range(['#ECF4EE', '#258730']);
     const isSelected = f => mapLevel==='distrito' && normDistrito(getDistritoName(f))===normDistrito(mapSelectedDistrito||'');

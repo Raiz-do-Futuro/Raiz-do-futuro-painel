@@ -1087,14 +1087,9 @@ async function renderGeoMap(){
 }
 
 async function loadPortugalDistritos(){
-  const metaRes = await fetch('https://www.geoboundaries.org/api/current/gbOpen/PRT/ADM1/');
-  if(!metaRes.ok) throw new Error('API geoBoundaries indisponível (HTTP '+metaRes.status+')');
-  const meta = await metaRes.json();
-  const url = meta.gjDownloadURL || meta.simplifiedGeometryGeoJSON || meta.staticDownloadLink || meta.downloadURL;
-  if(!url) throw new Error('Sem link de download na resposta da API');
-  const geoRes = await fetch(url);
-  if(!geoRes.ok) throw new Error('Não foi possível obter o ficheiro geográfico (HTTP '+geoRes.status+')');
-  return await geoRes.json();
+  const res = await fetch('https://cdn.jsdelivr.net/gh/wmgeolab/geoBoundaries@main/releaseData/gbOpen/PRT/ADM1/geoBoundaries-PRT-ADM1_simplified.geojson');
+  if(!res.ok) throw new Error('HTTP '+res.status);
+  return await res.json();
 }
 
 async function renderPortugalMap(svgWrap, alunos){

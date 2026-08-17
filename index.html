@@ -1087,9 +1087,28 @@ async function renderGeoMap(){
 }
 
 async function loadPortugalDistritos(){
-  const res = await fetch('https://cdn.jsdelivr.net/gh/wmgeolab/geoBoundaries@main/releaseData/gbOpen/PRT/ADM1/geoBoundaries-PRT-ADM1_simplified.geojson');
-  if(!res.ok) throw new Error('HTTP '+res.status);
-  return await res.json();
+  const listRes = await fetch('https://json.geoapi.pt/distritos');
+  if(!listRes.ok) throw new Error('HTTP '+listRes.status+' (lista de distritos)');
+  const list = await listRes.json();
+  const nomes = Array.isArray(list) ? list.map(d => (typeof d === 'string' ? d : (d.distrito || d.nome))) : [];
+  if(!nomes.length) throw new Error('Lista de distritos vazia');
+
+  const features = [];
+  await Promise.all(nomes.map(async nome => {
+    try{
+      const res = await fetch('https://json.geoapi.pt/distrito/'+encodeURIComponent(nome));
+      if(!res.ok) return;
+      const data = await res.json();
+      const gj = data.geojson || (data.geojsons && data.geojsons.distrito);
+      if(gj && gj.geometry){
+        gj.properties = gj.properties || {};
+        gj.properties.shapeName = nome;
+        features.push(gj);
+      }
+    }catch(e){ /* ignora este distrito, os restantes continuam */ }
+  }));
+  if(!features.length) throw new Error('Sem geometria devolvida pela API');
+  return {type:'FeatureCollection', features};
 }
 
 async function renderPortugalMap(svgWrap, alunos){

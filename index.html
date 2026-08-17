@@ -188,6 +188,9 @@ input[type=file]{display:none;}
 .geo-tile:hover{transform:scale(1.06); box-shadow:0 4px 10px rgba(37,135,48,0.25); z-index:2;}
 .geo-tile-nome{font-size:9.5px; font-weight:600; color:var(--ink); line-height:1.1; text-align:center;}
 .geo-tile-n{font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:600; color:var(--ink);}
+.geo-marker{transition:filter .12s;}
+.geo-marker:hover{filter:drop-shadow(0 3px 5px rgba(37,135,48,0.45));}
+div.geo-marker:hover{transform:translateY(-2px) scale(1.04); filter:drop-shadow(0 3px 6px rgba(37,135,48,0.35));}
 table.data{width:100%; border-collapse:collapse; font-size:12.5px;}
 table.data thead th{position:sticky; top:0; background:var(--card); z-index:1;}
 table.data .cell-edit{
@@ -307,7 +310,7 @@ table.data tr:hover td{background:var(--lime-soft);}
             <div id="geo-map-svg-wrap" style="position:relative; height:420px; background:var(--sage-soft); border-radius:12px; overflow:hidden;"></div>
             <div id="geo-map-list"></div>
             <div style="font-size:11px; color:var(--muted); margin-top:10px;">
-              O mapa é esquemático (posições aproximadas, não fronteiras reais) — construído diretamente no código, para funcionar sempre sem depender de serviços externos. Ao nível de concelho mostramos uma lista ordenada em vez de mais tiles. A associação a distrito/concelho é feita por reconhecimento do texto em "Localização" — localidades menos comuns podem cair em "Não classificado".
+              O contorno de Portugal e as posições dos distritos são aproximados (desenhados diretamente no código, sem depender de nenhum site externo, para nunca falhar). Ao nível de concelho mostramos uma lista ordenada em vez de mais marcadores. A associação a distrito/concelho é feita por reconhecimento do texto em "Localização" — localidades menos comuns podem cair em "Não classificado".
             </div>
           </div>
         </div>
@@ -1094,19 +1097,26 @@ async function renderGeoMap(){
   renderConcelhoList(listEl, alunosComLocal);
 }
 
-const DISTRITO_GRID = {
-  'Viana do Castelo': {row:0, col:1}, 'Braga': {row:0, col:2}, 'Bragança': {row:0, col:4},
-  'Porto': {row:1, col:1}, 'Vila Real': {row:1, col:3},
-  'Aveiro': {row:2, col:1}, 'Viseu': {row:2, col:2}, 'Guarda': {row:2, col:3},
-  'Coimbra': {row:3, col:1}, 'Castelo Branco': {row:3, col:3},
-  'Leiria': {row:4, col:1},
-  'Santarém': {row:5, col:1}, 'Portalegre': {row:5, col:3},
-  'Lisboa': {row:6, col:0}, 'Évora': {row:6, col:2},
-  'Setúbal': {row:7, col:0},
-  'Beja': {row:8, col:1},
-  'Faro': {row:9, col:1}
+
+// Coordenadas aproximadas (longitude, latitude) de cada capital de distrito
+const DISTRITO_COORDS = {
+  'Viana do Castelo': [-8.83, 41.69], 'Braga': [-8.42, 41.55], 'Bragança': [-6.75, 41.80],
+  'Porto': [-8.61, 41.15], 'Vila Real': [-7.74, 41.30],
+  'Aveiro': [-8.65, 40.64], 'Viseu': [-7.91, 40.66], 'Guarda': [-7.27, 40.54],
+  'Coimbra': [-8.42, 40.21], 'Castelo Branco': [-7.50, 39.82],
+  'Leiria': [-8.81, 39.75],
+  'Santarém': [-8.68, 39.24], 'Portalegre': [-7.43, 39.29],
+  'Lisboa': [-9.14, 38.72], 'Évora': [-7.91, 38.57],
+  'Setúbal': [-8.89, 38.53],
+  'Beja': [-7.87, 38.02],
+  'Faro': [-7.93, 37.02]
 };
 const DISTRITO_ILHAS = ['Açores', 'Madeira'];
+const MAP_LON_MIN=-9.6, MAP_LON_MAX=-6.0, MAP_LAT_MIN=36.85, MAP_LAT_MAX=42.2, MAP_W=300, MAP_H=580;
+function geoX(lon){ return (lon-MAP_LON_MIN)/(MAP_LON_MAX-MAP_LON_MIN)*MAP_W; }
+function geoY(lat){ return (MAP_LAT_MAX-lat)/(MAP_LAT_MAX-MAP_LAT_MIN)*MAP_H; }
+// Contorno simplificado de Portugal Continental (aproximado, desenhado à mão — não é uma fronteira oficial)
+const PORTUGAL_OUTLINE = "M62,36 L178,49 L238,76 L225,184 L217,260 L183,314 L203,360 L167,466 L175,548 L182,543 L54,562 L61,461 L33,379 L17,282 L71,168 L79,114 L64,54 Z";
 
 function renderPortugalMap(svgWrap, alunos){
   const normDistrito = s => stripAccents(s).trim().toLowerCase();
@@ -1114,7 +1124,7 @@ function renderPortugalMap(svgWrap, alunos){
   alunos.forEach(a=>{ const {distrito} = classifyLocalidade(a.localizacao); if(distrito) counts[normDistrito(distrito)] = (counts[normDistrito(distrito)]||0)+1; });
   const maxCount = Math.max(1, ...Object.values(counts));
   const shade = n => {
-    if(!n) return '#ECF4EE';
+    if(!n) return '#F4F9F4';
     const t = Math.min(1, n/maxCount);
     const mix = (a,b,t)=>Math.round(a+(b-a)*t);
     const c1=[236,244,238], c2=[37,135,48];
@@ -1122,34 +1132,38 @@ function renderPortugalMap(svgWrap, alunos){
   };
   const isSelected = nome => mapLevel==='distrito' && normDistrito(nome)===normDistrito(mapSelectedDistrito||'');
 
-  const nCols = 5, nRows = 10;
-  const tileTiles = Object.entries(DISTRITO_GRID).map(([nome,pos])=>{
+  const markers = Object.entries(DISTRITO_COORDS).map(([nome,[lon,lat]])=>{
     const n = counts[normDistrito(nome)] || 0;
     const sel = isSelected(nome);
-    return `<div class="geo-tile" data-nome="${nome}" style="grid-row:${pos.row+1}; grid-column:${pos.col+1};
-      background:${sel?'#CBE170':shade(n)}; border:2px solid ${sel?'#8C9C3B':'transparent'};">
-      <span class="geo-tile-nome">${nome}</span><span class="geo-tile-n">${n}</span>
-    </div>`;
+    const x = geoX(lon), y = geoY(lat);
+    const r = sel ? 16 : 13;
+    return `<g class="geo-marker" data-nome="${nome}" style="cursor:pointer;" transform="translate(${x},${y})">
+      <circle r="${r}" fill="${sel?'#CBE170':shade(n)}" stroke="${sel?'#8C9C3B':'#ffffff'}" stroke-width="${sel?2.5:1.5}"></circle>
+      <text text-anchor="middle" dy="4" font-size="11" font-weight="700" font-family="IBM Plex Mono, monospace" fill="#3E332F">${n}</text>
+      <title>${nome}${n? ' — '+n+' aluno(s)' : ' — sem alunos classificados'}</title>
+    </g>`;
   }).join('');
 
   svgWrap.innerHTML = `
-    <div style="padding:14px; height:100%; overflow:auto;">
-      <div style="display:grid; grid-template-columns:repeat(${nCols}, 1fr); grid-template-rows:repeat(${nRows}, 40px); gap:5px; max-width:520px; margin:0 auto;">
-        ${tileTiles}
-      </div>
-      <div style="display:flex; gap:8px; justify-content:center; margin-top:16px;">
+    <div style="display:flex; height:100%; align-items:center; justify-content:center; padding:10px;">
+      <svg viewBox="0 0 ${MAP_W} ${MAP_H+40}" style="height:100%; max-width:100%;">
+        <path d="${PORTUGAL_OUTLINE}" fill="#DDEBD9" stroke="#9FC7AA" stroke-width="2"></path>
+        ${markers}
+      </svg>
+      <div style="display:flex; flex-direction:column; gap:8px; margin-left:18px;">
         ${DISTRITO_ILHAS.map(nome=>{
           const n = counts[normDistrito(nome)] || 0;
           const sel = isSelected(nome);
-          return `<div class="geo-tile" data-nome="${nome}" style="position:static; width:110px; height:40px;
-            background:${sel?'#CBE170':shade(n)}; border:2px solid ${sel?'#8C9C3B':'transparent'};">
-            <span class="geo-tile-nome">${nome}</span><span class="geo-tile-n">${n}</span>
+          return `<div class="geo-marker" data-nome="${nome}" style="cursor:pointer; width:100px; padding:8px; border-radius:10px; text-align:center;
+            background:${sel?'#CBE170':shade(n)}; border:2px solid ${sel?'#8C9C3B':'transparent'}; font-family:'Bahnschrift','Poppins',sans-serif;">
+            <div style="font-size:10px; font-weight:600; color:var(--ink);">${nome}</div>
+            <div style="font-family:'IBM Plex Mono',monospace; font-weight:700; font-size:14px; color:var(--ink);">${n}</div>
           </div>`;
         }).join('')}
       </div>
     </div>`;
 
-  svgWrap.querySelectorAll('.geo-tile').forEach(el=>{
+  svgWrap.querySelectorAll('.geo-marker').forEach(el=>{
     el.addEventListener('click', ()=>{
       mapLevel = 'distrito'; mapSelectedDistrito = el.dataset.nome; renderGeoMap();
     });

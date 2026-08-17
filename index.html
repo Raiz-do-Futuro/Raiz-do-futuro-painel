@@ -180,6 +180,14 @@ input[type=file]{display:none;}
 @media (max-width:900px){.two-col{grid-template-columns:1fr;} .app{flex-direction:column;} .rail{width:100%;}}
 
 .table-scroll{max-height:520px; overflow-y:auto; border-radius:8px;}
+.geo-tile{
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  border-radius:8px; cursor:pointer; transition:transform .12s, box-shadow .12s;
+  font-family:'Bahnschrift','Poppins',sans-serif; padding:2px;
+}
+.geo-tile:hover{transform:scale(1.06); box-shadow:0 4px 10px rgba(37,135,48,0.25); z-index:2;}
+.geo-tile-nome{font-size:9.5px; font-weight:600; color:var(--ink); line-height:1.1; text-align:center;}
+.geo-tile-n{font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:600; color:var(--ink);}
 table.data{width:100%; border-collapse:collapse; font-size:12.5px;}
 table.data thead th{position:sticky; top:0; background:var(--card); z-index:1;}
 table.data .cell-edit{
@@ -299,7 +307,7 @@ table.data tr:hover td{background:var(--lime-soft);}
             <div id="geo-map-svg-wrap" style="position:relative; height:420px; background:var(--sage-soft); border-radius:12px; overflow:hidden;"></div>
             <div id="geo-map-list"></div>
             <div style="font-size:11px; color:var(--muted); margin-top:10px;">
-              Portugal usa fronteiras geográficas reais. Ao nível de concelho mostramos uma lista ordenada (em vez de polígonos) porque os ficheiros de fronteiras de concelho são demasiado pesados para carregar de forma fiável no dia a dia. A associação a distrito/concelho é feita por reconhecimento do texto em "Localização" — localidades menos comuns podem cair em "Não classificado".
+              O mapa é esquemático (posições aproximadas, não fronteiras reais) — construído diretamente no código, para funcionar sempre sem depender de serviços externos. Ao nível de concelho mostramos uma lista ordenada em vez de mais tiles. A associação a distrito/concelho é feita por reconhecimento do texto em "Localização" — localidades menos comuns podem cair em "Não classificado".
             </div>
           </div>
         </div>
@@ -1086,66 +1094,66 @@ async function renderGeoMap(){
   renderConcelhoList(listEl, alunosComLocal);
 }
 
-async function loadPortugalDistritos(){
-  const listRes = await fetch('https://json.geoapi.pt/distritos');
-  if(!listRes.ok) throw new Error('HTTP '+listRes.status+' (lista de distritos)');
-  const list = await listRes.json();
-  const nomes = Array.isArray(list) ? list.map(d => (typeof d === 'string' ? d : (d.distrito || d.nome))) : [];
-  if(!nomes.length) throw new Error('Lista de distritos vazia');
+const DISTRITO_GRID = {
+  'Viana do Castelo': {row:0, col:1}, 'Braga': {row:0, col:2}, 'Bragança': {row:0, col:4},
+  'Porto': {row:1, col:1}, 'Vila Real': {row:1, col:3},
+  'Aveiro': {row:2, col:1}, 'Viseu': {row:2, col:2}, 'Guarda': {row:2, col:3},
+  'Coimbra': {row:3, col:1}, 'Castelo Branco': {row:3, col:3},
+  'Leiria': {row:4, col:1},
+  'Santarém': {row:5, col:1}, 'Portalegre': {row:5, col:3},
+  'Lisboa': {row:6, col:0}, 'Évora': {row:6, col:2},
+  'Setúbal': {row:7, col:0},
+  'Beja': {row:8, col:1},
+  'Faro': {row:9, col:1}
+};
+const DISTRITO_ILHAS = ['Açores', 'Madeira'];
 
-  const features = [];
-  await Promise.all(nomes.map(async nome => {
-    try{
-      const res = await fetch('https://json.geoapi.pt/distrito/'+encodeURIComponent(nome));
-      if(!res.ok) return;
-      const data = await res.json();
-      const gj = data.geojson || (data.geojsons && data.geojsons.distrito);
-      if(gj && gj.geometry){
-        gj.properties = gj.properties || {};
-        gj.properties.shapeName = nome;
-        features.push(gj);
-      }
-    }catch(e){ /* ignora este distrito, os restantes continuam */ }
-  }));
-  if(!features.length) throw new Error('Sem geometria devolvida pela API');
-  return {type:'FeatureCollection', features};
-}
+function renderPortugalMap(svgWrap, alunos){
+  const normDistrito = s => stripAccents(s).trim().toLowerCase();
+  const counts = {};
+  alunos.forEach(a=>{ const {distrito} = classifyLocalidade(a.localizacao); if(distrito) counts[normDistrito(distrito)] = (counts[normDistrito(distrito)]||0)+1; });
+  const maxCount = Math.max(1, ...Object.values(counts));
+  const shade = n => {
+    if(!n) return '#ECF4EE';
+    const t = Math.min(1, n/maxCount);
+    const mix = (a,b,t)=>Math.round(a+(b-a)*t);
+    const c1=[236,244,238], c2=[37,135,48];
+    return `rgb(${mix(c1[0],c2[0],t)},${mix(c1[1],c2[1],t)},${mix(c1[2],c2[2],t)})`;
+  };
+  const isSelected = nome => mapLevel==='distrito' && normDistrito(nome)===normDistrito(mapSelectedDistrito||'');
 
-async function renderPortugalMap(svgWrap, alunos){
-  svgWrap.innerHTML = '<div style="display:flex; align-items:center; justify-content:center; height:100%; color:var(--muted); font-size:12px;">A carregar mapa de Portugal…</div>';
-  try{
-    if(!portugalGeoCache){
-      portugalGeoCache = await loadPortugalDistritos();
-    }
-    const getDistritoName = f => f.properties.shapeName || f.properties.Distrito || f.properties.NAME_1 || f.properties.distrito || f.properties.NAME || 'Desconhecido';
-    const normDistrito = s => stripAccents(s).trim().toLowerCase();
-    const isIlha = f => { const n = normDistrito(getDistritoName(f)); return n.includes('acores') || n.includes('madeira') || n.includes('autonoma'); };
-    const mainlandFeatures = portugalGeoCache.features.filter(f => !isIlha(f));
-    const mainlandFC = {type:'FeatureCollection', features: mainlandFeatures};
+  const nCols = 5, nRows = 10;
+  const tileTiles = Object.entries(DISTRITO_GRID).map(([nome,pos])=>{
+    const n = counts[normDistrito(nome)] || 0;
+    const sel = isSelected(nome);
+    return `<div class="geo-tile" data-nome="${nome}" style="grid-row:${pos.row+1}; grid-column:${pos.col+1};
+      background:${sel?'#CBE170':shade(n)}; border:2px solid ${sel?'#8C9C3B':'transparent'};">
+      <span class="geo-tile-nome">${nome}</span><span class="geo-tile-n">${n}</span>
+    </div>`;
+  }).join('');
 
-    const counts = {};
-    alunos.forEach(a=>{ const {distrito} = classifyLocalidade(a.localizacao); if(distrito) counts[normDistrito(distrito)] = (counts[normDistrito(distrito)]||0)+1; });
-    const maxCount = Math.max(1, ...Object.values(counts));
+  svgWrap.innerHTML = `
+    <div style="padding:14px; height:100%; overflow:auto;">
+      <div style="display:grid; grid-template-columns:repeat(${nCols}, 1fr); grid-template-rows:repeat(${nRows}, 40px); gap:5px; max-width:520px; margin:0 auto;">
+        ${tileTiles}
+      </div>
+      <div style="display:flex; gap:8px; justify-content:center; margin-top:16px;">
+        ${DISTRITO_ILHAS.map(nome=>{
+          const n = counts[normDistrito(nome)] || 0;
+          const sel = isSelected(nome);
+          return `<div class="geo-tile" data-nome="${nome}" style="position:static; width:110px; height:40px;
+            background:${sel?'#CBE170':shade(n)}; border:2px solid ${sel?'#8C9C3B':'transparent'};">
+            <span class="geo-tile-nome">${nome}</span><span class="geo-tile-n">${n}</span>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
 
-    const w = svgWrap.clientWidth || 700, h = 420;
-    svgWrap.innerHTML = '';
-    const svg = d3.select(svgWrap).append('svg').attr('width', w).attr('height', h).attr('viewBox', `0 0 ${w} ${h}`);
-    const projection = d3.geoMercator().fitSize([w, h], mainlandFC);
-    const path = d3.geoPath(projection);
-    const colorScale = d3.scaleLinear().domain([0, maxCount]).range(['#ECF4EE', '#258730']);
-    const isSelected = f => mapLevel==='distrito' && normDistrito(getDistritoName(f))===normDistrito(mapSelectedDistrito||'');
-
-    svg.append('g').selectAll('path').data(portugalGeoCache.features).join('path')
-      .attr('d', path)
-      .attr('fill', d => isSelected(d) ? '#CBE170' : colorScale(counts[normDistrito(getDistritoName(d))]||0))
-      .attr('stroke', d => isSelected(d) ? '#8C9C3B' : '#fff')
-      .attr('stroke-width', d => isSelected(d) ? 2.5 : 0.6)
-      .style('cursor', 'pointer')
-      .on('click', (event, d) => { mapLevel = 'distrito'; mapSelectedDistrito = getDistritoName(d); renderGeoMap(); })
-      .append('title').text(d => { const n = counts[normDistrito(getDistritoName(d))]; return `${getDistritoName(d)}${n? ' — '+n+' aluno(s)' : ' — sem alunos classificados'}`; });
-  }catch(err){
-    svgWrap.innerHTML = `<div style="display:flex; align-items:center; justify-content:center; height:100%; color:var(--muted); font-size:12px; text-align:center; padding:20px;">Não foi possível carregar o mapa de Portugal (${err.message}). Confirma a ligação à internet.</div>`;
-  }
+  svgWrap.querySelectorAll('.geo-tile').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      mapLevel = 'distrito'; mapSelectedDistrito = el.dataset.nome; renderGeoMap();
+    });
+  });
 }
 
 function renderConcelhoList(listEl, alunos){

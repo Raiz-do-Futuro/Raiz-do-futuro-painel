@@ -353,13 +353,16 @@ table.data tr:hover td{background:var(--lime-soft);}
           <h3>🏆 Desempenho por professor</h3>
           <p class="desc">Retenção, tempo médio em conversações e entre aula experimental (AE) e efetivação, com base na aba "AEs"</p>
           <div class="chart-card" id="card-table-professores">
+            <div style="overflow-x:auto;">
             <table class="data" id="table-professores">
               <thead><tr>
                 <th>Professor</th><th>Nº Alunos</th><th>Retenção média</th>
                 <th>Tempo médio em conversações</th><th>Tempo médio AE → Efetivação</th><th>Nº AE</th><th>Taxa conversão AE</th>
+                <th>Conversações (ganhos/perdidos)</th><th>AE (ganhos/perdidos)</th><th>Efetivos perdidos</th>
               </tr></thead>
               <tbody></tbody>
             </table>
+            </div>
           </div>
         </div>
 
@@ -856,6 +859,7 @@ function parseCrmWorkbook(wb){
   return {efetivos, pendentes, aes};
 }
 
+function isDash(v){ return typeof v === 'string' && v.trim() === '-'; }
 function combineDiaHora(diaVal, horaVal){
   const d = parseDate(diaVal);
   if(!d) return null;
@@ -883,8 +887,10 @@ function readAEsSheet(sheet){
       professor: normStr(r[c0+1]) || 'Não especificado',
       tiConv: combineDiaHora(r[c0+2], r[c0+3]),
       tfConv: combineDiaHora(r[c0+4], r[c0+5]),
+      tfConvPerdido: isDash(r[c0+4]) || isDash(r[c0+5]),
       tiAE: combineDiaHora(r[c0+6], r[c0+7]),
       tfAE: combineDiaHora(r[c0+8], r[c0+9]),
+      tfAEPerdido: isDash(r[c0+8]) || isDash(r[c0+9]),
       estado: normStr(r[c0+10])
     };
   }).filter(Boolean);
@@ -1029,7 +1035,14 @@ function renderAlunos(){
     const convertidosP = aesProf.filter(a=>nomesEfetivos.has(normKey(a.nome))).length;
     const taxaP = aesProf.length? (100*convertidosP/aesProf.length).toFixed(0)+'%' : '—';
 
-    return `<tr><td><b>${p}</b></td><td>${nAlunos}</td><td>${fmtDuration(retMed)}</td><td>${fmtDuration(convMedP)}</td><td>${fmtDuration(aeMedP)}</td><td>${aesProf.length}</td><td>${taxaP}</td></tr>`;
+    const conversasGanhos = aesProf.filter(a=>a.tiConv && a.tfConv).length;
+    const conversasPerdidos = aesProf.filter(a=>a.tiConv && a.tfConvPerdido).length;
+    const aeGanhos = aesProf.filter(a=>a.tiAE && a.tfAE).length;
+    const aePerdidos = aesProf.filter(a=>a.tiAE && a.tfAEPerdido).length;
+    const efetivosPerdidos = efetivos.filter(a=>a.professor===p && a.dataFim).length;
+
+    return `<tr><td><b>${p}</b></td><td>${nAlunos}</td><td>${fmtDuration(retMed)}</td><td>${fmtDuration(convMedP)}</td><td>${fmtDuration(aeMedP)}</td><td>${aesProf.length}</td><td>${taxaP}</td>
+      <td>${conversasGanhos} / ${conversasPerdidos}</td><td>${aeGanhos} / ${aePerdidos}</td><td>${efetivosPerdidos}</td></tr>`;
   }).join('');
 
   renderGeoMap();

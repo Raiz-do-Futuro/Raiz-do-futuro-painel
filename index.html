@@ -770,11 +770,13 @@ function doughnutChart(id, labels, data){
   });
 }
 
-function kpiCard(label, value, sub, circled, targetId){
+function kpiCard(label, value, sub, circled, targetId, definicao){
   const clickable = targetId ? ` onclick="scrollToSection('${targetId}')"` : '';
   const tag = targetId ? 'button' : 'div';
   const goLabel = targetId && targetId.includes('table') ? 'Ver tabela →' : 'Ver gráfico →';
-  return `<${tag} class="kpi"${clickable}><div class="label">${label}</div><div class="value${circled?' circled':''}">${value}</div>${sub?`<div class="sub">${sub}</div>`:''}${targetId?`<div class="go">${goLabel}</div>`:''}</${tag}>`;
+  const labelAttr = definicao ? ` title="${definicao.replace(/"/g,'&quot;')}"` : '';
+  const helpIcon = definicao ? ' <span style="opacity:.5; font-size:11px;" title="'+definicao.replace(/"/g,'&quot;')+'">ⓘ</span>' : '';
+  return `<${tag} class="kpi"${clickable}><div class="label"${labelAttr}>${label}${helpIcon}</div><div class="value${circled?' circled':''}">${value}</div>${sub?`<div class="sub">${sub}</div>`:''}${targetId?`<div class="go">${goLabel}</div>`:''}</${tag}>`;
 }
 function scrollToSection(id){
   const el = document.getElementById(id);
@@ -789,11 +791,11 @@ function scrollToSection(id){
    ============================================================ */
 function fmtDuration(ms){
   if(ms===null || ms===undefined || isNaN(ms) || ms<0) return '—';
-  const hours = ms/3600000;
-  if(hours < 48) return Math.round(hours)+'h';
-  const days = hours/24;
-  if(days < 60) return days.toFixed(1)+' dias';
-  return (days/30.44).toFixed(1)+' meses';
+  const totalHours = Math.round(ms/3600000);
+  if(totalHours < 24) return totalHours+'h';
+  const days = Math.floor(totalHours/24);
+  const remHours = totalHours%24;
+  return remHours>0 ? `${days}d e ${remHours}h` : `${days}d`;
 }
 function normKey(s){ return String(s||'').trim().toLowerCase(); }
 
@@ -954,11 +956,11 @@ function renderAlunos(){
   const convMedGlobal = convDur.length ? convDur.reduce((x,y)=>x+y,0)/convDur.length : null;
 
   document.getElementById('alunos-kpis').innerHTML = [
-    kpiCard('Alunos efetivos', unicos.length, ativos+' sem data de fim (ativos) · '+efetivos.length+' matrículas no total', true, 'card-chart-ativos-mes'),
-    kpiCard('Taxa de conversão AE → Efetivo', taxaConversaoAE!==null? taxaConversaoAE.toFixed(0)+'%' : '— (sem AEs registadas)', aes.length+' aulas experimentais na aba "AEs"', false, 'card-table-professores'),
-    kpiCard('Retenção média', fmtDuration(retencaoMedia), duracoesFim.length? 'com base em '+duracoesFim.length+' aluno(s) já com Data Fim' : 'ainda sem "Data Fim" preenchida', false, 'card-table-professores'),
-    kpiCard('Desistência antes do fim do ano', taxaDesistAntes!==null? taxaDesistAntes.toFixed(0)+'%' : '— (sem "Data Fim" suficiente)', saidos.length+' aluno(s) já com data de saída registada', false, 'card-chart-inicio-fim'),
-    kpiCard('Tempo médio em conversações', fmtDuration(convMedGlobal), 'do 1º contacto do professor até marcar AE', false, 'card-table-professores')
+    kpiCard('Alunos efetivos', unicos.length, ativos+' sem data de fim (ativos) · '+efetivos.length+' matrículas no total', true, 'card-chart-ativos-mes', 'Número de alunos únicos atualmente na folha "Clientes Efetivos" — cada aluno conta uma vez, mesmo que tenha mais do que uma disciplina.'),
+    kpiCard('Taxa de conversão AE → Efetivo', taxaConversaoAE!==null? taxaConversaoAE.toFixed(0)+'%' : '— (sem AEs registadas)', aes.length+' aulas experimentais na aba "AEs"', false, 'card-table-professores', 'Percentagem de alunos com aula experimental (aba "AEs") cujo nome aparece depois em "Clientes Efetivos" — ou seja, que passaram de AE a aluno efetivo.'),
+    kpiCard('Retenção média', fmtDuration(retencaoMedia), duracoesFim.length? 'com base em '+duracoesFim.length+' aluno(s) já com Data Fim' : 'ainda sem "Data Fim" preenchida', false, 'card-table-professores', 'Tempo médio entre a Data de Início e a Data de Fim dos alunos que já saíram — quanto tempo, em média, um aluno fica connosco.'),
+    kpiCard('Desistência antes do fim do ano', taxaDesistAntes!==null? taxaDesistAntes.toFixed(0)+'%' : '— (sem "Data Fim" suficiente)', saidos.length+' aluno(s) já com data de saída registada', false, 'card-chart-inicio-fim', 'Entre os alunos que já saíram, a percentagem cuja Data de Fim foi antes de 30 de junho do respetivo ano letivo — ou seja, que desistiram a meio do ano em vez de terminarem naturalmente.'),
+    kpiCard('Tempo médio em conversações', fmtDuration(convMedGlobal), 'do 1º contacto do professor até marcar AE', false, 'card-table-professores', 'Tempo médio entre o início e o fim das conversações (aba "AEs") — do primeiro contacto do professor com o aluno até se marcar a aula experimental.')
   ].join('');
 
   // geo (localização — normalmente ainda por preencher)
@@ -1438,11 +1440,11 @@ function renderFixando(){
   const pctFicamosLegiveis = legiveis.length? 100*legiveis.filter(x=>x.ficamos.value).length/legiveis.length : null;
 
   document.getElementById('fixando-kpis').innerHTML = [
-    kpiCard('Pedidos / mês (média)', mediaMes, total+' pedidos registados no total', true, 'card-chart-evolucao-mensal'),
-    kpiCard('Pedidos online / mês (média)', mediaMesOnline, online.length+' pedidos online no total', false, 'card-chart-loc-online'),
-    kpiCard('% abordados sobre legíveis', pctAbordAmosLegiveis!==null? pctAbordAmosLegiveis.toFixed(0)+'%':'—', abordadosArr.length+' abordados (associação automática por telemóvel)', false, 'card-chart-evolucao-mensal'),
-    kpiCard('% ficámos sobre abordados', pctFicamosAbordados!==null? pctFicamosAbordados.toFixed(0)+'%':'—', ficadosCount+' ficámos no total', false, 'card-chart-evolucao-mensal'),
-    kpiCard('% ficámos sobre legíveis', pctFicamosLegiveis!==null? pctFicamosLegiveis.toFixed(0)+'%':'—', null, false, 'card-chart-evolucao-mensal')
+    kpiCard('Pedidos / mês (média)', mediaMes, total+' pedidos registados no total', true, 'card-chart-evolucao-mensal', 'Total de pedidos registados dividido pelo número de meses diferentes em que há pelo menos um pedido.'),
+    kpiCard('Pedidos online / mês (média)', mediaMesOnline, online.length+' pedidos online no total', false, 'card-chart-loc-online', 'O mesmo cálculo que "Pedidos / mês", mas contando só os pedidos com Modalidade = Online.'),
+    kpiCard('% abordados sobre legíveis', pctAbordAmosLegiveis!==null? pctAbordAmosLegiveis.toFixed(0)+'%':'—', abordadosArr.length+' abordados (associação automática por telemóvel)', false, 'card-chart-evolucao-mensal', 'Entre os pedidos marcados como "Legível", a percentagem em que clicaste em "Marcar abordámos" (ou seja, o telemóvel do cliente já é conhecido).'),
+    kpiCard('% ficámos sobre abordados', pctFicamosAbordados!==null? pctFicamosAbordados.toFixed(0)+'%':'—', ficadosCount+' ficámos no total', false, 'card-chart-evolucao-mensal', 'Entre os pedidos que abordaste, a percentagem cujo telemóvel apareceu depois em "Clientes Efetivos" — ou seja, que se tornaram alunos.'),
+    kpiCard('% ficámos sobre legíveis', pctFicamosLegiveis!==null? pctFicamosLegiveis.toFixed(0)+'%':'—', null, false, 'card-chart-evolucao-mensal', 'Percentagem de todos os pedidos legíveis que acabaram por se tornar alunos efetivos — o funil completo, do pedido ao aluno.')
   ].join('');
 
   const locTotal = sortedEntries(groupCount(pedidos, p=>p.localidade), 10);

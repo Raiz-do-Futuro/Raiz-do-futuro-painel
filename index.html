@@ -389,6 +389,7 @@ table.data tr:hover td{background:var(--lime-soft);}
         <button class="btn secondary" id="btn-template-fixando">↓ Descarregar modelo Excel</button>
         <button class="btn secondary" id="btn-upload-fixando">↑ Importar em lote</button>
         <input type="file" id="file-fixando" accept=".xlsx,.xls,.csv">
+        <button class="btn" id="btn-export-fixando">⬇️ Exportar cópia de segurança</button>
         <button class="btn danger" id="btn-clear-fixando">Limpar dados</button>
       </div>
 
@@ -532,7 +533,7 @@ table.data tr:hover td{background:var(--lime-soft);}
             <table class="data" id="table-fixando">
               <thead><tr>
                 <th>Data</th><th>Hora</th><th>Disciplina</th><th>Ano</th><th>Localidade</th>
-                <th>Modalidade</th><th>Legível</th><th>Abordámos</th><th>Ficámos</th>
+                <th>Modalidade</th><th>Ações</th><th>Abordámos</th><th>Ficámos</th>
               </tr></thead>
               <tbody></tbody>
             </table>
@@ -1277,6 +1278,27 @@ document.getElementById('file-fixando').addEventListener('change', (e)=>{
   reader.readAsArrayBuffer(file);
   e.target.value = '';
 });
+document.getElementById('btn-export-fixando').addEventListener('click', ()=>{
+  if(!pedidos.length){ alert('Ainda não há pedidos para exportar.'); return; }
+  const headers = ['Data do Pedido','Hora do Pedido (0-23)','Disciplina','Ano de Ensino','Localidade',
+    'Contacto (opcional)','Modalidade (Online/Presencial)','Pedido Legível (Sim/Não)','Abordámos (calculado)','Ficámos (calculado)'];
+  const linhas = pedidos.map(p=>{
+    const ficamos = resolveFicamos(p);
+    return [
+      p.data ? p.data.toLocaleDateString('pt-PT') : '',
+      p.hora, p.disciplina, p.ano, p.localidade, p.contacto||'',
+      p.modalidade, p.legivel ? 'Sim' : 'Não',
+      isAbordado(p) ? 'Sim' : 'Não',
+      ficamos.value ? 'Sim' : 'Não'
+    ];
+  });
+  const ws = XLSX.utils.aoa_to_sheet([headers, ...linhas]);
+  ws['!cols'] = headers.map(()=>({wch:20}));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Pedidos Fixando');
+  const hoje = new Date().toISOString().slice(0,10);
+  XLSX.writeFile(wb, `copia_seguranca_pedidos_fixando_${hoje}.xlsx`);
+});
 document.getElementById('btn-clear-fixando').addEventListener('click', ()=>{
   if(confirm('Apagar todos os pedidos registados?')){ pedidos = []; savePedidos(); renderFixando(); }
 });
@@ -1319,6 +1341,10 @@ function parseCSVText(text){
     const o={}; headers.forEach((h,idx)=>{ if(h) o[h] = r[idx]!==undefined ? r[idx] : ''; }); return o;
   });
 }
+function pedidoKey(p){
+  const dia = p.data ? p.data.getFullYear()+'-'+String(p.data.getMonth()+1).padStart(2,'0')+'-'+String(p.data.getDate()).padStart(2,'0') : '';
+  return [dia, p.hora, p.disciplina, p.localidade].join('|').toLowerCase();
+}
 async function syncFromSheet(url){
   if(!url){ setSyncStatus('Ainda sem fonte automática ligada.'); return; }
   setSyncStatus('A sincronizar…');
@@ -1331,9 +1357,12 @@ async function syncFromSheet(url){
     }
     const rows = parseCSVText(text);
     const autoRows = mapRowsToPedidos(rows, 'auto');
-    pedidos = pedidos.filter(p=>p.source!=='auto').concat(autoRows);
+    // fusão: mantém sempre o que já existe (inclui as tuas edições manuais) — só acrescenta pedidos novos que ainda não tínhamos
+    const existentes = new Set(pedidos.map(pedidoKey));
+    const novos = autoRows.filter(p => !existentes.has(pedidoKey(p)));
+    pedidos = pedidos.concat(novos);
     savePedidos(); renderFixando();
-    setSyncStatus('✅ Sincronizado agora — '+autoRows.length+' pedido(s) da folha, às '+new Date().toLocaleTimeString('pt-PT'));
+    setSyncStatus('✅ Sincronizado agora — '+novos.length+' pedido(s) novo(s) adicionado(s) (de '+autoRows.length+' na folha), às '+new Date().toLocaleTimeString('pt-PT'));
   }catch(err){
     setSyncStatus('⚠️ Não foi possível sincronizar (confirma que a Sheet está publicada como CSV e acessível publicamente). Erro: '+err.message);
   }
@@ -1578,11 +1607,21 @@ function renderFixandoTable(){
       <td><input class="cell-edit" type="text" data-idx="${idx}" data-field="ano" value="${p.ano}"></td>
       <td><input class="cell-edit" type="text" data-idx="${idx}" data-field="localidade" value="${p.localidade}"></td>
       <td><select class="cell-edit" data-idx="${idx}" data-field="modalidade">${opt('Online',p.modalidade)}${opt('Presencial',p.modalidade)}</select></td>
-      <td><select class="cell-edit" data-idx="${idx}" data-field="legivel">${opt('Sim', p.legivel?'Sim':'Não')}${opt('Não', p.legivel?'Sim':'Não')}</select></td>
+      <td><button class="btn danger" data-idx="${idx}" data-action="apagar-pedido" style="padding:5px 12px; font-size:11px;">🗑️ Apagar</button></td>
       <td>${abordamosCellHtml(idx, p)}</td>
       <td>${flagCellHtml(ficamos)}</td>
     </tr>`;
   }).join('');
+
+  tbody.querySelectorAll('[data-action="apagar-pedido"]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const idx = Number(btn.dataset.idx);
+      if(confirm('Apagar este pedido? Não é possível desfazer.')){
+        pedidos.splice(idx, 1);
+        savePedidos(); renderFixando();
+      }
+    });
+  });
 
   tbody.querySelectorAll('.cell-edit').forEach(el=>{
     el.addEventListener('change', ()=>{

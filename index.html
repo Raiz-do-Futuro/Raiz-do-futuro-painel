@@ -513,6 +513,7 @@ table.data tr:hover td{background:var(--lime-soft);}
             <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:10px;">
               <input type="text" id="filter-search" placeholder="🔍 Procurar disciplina, localidade, contacto..." style="grid-column:span 2; font-family:'Bahnschrift','Poppins',sans-serif; font-size:13px; padding:8px 10px; border:1.5px solid var(--border); border-radius:8px; background:var(--bg); color:var(--ink);">
               <select id="filter-disciplina" style="font-family:'Bahnschrift','Poppins',sans-serif; font-size:13px; padding:8px 10px; border:1.5px solid var(--border); border-radius:8px; background:var(--bg); color:var(--ink);"><option value="">Todas as disciplinas</option></select>
+              <select id="filter-ano" style="font-family:'Bahnschrift','Poppins',sans-serif; font-size:13px; padding:8px 10px; border:1.5px solid var(--border); border-radius:8px; background:var(--bg); color:var(--ink);"><option value="">Todos os anos de ensino</option></select>
               <select id="filter-modalidade" style="font-family:'Bahnschrift','Poppins',sans-serif; font-size:13px; padding:8px 10px; border:1.5px solid var(--border); border-radius:8px; background:var(--bg); color:var(--ink);">
                 <option value="">Todas as modalidades</option><option value="Online">Online</option><option value="Presencial">Presencial</option>
               </select>
@@ -525,13 +526,15 @@ table.data tr:hover td{background:var(--lime-soft);}
               <select id="filter-ficamos" style="font-family:'Bahnschrift','Poppins',sans-serif; font-size:13px; padding:8px 10px; border:1.5px solid var(--border); border-radius:8px; background:var(--bg); color:var(--ink);">
                 <option value="">Ficámos: todos</option><option value="Sim">Ficámos: Sim</option><option value="Não">Ficámos: Não</option>
               </select>
-              <div style="display:flex; gap:8px; align-items:center;">
-                <label style="font-size:11px; color:var(--muted); white-space:nowrap;">De</label>
-                <input type="date" id="filter-data-de" style="flex:1; font-family:'Bahnschrift','Poppins',sans-serif; font-size:13px; padding:7px 8px; border:1.5px solid var(--border); border-radius:8px; background:var(--bg); color:var(--ink);">
-              </div>
-              <div style="display:flex; gap:8px; align-items:center;">
-                <label style="font-size:11px; color:var(--muted); white-space:nowrap;">Até</label>
-                <input type="date" id="filter-data-ate" style="flex:1; font-family:'Bahnschrift','Poppins',sans-serif; font-size:13px; padding:7px 8px; border:1.5px solid var(--border); border-radius:8px; background:var(--bg); color:var(--ink);">
+              <div style="grid-column:span 2; display:flex; gap:14px; align-items:center;">
+                <div style="display:flex; gap:8px; align-items:center; flex:1;">
+                  <label style="font-size:11px; color:var(--muted); white-space:nowrap;">De</label>
+                  <input type="date" id="filter-data-de" style="flex:1; font-family:'Bahnschrift','Poppins',sans-serif; font-size:13px; padding:7px 8px; border:1.5px solid var(--border); border-radius:8px; background:var(--bg); color:var(--ink);">
+                </div>
+                <div style="display:flex; gap:8px; align-items:center; flex:1;">
+                  <label style="font-size:11px; color:var(--muted); white-space:nowrap;">Até</label>
+                  <input type="date" id="filter-data-ate" style="flex:1; font-family:'Bahnschrift','Poppins',sans-serif; font-size:13px; padding:7px 8px; border:1.5px solid var(--border); border-radius:8px; background:var(--bg); color:var(--ink);">
+                </div>
               </div>
             </div>
             <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
@@ -1633,6 +1636,11 @@ function populateFilterOptions(){
   const current = discSel.value;
   const discs = Array.from(new Set(pedidos.flatMap(p=>splitMulti(p.disciplina)))).sort();
   discSel.innerHTML = '<option value="">Todas as disciplinas</option>' + discs.map(d=>`<option value="${d}" ${d===current?'selected':''}>${d}</option>`).join('');
+
+  const anoSel = document.getElementById('filter-ano');
+  const currentAno = anoSel.value;
+  const anos = Array.from(new Set(pedidos.map(p=>p.ano).filter(Boolean))).sort();
+  anoSel.innerHTML = '<option value="">Todos os anos de ensino</option>' + anos.map(a=>`<option value="${a}" ${a===currentAno?'selected':''}>${a}</option>`).join('');
 }
 
 function renderFixandoTable(){
@@ -1641,6 +1649,7 @@ function renderFixandoTable(){
 
   const fSearch = (document.getElementById('filter-search')?.value || '').toLowerCase().trim();
   const fDisc = document.getElementById('filter-disciplina')?.value || '';
+  const fAno = document.getElementById('filter-ano')?.value || '';
   const fModalidade = document.getElementById('filter-modalidade')?.value || '';
   const fLegivel = document.getElementById('filter-legivel')?.value || '';
   const fAbordamos = document.getElementById('filter-abordamos')?.value || '';
@@ -1652,6 +1661,7 @@ function renderFixandoTable(){
 
   if(fSearch) rows = rows.filter(({p})=> (p.disciplina+' '+p.localidade+' '+(p.contacto||'')+' '+p.ano).toLowerCase().includes(fSearch));
   if(fDisc) rows = rows.filter(({p})=>splitMulti(p.disciplina).includes(fDisc));
+  if(fAno) rows = rows.filter(({p})=>p.ano===fAno);
   if(fModalidade) rows = rows.filter(({p})=>p.modalidade===fModalidade);
   if(fLegivel) rows = rows.filter(({p})=> (fLegivel==='Sim') === !!p.legivel);
   if(fAbordamos) rows = rows.filter(({abordamos})=> (fAbordamos==='Sim') === abordamos.value);
@@ -1721,13 +1731,13 @@ function renderFixandoTable(){
 }
 
 function wireFilterListeners(){
-  ['filter-search','filter-disciplina','filter-modalidade','filter-legivel','filter-abordamos','filter-ficamos','filter-data-de','filter-data-ate'].forEach(id=>{
+  ['filter-search','filter-disciplina','filter-ano','filter-modalidade','filter-legivel','filter-abordamos','filter-ficamos','filter-data-de','filter-data-ate'].forEach(id=>{
     const el = document.getElementById(id);
     if(el) el.addEventListener('input', renderFixandoTable);
   });
   const clearBtn = document.getElementById('btn-clear-filters');
   if(clearBtn) clearBtn.addEventListener('click', ()=>{
-    ['filter-search','filter-disciplina','filter-modalidade','filter-legivel','filter-abordamos','filter-ficamos','filter-data-de','filter-data-ate'].forEach(id=>{
+    ['filter-search','filter-disciplina','filter-ano','filter-modalidade','filter-legivel','filter-abordamos','filter-ficamos','filter-data-de','filter-data-ate'].forEach(id=>{
       const el = document.getElementById(id); if(el) el.value='';
     });
     renderFixandoTable();

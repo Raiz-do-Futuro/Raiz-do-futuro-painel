@@ -616,10 +616,14 @@ async function loadState(){
     }catch(e){ console.error('starter dataset error', e); }
   }
 
+  await loadDeletedKeys();
   try{
     const r = await window.storage.get('fixando-data', false);
     if(r && r.value) pedidos = JSON.parse(r.value).map(reviveDates);
   }catch(e){ pedidos = []; }
+  let precisaGuardar = false;
+  pedidos.forEach(p=>{ if(!p.sourceKey){ p.sourceKey = pedidoKey(p); precisaGuardar = true; } });
+  if(precisaGuardar) savePedidos();
   renderAlunos();
   renderFixando();
 
@@ -1249,7 +1253,7 @@ function mapRowsToPedidos(rows, source){
       hora = Number(r['Hora do Pedido (0-23)']) || 0;
     }
     const anoRaw = r['Ano de Ensino'] !== undefined ? r['Ano de Ensino'] : r['Nível de Ensino'];
-    return {
+    const p = {
       data, hora,
       disciplina: stripDisciplinaPrefix(r['Disciplina']) || 'Não especificado',
       ano: normStr(anoRaw) || 'Não especificado',
@@ -1259,6 +1263,8 @@ function mapRowsToPedidos(rows, source){
       legivel: normStr(r['Pedido Legível (Sim/Não)'] !== undefined ? r['Pedido Legível (Sim/Não)'] : r['Legível']) ? isTrue(normStr(r['Pedido Legível (Sim/Não)'] !== undefined ? r['Pedido Legível (Sim/Não)'] : r['Legível'])) : true,
       source: source || 'manual'
     };
+    p.sourceKey = pedidoKey(p); // identidade fixa, calculada só agora — nunca muda mesmo que edites os campos depois
+    return p;
   }).filter(p=>p.data);
 }
 
@@ -1345,8 +1351,19 @@ function parseCSVText(text){
   });
 }
 function pedidoKey(p){
+  if(p.sourceKey) return p.sourceKey;
   const dia = p.data ? p.data.getFullYear()+'-'+String(p.data.getMonth()+1).padStart(2,'0')+'-'+String(p.data.getDate()).padStart(2,'0') : '';
   return [dia, p.hora, p.disciplina, p.localidade].join('|').toLowerCase();
+}
+let deletedPedidoKeys = new Set();
+async function loadDeletedKeys(){
+  try{
+    const r = await window.storage.get('pedidos-deleted-keys', false);
+    if(r && r.value) deletedPedidoKeys = new Set(JSON.parse(r.value));
+  }catch(e){ /* ainda sem registo */ }
+}
+async function saveDeletedKeys(){
+  try{ await window.storage.set('pedidos-deleted-keys', JSON.stringify([...deletedPedidoKeys]), false); }catch(e){ console.error(e); }
 }
 async function syncFromSheet(url){
   if(!url){ setSyncStatus('Ainda sem fonte automática ligada.'); return; }
@@ -1360,9 +1377,9 @@ async function syncFromSheet(url){
     }
     const rows = parseCSVText(text);
     const autoRows = mapRowsToPedidos(rows, 'auto');
-    // fusão: mantém sempre o que já existe (inclui as tuas edições manuais) — só acrescenta pedidos novos que ainda não tínhamos
+    // fusão: mantém sempre o que já existe (inclui as tuas edições manuais) e nunca ressuscita o que apagaste
     const existentes = new Set(pedidos.map(pedidoKey));
-    const novos = autoRows.filter(p => !existentes.has(pedidoKey(p)));
+    const novos = autoRows.filter(p => !existentes.has(p.sourceKey) && !deletedPedidoKeys.has(p.sourceKey));
     pedidos = pedidos.concat(novos);
     savePedidos(); renderFixando();
     setSyncStatus('✅ Sincronizado agora — '+novos.length+' pedido(s) novo(s) adicionado(s) (de '+autoRows.length+' na folha), às '+new Date().toLocaleTimeString('pt-PT'));
@@ -1398,6 +1415,7 @@ document.getElementById('btn-add-fixando').addEventListener('click', ()=>{
     legivel: document.getElementById('f-legivel').value === 'Sim',
     source: 'manual'
   };
+  p.sourceKey = pedidoKey(p);
   pedidos.push(p); savePedidos(); renderFixando();
   ['f-hora','f-disciplina','f-ano','f-localidade'].forEach(id=>document.getElementById(id).value='');
   ['field-disciplina','field-localidade','field-ano','field-data','field-hora','field-modalidade'].forEach(id=>{
@@ -1623,7 +1641,9 @@ function renderFixandoTable(){
   tbody.querySelectorAll('[data-action="apagar-pedido"]').forEach(btn=>{
     btn.addEventListener('click', ()=>{
       const idx = Number(btn.dataset.idx);
-      if(confirm('Apagar este pedido? Não é possível desfazer.')){
+      if(confirm('Apagar este pedido? Não é possível desfazer, e nunca mais vai voltar a aparecer, mesmo depois de sincronizar de novo.')){
+        deletedPedidoKeys.add(pedidoKey(pedidos[idx]));
+        saveDeletedKeys();
         pedidos.splice(idx, 1);
         savePedidos(); renderFixando();
       }

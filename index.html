@@ -203,6 +203,11 @@ table.data th{
   text-transform:uppercase; color:var(--muted); font-weight:600;
   border-bottom:2px solid var(--sage); padding:8px 10px;
 }
+table.data th[data-key]{cursor:pointer; user-select:none;}
+table.data th[data-key]:hover{color:var(--green);}
+table.data th.sort-active{color:var(--green);}
+table.data th.sort-active::after{content:' ▾'; font-size:9px;}
+table.data th.sort-active.sort-asc::after{content:' ▴'; font-size:9px;}
 table.data td{padding:8px 10px; border-bottom:1px solid var(--border); color:var(--body);}
 table.data tr:hover td{background:var(--lime-soft);}
 
@@ -355,10 +360,17 @@ table.data tr:hover td{background:var(--lime-soft);}
           <div class="chart-card" id="card-table-professores">
             <div style="overflow-x:auto;">
             <table class="data" id="table-professores">
-              <thead><tr>
-                <th>Professor</th><th>Nº Alunos</th><th>Retenção média</th>
-                <th>Tempo médio em conversações</th><th>Tempo médio AE → Efetivação</th><th>Nº AE</th><th>Taxa conversão AE</th>
-                <th>Conversações (ganhos/perdidos)</th><th>AE (ganhos/perdidos)</th><th>Efetivos perdidos</th>
+              <thead><tr id="prof-table-headers">
+                <th data-key="professor" title="Nome do professor.">Professor</th>
+                <th data-key="nAlunos" title="Número de alunos efetivos atualmente atribuídos a este professor.">Nº Alunos</th>
+                <th data-key="retMed" title="Tempo médio entre a Data de Início e a Data de Fim dos alunos deste professor que já saíram.">Retenção média</th>
+                <th data-key="convMedP" title="Tempo médio entre o início e o fim das conversações (aba &quot;AEs&quot;) para os alunos deste professor.">Tempo médio em conversações</th>
+                <th data-key="aeMedP" title="Tempo médio entre a aula experimental e a efetivação, para os alunos deste professor.">Tempo médio AE → Efetivação</th>
+                <th data-key="nAE" title="Número de aulas experimentais registadas na aba &quot;AEs&quot; para este professor.">Nº AE</th>
+                <th data-key="taxaConversao" title="Percentagem das aulas experimentais deste professor que resultaram em aluno efetivo.">Taxa conversão AE</th>
+                <th data-key="conversasGanhos" title="Alunos deste professor que passaram (ganhos) ou foram perdidos na fase de conversações, antes da aula experimental.">Conversações (ganhos/perdidos)</th>
+                <th data-key="aeGanhos" title="Alunos deste professor que passaram (ganhos) ou foram perdidos na fase de aula experimental.">AE (ganhos/perdidos)</th>
+                <th data-key="efetivosPerdidos" title="Alunos efetivos deste professor que já têm Data de Fim preenchida (saíram/desistiram).">Efetivos perdidos</th>
               </tr></thead>
               <tbody></tbody>
             </table>
@@ -922,6 +934,37 @@ document.getElementById('btn-clear-alunos').addEventListener('click', ()=>{
   if(confirm('Apagar todos os dados importados?')){ crm = {efetivos:[], pendentes:[], aes:[]}; saveAlunos(); renderAlunos(); }
 });
 
+let lastProfRows = [];
+let profSort = { key: 'nAlunos', dir: 'desc' };
+function renderProfTable(){
+  const tbody = document.querySelector('#table-professores tbody');
+  if(!tbody) return;
+  const { key, dir } = profSort;
+  const mult = dir === 'asc' ? 1 : -1;
+  const sorted = [...lastProfRows].sort((a,b)=>{
+    let va = a[key], vb = b[key];
+    if(va===null || va===undefined) return 1; // sem dados vai sempre para o fim
+    if(vb===null || vb===undefined) return -1;
+    if(typeof va === 'string') return va.localeCompare(vb) * mult;
+    return (va-vb) * mult;
+  });
+  tbody.innerHTML = sorted.map(r=>`<tr><td><b>${r.professor}</b></td><td>${r.nAlunos}</td><td>${fmtDuration(r.retMed)}</td><td>${fmtDuration(r.convMedP)}</td><td>${fmtDuration(r.aeMedP)}</td><td>${r.nAE}</td><td>${r.taxaConversao!==null? r.taxaConversao.toFixed(0)+'%' : '—'}</td>
+    <td>${r.conversasGanhos} / ${r.conversasPerdidos}</td><td>${r.aeGanhos} / ${r.aePerdidos}</td><td>${r.efetivosPerdidos}</td></tr>`).join('');
+
+  document.querySelectorAll('#prof-table-headers th[data-key]').forEach(th=>{
+    th.classList.toggle('sort-active', th.dataset.key===key);
+    th.classList.toggle('sort-asc', th.dataset.key===key && dir==='asc');
+  });
+}
+document.querySelectorAll('#prof-table-headers th[data-key]').forEach(th=>{
+  th.addEventListener('click', ()=>{
+    const key = th.dataset.key;
+    if(profSort.key === key){ profSort.dir = profSort.dir === 'asc' ? 'desc' : 'asc'; }
+    else { profSort.key = key; profSort.dir = 'desc'; }
+    renderProfTable();
+  });
+});
+
 function renderAlunos(){
   const empty = document.getElementById('alunos-empty');
   const content = document.getElementById('alunos-content');
@@ -1021,9 +1064,7 @@ function renderAlunos(){
     ...pendentes.map(p=>p.professor),
     ...aes.map(a=>a.professor)
   ])).filter(p=>p && p!=='Não especificado').sort();
-  const tbody = document.querySelector('#table-professores tbody');
-  tbody.innerHTML = profNames.map(p=>{
-    const rowsUnicos = unicos.filter(a=>a.professor===p || efetivos.some(e=>e.professor===p && normKey(e.nome)===normKey(a.nome)));
+  lastProfRows = profNames.map(p=>{
     const nAlunos = new Set(efetivos.filter(a=>a.professor===p).map(a=>normKey(a.nome))).size;
     const dur = unicos.filter(a=> efetivos.some(e=>normKey(e.nome)===normKey(a.nome) && e.professor===p) && a.dataInicio && a.dataFim).map(a=>a.dataFim-a.dataInicio);
     const retMed = dur.length? dur.reduce((x,y)=>x+y,0)/dur.length : null;
@@ -1042,7 +1083,7 @@ function renderAlunos(){
     const aeMedP = aeToStartP.length? aeToStartP.reduce((x,y)=>x+y,0)/aeToStartP.length : null;
 
     const convertidosP = aesProf.filter(a=>nomesEfetivos.has(normKey(a.nome))).length;
-    const taxaP = aesProf.length? (100*convertidosP/aesProf.length).toFixed(0)+'%' : '—';
+    const taxaConversao = aesProf.length? 100*convertidosP/aesProf.length : null;
 
     const conversasGanhos = aesProf.filter(a=>a.tiConv && a.tfConv).length;
     const conversasPerdidos = aesProf.filter(a=>a.tiConv && a.tfConvPerdido).length;
@@ -1050,9 +1091,10 @@ function renderAlunos(){
     const aePerdidos = aesProf.filter(a=>a.tiAE && a.tfAEPerdido).length;
     const efetivosPerdidos = efetivos.filter(a=>a.professor===p && a.dataFim).length;
 
-    return `<tr><td><b>${p}</b></td><td>${nAlunos}</td><td>${fmtDuration(retMed)}</td><td>${fmtDuration(convMedP)}</td><td>${fmtDuration(aeMedP)}</td><td>${aesProf.length}</td><td>${taxaP}</td>
-      <td>${conversasGanhos} / ${conversasPerdidos}</td><td>${aeGanhos} / ${aePerdidos}</td><td>${efetivosPerdidos}</td></tr>`;
-  }).join('');
+    return { professor:p, nAlunos, retMed, convMedP, aeMedP, nAE: aesProf.length, taxaConversao,
+      conversasGanhos, conversasPerdidos, aeGanhos, aePerdidos, efetivosPerdidos };
+  });
+  renderProfTable();
 
   renderGeoMap();
 }

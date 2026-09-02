@@ -960,7 +960,7 @@ document.querySelectorAll('#prof-table-headers th[data-key]').forEach(th=>{
   th.addEventListener('click', ()=>{
     const key = th.dataset.key;
     if(profSort.key === key){ profSort.dir = profSort.dir === 'asc' ? 'desc' : 'asc'; }
-    else { profSort.key = key; profSort.dir = 'desc'; }
+    else { profSort.key = key; profSort.dir = key === 'professor' ? 'asc' : 'desc'; }
     renderProfTable();
   });
 });

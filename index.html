@@ -532,8 +532,8 @@ table.data tr:hover td{background:var(--lime-soft);}
             <div class="table-scroll">
             <table class="data" id="table-fixando">
               <thead><tr>
-                <th>Data</th><th>Hora</th><th>Disciplina</th><th>Ano</th><th>Localidade</th>
-                <th>Modalidade</th><th>Ações</th><th>Abordámos</th><th>Ficámos</th>
+                <th>Data</th><th>Hora</th><th>Ano</th><th>Disciplina</th><th>Modalidade</th><th>Localidade</th>
+                <th>Abordámos</th><th>Ficámos</th><th>Ações</th>
               </tr></thead>
               <tbody></tbody>
             </table>
@@ -1297,7 +1297,7 @@ document.getElementById('btn-export-fixando').addEventListener('click', ()=>{
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Pedidos Fixando');
   const hoje = new Date().toISOString().slice(0,10);
-  XLSX.writeFile(wb, `copia_seguranca_pedidos_fixando_${hoje}.xlsx`);
+  XLSX.writeFile(wb, `Dados de análise de mercado - ${hoje}.xlsx`);
 });
 document.getElementById('btn-clear-fixando').addEventListener('click', ()=>{
   if(confirm('Apagar todos os pedidos registados?')){ pedidos = []; savePedidos(); renderFixando(); }
@@ -1455,7 +1455,11 @@ function flagCellHtml(r){
 }
 function abordamosCellHtml(idx, pedido){
   if(pedido.contacto){
-    return `<span class="badge green">Sim — ${pedido.contacto}</span> <a href="#" class="override-link" data-idx="${idx}" data-action="editar-contacto">editar</a>`;
+    return `<div style="display:inline-flex; align-items:center; gap:8px; background:var(--green-soft); border:1px solid var(--green); border-radius:999px; padding:5px 10px 5px 12px;">
+      <span style="color:var(--green); font-weight:700; font-size:12px;">✓ Sim</span>
+      <span style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--ink);">📞 ${pedido.contacto}</span>
+      <a href="#" class="override-link" data-idx="${idx}" data-action="editar-contacto" title="Editar telemóvel" style="color:var(--muted); text-decoration:none; font-size:13px;">✏️</a>
+    </div>`;
   }
   return `<button class="btn secondary" data-idx="${idx}" data-action="marcar-abordado" style="padding:5px 12px; font-size:11px;">Marcar abordámos</button>`;
 }
@@ -1592,7 +1596,7 @@ function renderFixandoTable(){
   if(fDe){ const d=new Date(fDe+'T00:00:00'); rows = rows.filter(({p})=>p.data>=d); }
   if(fAte){ const d=new Date(fAte+'T23:59:59'); rows = rows.filter(({p})=>p.data<=d); }
 
-  rows.sort((a,b)=>b.p.data-a.p.data);
+  rows.sort((a,b)=>a.p.data-b.p.data);
 
   document.getElementById('filter-count').textContent = rows.length+' de '+pedidos.length+' pedidos';
 
@@ -1602,14 +1606,14 @@ function renderFixandoTable(){
     const dataISO = p.data.getFullYear()+'-'+String(p.data.getMonth()+1).padStart(2,'0')+'-'+String(p.data.getDate()).padStart(2,'0');
     return `<tr>
       <td><input class="cell-edit" type="date" data-idx="${idx}" data-field="data" value="${dataISO}"></td>
-      <td><input class="cell-edit" type="number" min="0" max="23" data-idx="${idx}" data-field="hora" value="${p.hora}" style="width:56px;"></td>
-      <td><input class="cell-edit" type="text" data-idx="${idx}" data-field="disciplina" value="${p.disciplina}" placeholder="ex: Matemática, Português"></td>
+      <td><div style="display:flex; align-items:center; gap:4px;"><input class="cell-edit" type="number" min="0" max="23" data-idx="${idx}" data-field="hora" value="${p.hora}" style="width:48px;"><span style="color:var(--muted); font-size:12px;">h</span></div></td>
       <td><input class="cell-edit" type="text" data-idx="${idx}" data-field="ano" value="${p.ano}"></td>
-      <td><input class="cell-edit" type="text" data-idx="${idx}" data-field="localidade" value="${p.localidade}"></td>
+      <td><input class="cell-edit" type="text" data-idx="${idx}" data-field="disciplina" value="${p.disciplina}" placeholder="ex: Matemática, Português"></td>
       <td><select class="cell-edit" data-idx="${idx}" data-field="modalidade">${opt('Online',p.modalidade)}${opt('Presencial',p.modalidade)}</select></td>
-      <td><button class="btn danger" data-idx="${idx}" data-action="apagar-pedido" style="padding:5px 12px; font-size:11px;">🗑️ Apagar</button></td>
+      <td><input class="cell-edit" type="text" data-idx="${idx}" data-field="localidade" value="${p.localidade}"></td>
       <td>${abordamosCellHtml(idx, p)}</td>
       <td>${flagCellHtml(ficamos)}</td>
+      <td><button class="btn danger" data-idx="${idx}" data-action="apagar-pedido" style="padding:5px 12px; font-size:11px;">🗑️ Apagar</button></td>
     </tr>`;
   }).join('');
 

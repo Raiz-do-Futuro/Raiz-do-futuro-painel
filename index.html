@@ -1296,8 +1296,11 @@ document.getElementById('btn-export-fixando').addEventListener('click', ()=>{
   ws['!cols'] = headers.map(()=>({wch:20}));
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Pedidos Fixando');
-  const hoje = new Date().toISOString().slice(0,10);
-  XLSX.writeFile(wb, `Dados de análise de mercado - ${hoje}.xlsx`);
+  const now = new Date();
+  const dd = String(now.getDate()).padStart(2,'0');
+  const mm = String(now.getMonth()+1).padStart(2,'0');
+  const yy = String(now.getFullYear()).slice(-2);
+  XLSX.writeFile(wb, `Cópia de Segurança - AM ${dd}.${mm}.${yy}.xlsx`);
 });
 document.getElementById('btn-clear-fixando').addEventListener('click', ()=>{
   if(confirm('Apagar todos os pedidos registados?')){ pedidos = []; savePedidos(); renderFixando(); }
@@ -1596,7 +1599,7 @@ function renderFixandoTable(){
   if(fDe){ const d=new Date(fDe+'T00:00:00'); rows = rows.filter(({p})=>p.data>=d); }
   if(fAte){ const d=new Date(fAte+'T23:59:59'); rows = rows.filter(({p})=>p.data<=d); }
 
-  rows.sort((a,b)=>a.p.data-b.p.data);
+  rows.sort((a,b)=>b.p.data-a.p.data);
 
   document.getElementById('filter-count').textContent = rows.length+' de '+pedidos.length+' pedidos';
 

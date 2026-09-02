@@ -255,6 +255,7 @@ table.data tr:hover td{background:var(--lime-soft);}
     <div class="tab-list">
       <button class="tab-btn active" data-tab="alunos"><span class="idx">01 · ALUNOS</span>Gestão &amp; retenção</button>
       <button class="tab-btn" data-tab="mercado"><span class="idx">02 · MERCADO</span>Fixando &amp; procura</button>
+      <button class="tab-btn" data-tab="financeiro"><span class="idx">03 · FINANCEIRO</span>Gestão financeira</button>
     </div>
     <div class="rail-foot">Os dados ficam guardados apenas nesta conversa/artefacto — não são partilhados com mais ninguém.</div>
   </nav>
@@ -301,6 +302,11 @@ table.data tr:hover td{background:var(--lime-soft);}
             <h3>📚 Alunos por disciplina</h3>
             <p class="desc">Contagem de alunos efetivos</p>
             <div class="chart-card" id="card-chart-disciplina"><div class="chart-wrap"><canvas id="chart-disciplina"></canvas></div></div>
+          </div>
+          <div class="section">
+            <h3>🎓 Alunos por Ano de Ensino</h3>
+            <p class="desc">Distribuição por ano/nível de ensino</p>
+            <div class="chart-card" id="card-chart-ano-ensino"><div class="chart-wrap"><canvas id="chart-ano-ensino"></canvas></div></div>
           </div>
         </div>
 
@@ -354,6 +360,24 @@ table.data tr:hover td{background:var(--lime-soft);}
           <div class="chart-card" id="card-chart-funil"><div class="chart-wrap"><canvas id="chart-funil"></canvas></div></div>
         </div>
 
+        <div class="two-col">
+          <div class="section">
+            <h3>💶 Receita por aluno (Total)</h3>
+            <p class="desc">Top 10 alunos por valor pago, com base na aba "Pagamentos Alunos"</p>
+            <div class="chart-card" id="card-table-receita-aluno">
+              <table class="data" id="table-receita-aluno">
+                <thead><tr><th>Aluno</th><th>Nº de aulas (total)</th><th>Valor pago (total)</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="section">
+            <h3>📚 Alunos por nº de aulas/mês</h3>
+            <p class="desc">Abaixo do esperado (&lt;4), dentro (4-9) e acima (&gt;9), no mês mais recente com dados</p>
+            <div class="chart-card" id="card-chart-faixa-aulas"><div class="chart-wrap"><canvas id="chart-faixa-aulas"></canvas></div></div>
+          </div>
+        </div>
+
         <div class="section">
           <h3>🏆 Desempenho por professor</h3>
           <p class="desc">Retenção, tempo médio em conversações e entre aula experimental (AE) e efetivação, com base na aba "AEs"</p>
@@ -371,6 +395,10 @@ table.data tr:hover td{background:var(--lime-soft);}
                 <th data-key="conversasGanhos" title="Alunos deste professor que passaram (ganhos) ou foram perdidos na fase de conversações, antes da aula experimental.">Conversações (ganhos/perdidos)</th>
                 <th data-key="aeGanhos" title="Alunos deste professor que passaram (ganhos) ou foram perdidos na fase de aula experimental.">AE (ganhos/perdidos)</th>
                 <th data-key="efetivosPerdidos" title="Alunos efetivos deste professor que já têm Data de Fim preenchida (saíram/desistiram).">Efetivos perdidos</th>
+                <th data-key="tempoResposta" title="Tempo médio entre o pedido chegar (Momento do contacto, aba Clientes pendentes) e o professor iniciar as conversações (T/i Conversações, aba AEs).">Tempo de resposta</th>
+                <th data-key="tempoMarcarAE" title="Tempo médio entre o início das conversações e a aula experimental ficar marcada.">Tempo até marcar AE</th>
+                <th data-key="disciplinaPrincipal" title="Disciplina mais frequente entre os alunos efetivos deste professor.">Disciplina principal</th>
+                <th data-key="faturacaoReal" title="Soma do 'Valor' pago (aba Pagamentos Alunos) pelos alunos efetivos deste professor.">Faturação (real)</th>
               </tr></thead>
               <tbody></tbody>
             </table>
@@ -498,6 +526,19 @@ table.data tr:hover td{background:var(--lime-soft);}
         <hr class="divider">
 
         <div class="section">
+          <h3>🗺️ Taxa de penetração por distrito</h3>
+          <p class="desc">Entre os pedidos legíveis de cada distrito, quantos abordámos e quantos ficaram alunos</p>
+          <div class="chart-card" id="card-table-penetracao">
+            <table class="data" id="table-penetracao">
+              <thead><tr><th>Distrito</th><th>Pedidos legíveis</th><th>Abordámos</th><th>Ficámos</th><th title="Ficámos ÷ Legíveis — o quanto do potencial de mercado dessa região já é nosso.">% Penetração</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <hr class="divider">
+
+        <div class="section">
           <h3>📈 Evolução mensal</h3>
           <p class="desc">Pedidos por mês (barras) e taxas de abordagem/conversão ao longo do tempo (linhas)</p>
           <div class="chart-card" id="card-chart-evolucao-mensal"><div class="chart-wrap"><canvas id="chart-evolucao-mensal"></canvas></div></div>
@@ -554,6 +595,125 @@ table.data tr:hover td{background:var(--lime-soft);}
             </table>
             </div>
           </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ===================== TAB 3: FINANCEIRO ===================== -->
+    <section class="panel" id="panel-financeiro">
+      <div class="page-head">
+        <h2>💶 Gestão financeira</h2>
+        <p>Importa o teu Excel financeiro para veres onde estás face às previsões pessimista, objetivo e otimista.</p>
+      </div>
+
+      <div class="toolbar">
+        <button class="btn" id="btn-upload-financeiro">↑ Importar ficheiro financeiro (Excel)</button>
+        <input type="file" id="file-financeiro" accept=".xlsx,.xls">
+        <button class="btn danger" id="btn-clear-financeiro">Limpar dados</button>
+      </div>
+
+      <div class="notice">
+        Lê as abas <b>"DR"</b>, <b>"DR Pessimista"</b>, <b>"DR Objetivo"</b>, <b>"DR Otimista"</b> e <b>"CF"</b> (com as 4 previsões — Pessimista/Objetivo/Otimista/Real — todas dentro dessa mesma aba). A aba "Gastos" é ignorada, tal como pediste.
+      </div>
+
+      <div id="financeiro-empty" class="empty-state">
+        <b>Ainda sem dados</b>
+        Importa o teu ficheiro financeiro para veres as estatísticas.
+      </div>
+
+      <div id="financeiro-content" style="display:none;">
+
+        <div id="fin-alerta-runway" class="notice" style="display:none; border-left:4px solid var(--rust); background:var(--rust-soft);"></div>
+        <div class="kpi-grid" id="financeiro-kpis"></div>
+
+        <hr class="divider">
+
+        <div class="section">
+          <h3>📊 Demonstração de Resultados — onde estamos</h3>
+          <div style="display:flex; align-items:center; gap:10px; margin-bottom:14px;">
+            <label style="font-size:12px; color:var(--muted); font-weight:600;">Ver:</label>
+            <select id="fin-dr-mes" style="font-family:'Bahnschrift','Poppins',sans-serif; font-size:13px; padding:7px 10px; border:1.5px solid var(--border); border-radius:8px; background:var(--bg); color:var(--ink);"></select>
+          </div>
+          <div class="chart-card" id="card-table-dr">
+            <div style="overflow-x:auto;">
+            <table class="data" id="table-dr">
+              <thead><tr><th>Linha da DR</th><th title="Cenário pessimista para este mês/total.">Pessimista</th><th title="Cenário objetivo para este mês/total.">Objetivo</th><th title="Valores reais registados (aba DR).">Real</th><th title="Cenário otimista para este mês/total.">Otimista</th><th title="Como o Real compara com o Objetivo.">Face ao objetivo</th><th title="Este valor Real como percentagem da Receita Real do mesmo período.">% da Receita</th></tr></thead>
+              <tbody></tbody>
+            </table>
+            </div>
+          </div>
+        </div>
+
+        <hr class="divider">
+
+        <div class="section">
+          <h3>💰 Fluxo de Caixa — onde estamos</h3>
+          <div style="display:flex; align-items:center; gap:10px; margin-bottom:14px;">
+            <label style="font-size:12px; color:var(--muted); font-weight:600;">Ver:</label>
+            <select id="fin-cf-mes" style="font-family:'Bahnschrift','Poppins',sans-serif; font-size:13px; padding:7px 10px; border:1.5px solid var(--border); border-radius:8px; background:var(--bg); color:var(--ink);"></select>
+          </div>
+          <div class="chart-card" id="card-table-cf">
+            <div style="overflow-x:auto;">
+            <table class="data" id="table-cf">
+              <thead><tr><th>Linha do CF</th><th>Pessimista</th><th>Objetivo</th><th>Real</th><th>Otimista</th><th>Face ao objetivo</th></tr></thead>
+              <tbody></tbody>
+            </table>
+            </div>
+          </div>
+        </div>
+
+        <hr class="divider">
+
+        <div class="two-col">
+          <div class="section">
+            <h3>📈 Evolução da Caixa</h3>
+            <p class="desc">Saldo de caixa acumulado, mês a mês, nos 4 cenários</p>
+            <div class="chart-card" id="card-chart-caixa"><div class="chart-wrap"><canvas id="chart-caixa"></canvas></div></div>
+          </div>
+          <div class="section">
+            <h3>📈 Evolução da Receita</h3>
+            <p class="desc">Receita mensal nos 4 cenários</p>
+            <div class="chart-card" id="card-chart-receita-fin"><div class="chart-wrap"><canvas id="chart-receita-fin"></canvas></div></div>
+          </div>
+        </div>
+
+        <div class="two-col">
+          <div class="section">
+            <h3>📊 Crescimento mensal (Receita Real)</h3>
+            <p class="desc">Variação % da receita face ao mês anterior</p>
+            <div class="chart-card" id="card-chart-crescimento"><div class="chart-wrap"><canvas id="chart-crescimento"></canvas></div></div>
+          </div>
+          <div class="section">
+            <h3>📉 Desvio acumulado — Real vs Objetivo</h3>
+            <p class="desc">Diferença acumulada, mês a mês, entre Receita/Rendimento Real e Objetivo</p>
+            <div class="chart-card" id="card-chart-desvio"><div class="chart-wrap"><canvas id="chart-desvio"></canvas></div></div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h3>🥧 Peso de cada gasto na Receita</h3>
+          <p class="desc">Gastos fixos e variáveis reais como % da Receita Real (Total anual)</p>
+          <div class="chart-card" id="card-chart-peso-gastos"><div class="chart-wrap"><canvas id="chart-peso-gastos"></canvas></div></div>
+        </div>
+
+        <div class="two-col">
+          <div class="section">
+            <h3>📈 Margem de lucro (%)</h3>
+            <p class="desc">Rendimento ÷ Receita, mês a mês, nos 4 cenários</p>
+            <div class="chart-card" id="card-chart-margem"><div class="chart-wrap"><canvas id="chart-margem"></canvas></div></div>
+          </div>
+          <div class="section">
+            <h3>🎯 CAC — Custo de Aquisição de Cliente</h3>
+            <p class="desc">Gasto em marketing (Google Ads, Meta Ads, Lendarius) ÷ nº de alunos "Ficámos" nesse mês</p>
+            <div class="chart-card" id="card-chart-cac"><div class="chart-wrap"><canvas id="chart-cac"></canvas></div></div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h3>📊 Gastos por categoria ao longo do tempo</h3>
+          <p class="desc">Cada categoria de gasto real, mês a mês (empilhado)</p>
+          <div class="chart-card" id="card-chart-gastos-tempo"><div class="chart-wrap"><canvas id="chart-gastos-tempo"></canvas></div></div>
         </div>
 
       </div>
@@ -641,6 +801,12 @@ async function loadState(){
   if(precisaGuardar) savePedidos();
   renderAlunos();
   renderFixando();
+
+  try{
+    const rFin = await window.storage.get('financeiro-data', false);
+    if(rFin && rFin.value) fin = JSON.parse(rFin.value);
+  }catch(e){ /* ainda sem dados financeiros */ }
+  renderFinanceiro();
 
   const savedSyncUrl = await loadSyncUrl();
   if(savedSyncUrl){
@@ -880,7 +1046,10 @@ function parseCrmWorkbook(wb){
   // --- AEs (cabeçalho em 2 linhas: grupo + Dia/Hora repetido — precisa de leitura posicional) ---
   const aes = readAEsSheet(findSheet(wb,'ae'));
 
-  return {efetivos, pendentes, aes};
+  // --- Pagamentos Alunos (nº de aulas + valor real, por aluno e por mês) ---
+  const pagamentos = readPagamentosAlunosSheet(findSheet(wb,'pagamentos alunos'));
+
+  return {efetivos, pendentes, aes, pagamentos};
 }
 
 function isDash(v){ return typeof v === 'string' && v.trim() === '-'; }
@@ -894,6 +1063,44 @@ function combineDiaHora(diaVal, horaVal){
     if(m) d.setHours(+m[1], +m[2], 0, 0);
   }
   return d;
+}
+const MESES_PT_ALL = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+function readPagamentosAlunosSheet(sheet){
+  if(!sheet) return [];
+  const aoa = XLSX.utils.sheet_to_json(sheet, {header:1, defval:''});
+  const headerRowIdx = aoa.findIndex(row => row.some(c=>MESES_PT_ALL.includes(String(c).trim())));
+  if(headerRowIdx===-1) return [];
+  const monthRow = aoa[headerRowIdx];
+  const blocks = [];
+  monthRow.forEach((v,i)=>{ if(v && MESES_PT_ALL.includes(String(v).trim())) blocks.push({mes:String(v).trim(), col:i}); });
+  const registos = [];
+  blocks.forEach(({mes,col})=>{
+    // duas listas independentes lado a lado: (Aluno, Nº de Aulas) e (Pagamento=Aluno, Valor) — juntam-se pelo nome, não pela linha
+    const nAulasPorNome = {};
+    const valorPorNome = {};
+    for(let r=headerRowIdx+2; r<aoa.length; r++){
+      const alunoAulas = aoa[r][col];
+      if(alunoAulas && String(alunoAulas).trim()){
+        const k = normKey(String(alunoAulas).trim());
+        nAulasPorNome[k] = (nAulasPorNome[k]||0) + (Number(aoa[r][col+1])||0);
+      }
+      const alunoPagamento = aoa[r][col+2];
+      if(alunoPagamento && String(alunoPagamento).trim()){
+        const k = normKey(String(alunoPagamento).trim());
+        valorPorNome[k] = (valorPorNome[k]||0) + (Number(aoa[r][col+3])||0);
+        if(!nAulasPorNome.hasOwnProperty(k)) nAulasPorNome[k] = nAulasPorNome[k]||0;
+      }
+    }
+    const nomesReais = {};
+    for(let r=headerRowIdx+2; r<aoa.length; r++){
+      [aoa[r][col], aoa[r][col+2]].forEach(nm=>{ if(nm && String(nm).trim()) nomesReais[normKey(String(nm).trim())] = String(nm).trim(); });
+    }
+    const todosNomes = new Set([...Object.keys(nAulasPorNome), ...Object.keys(valorPorNome)]);
+    todosNomes.forEach(k=>{
+      registos.push({ aluno: nomesReais[k], mes, nAulas: nAulasPorNome[k]||0, valor: valorPorNome[k]||0 });
+    });
+  });
+  return registos;
 }
 function readAEsSheet(sheet){
   if(!sheet) return [];
@@ -939,6 +1146,34 @@ document.getElementById('btn-clear-alunos').addEventListener('click', ()=>{
 
 let lastProfRows = [];
 let profSort = { key: 'nAlunos', dir: 'desc' };
+function renderReceitaPorAluno(pagamentos){
+  const tbody = document.querySelector('#table-receita-aluno tbody');
+  if(tbody){
+    const porAluno = {};
+    pagamentos.forEach(pg=>{
+      const k = normKey(pg.aluno);
+      porAluno[k] = porAluno[k] || {nome:pg.aluno, nAulas:0, valor:0};
+      porAluno[k].nAulas += pg.nAulas;
+      porAluno[k].valor += pg.valor;
+    });
+    const top = Object.values(porAluno).sort((a,b)=>b.valor-a.valor).slice(0,10);
+    tbody.innerHTML = top.length ? top.map(a=>`<tr><td>${a.nome}</td><td>${a.nAulas}</td><td>${fmtEuro(a.valor)}</td></tr>`).join('')
+      : '<tr><td colspan="3" style="text-align:center; color:var(--muted);">Sem dados na aba "Pagamentos Alunos" ainda.</td></tr>';
+  }
+
+  // faixas de nº de aulas no mês mais recente com dados
+  const mesesComDados = Array.from(new Set(pagamentos.map(pg=>pg.mes)));
+  let mesRecente = null, maxKey = '';
+  mesesComDados.forEach(m=>{ const k = drMonthToKey ? drMonthToKey(m) : m; if(k && k>maxKey){ maxKey=k; mesRecente=m; } });
+  const doMes = pagamentos.filter(pg=>pg.mes===mesRecente);
+  const faixas = {'Abaixo (<4)':0, 'Dentro (4-9)':0, 'Acima (>9)':0};
+  doMes.forEach(pg=>{
+    if(pg.nAulas < 4) faixas['Abaixo (<4)']++;
+    else if(pg.nAulas <= 9) faixas['Dentro (4-9)']++;
+    else faixas['Acima (>9)']++;
+  });
+  barChart('chart-faixa-aulas', Object.keys(faixas), Object.values(faixas), ['#8B4A3D','#258730','#CBE170']);
+}
 function renderProfTable(){
   const tbody = document.querySelector('#table-professores tbody');
   if(!tbody) return;
@@ -952,7 +1187,8 @@ function renderProfTable(){
     return (va-vb) * mult;
   });
   tbody.innerHTML = sorted.map(r=>`<tr><td><b>${r.professor}</b></td><td>${r.nAlunos}</td><td>${fmtDuration(r.retMed)}</td><td>${fmtDuration(r.convMedP)}</td><td>${fmtDuration(r.aeMedP)}</td><td>${r.nAE}</td><td>${r.taxaConversao!==null? r.taxaConversao.toFixed(0)+'%' : '—'}</td>
-    <td>${r.conversasGanhos} / ${r.conversasPerdidos}</td><td>${r.aeGanhos} / ${r.aePerdidos}</td><td>${r.efetivosPerdidos}</td></tr>`).join('');
+    <td>${r.conversasGanhos} / ${r.conversasPerdidos}</td><td>${r.aeGanhos} / ${r.aePerdidos}</td><td>${r.efetivosPerdidos}</td>
+    <td>${fmtDuration(r.tempoResposta)}</td><td>${fmtDuration(r.tempoMarcarAE)}</td><td>${r.disciplinaPrincipal}</td><td>${r.faturacaoReal>0? fmtEuro(r.faturacaoReal) : '—'}</td></tr>`).join('');
 
   document.querySelectorAll('#prof-table-headers th[data-key]').forEach(th=>{
     th.classList.toggle('sort-active', th.dataset.key===key);
@@ -975,7 +1211,7 @@ function renderAlunos(){
   if(totalRows === 0){ empty.style.display='block'; content.style.display='none'; return; }
   empty.style.display='none'; content.style.display='block';
 
-  const efetivos = crm.efetivos, pendentes = crm.pendentes, aes = crm.aes;
+  const efetivos = crm.efetivos, pendentes = crm.pendentes, aes = crm.aes, pagamentos = crm.pagamentos || [];
 
   // 1 linha por aluno único (para métricas que não devem contar 2x quem tem 2 disciplinas)
   const seen = new Set();
@@ -993,6 +1229,7 @@ function renderAlunos(){
   // retenção média (só quem já tem Data Fim preenchida)
   const duracoesFim = unicos.filter(a=>a.dataInicio && a.dataFim).map(a=> a.dataFim - a.dataInicio);
   const retencaoMedia = duracoesFim.length ? duracoesFim.reduce((x,y)=>x+y,0)/duracoesFim.length : null;
+  lastRetencaoMediaMs = retencaoMedia; // cache para cruzar com o Financeiro (LTV)
 
   // taxa de desistência antes do fim do ano letivo (30 de junho do ano letivo correspondente à Data Início)
   const saidos = unicos.filter(a=>a.dataFim);
@@ -1013,7 +1250,8 @@ function renderAlunos(){
     kpiCard('Taxa de conversão AE → Efetivo', taxaConversaoAE!==null? taxaConversaoAE.toFixed(0)+'%' : '— (sem AEs registadas)', aes.length+' aulas experimentais na aba "AEs"', false, 'card-table-professores', 'Percentagem de alunos com aula experimental (aba "AEs") cujo nome aparece depois em "Clientes Efetivos" — ou seja, que passaram de AE a aluno efetivo.'),
     kpiCard('Retenção média', fmtDuration(retencaoMedia), duracoesFim.length? 'com base em '+duracoesFim.length+' aluno(s) já com Data Fim' : 'ainda sem "Data Fim" preenchida', false, 'card-table-professores', 'Tempo médio entre a Data de Início e a Data de Fim dos alunos que já saíram — quanto tempo, em média, um aluno fica connosco.'),
     kpiCard('Desistência antes do fim do ano', taxaDesistAntes!==null? taxaDesistAntes.toFixed(0)+'%' : '— (sem "Data Fim" suficiente)', saidos.length+' aluno(s) já com data de saída registada', false, 'card-chart-inicio-fim', 'Entre os alunos que já saíram, a percentagem cuja Data de Fim foi antes de 30 de junho do respetivo ano letivo — ou seja, que desistiram a meio do ano em vez de terminarem naturalmente.'),
-    kpiCard('Tempo médio em conversações', fmtDuration(convMedGlobal), 'do 1º contacto do professor até marcar AE', false, 'card-table-professores', 'Tempo médio entre o início e o fim das conversações (aba "AEs") — do primeiro contacto do professor com o aluno até se marcar a aula experimental.')
+    kpiCard('Tempo médio em conversações', fmtDuration(convMedGlobal), 'do 1º contacto do professor até marcar AE', false, 'card-table-professores', 'Tempo médio entre o início e o fim das conversações (aba "AEs") — do primeiro contacto do professor com o aluno até se marcar a aula experimental.'),
+    kpiCard('Média de disciplinas por aluno', unicos.length? (efetivos.length/unicos.length).toFixed(1) : '—', efetivos.length+' matrículas / '+unicos.length+' alunos', false, 'card-chart-disciplina', 'Nº total de matrículas (aluno + disciplina) a dividir pelo nº de alunos únicos — mostra quantas disciplinas, em média, cada aluno tem connosco.')
   ].join('');
 
   // geo (localização — normalmente ainda por preencher)
@@ -1023,6 +1261,10 @@ function renderAlunos(){
   // disciplina (nível matrícula)
   const discE = sortedEntries(groupCountMulti(efetivos, a=>a.disciplina), 10);
   barChart('chart-disciplina', discE.map(e=>e[0]), discE.map(e=>e[1]), '#258730');
+
+  // alunos por ano de ensino (nível aluno único)
+  const anoE = sortedEntries(groupCount(unicos, a=>a.ano), 12);
+  barChart('chart-ano-ensino', anoE.map(e=>e[0]), anoE.map(e=>e[1]), '#33587F');
 
   // inicio vs fim por mes (nível aluno único)
   const inicioPorMes = groupCount(unicos.filter(a=>a.dataInicio), a=>monthKey(a.dataInicio));
@@ -1045,6 +1287,8 @@ function renderAlunos(){
       return unicos.filter(a=> a.dataInicio && a.dataInicio <= monthEnd && (!a.dataFim || a.dataFim >= monthStart)).length;
     });
     areaChart('chart-ativos-mes', months.map(monthLabel), activeCounts);
+    lastAtivosPorMesMap = {}; // cache "YYYY-MM" -> nº alunos ativos, para cruzar com o Financeiro (ARPU)
+    months.forEach((mk,i)=>{ lastAtivosPorMesMap[mk] = activeCounts[i]; });
   }
 
   // plataforma (nível aluno único — inclui tags de transição tipo "25/26")
@@ -1094,10 +1338,27 @@ function renderAlunos(){
     const aePerdidos = aesProf.filter(a=>a.tiAE && a.tfAEPerdido).length;
     const efetivosPerdidos = efetivos.filter(a=>a.professor===p && a.dataFim).length;
 
+    const tempoRespostaDur = aesProf.filter(a=>a.tiConv).map(a=>{
+      const pend = pendentes.find(pp=>normKey(pp.nome)===normKey(a.nome));
+      return (pend && pend.momentoContacto && a.tiConv>pend.momentoContacto) ? a.tiConv-pend.momentoContacto : null;
+    }).filter(v=>v!==null);
+    const tempoResposta = tempoRespostaDur.length? tempoRespostaDur.reduce((x,y)=>x+y,0)/tempoRespostaDur.length : null;
+
+    const tempoMarcarAEDur = aesProf.filter(a=>a.tiConv && a.tiAE && a.tiAE>a.tiConv).map(a=>a.tiAE-a.tiConv);
+    const tempoMarcarAE = tempoMarcarAEDur.length? tempoMarcarAEDur.reduce((x,y)=>x+y,0)/tempoMarcarAEDur.length : null;
+
+    const discCountProf = groupCount(efetivos.filter(a=>a.professor===p), a=>a.disciplina);
+    const discPrincipal = Object.entries(discCountProf).sort((a,b)=>b[1]-a[1])[0];
+
+    const nomesAlunosProf = new Set(efetivos.filter(a=>a.professor===p).map(a=>normKey(a.nome)));
+    const faturacaoReal = pagamentos.filter(pg=>nomesAlunosProf.has(normKey(pg.aluno))).reduce((s,pg)=>s+pg.valor, 0);
+
     return { professor:p, nAlunos, retMed, convMedP, aeMedP, nAE: aesProf.length, taxaConversao,
-      conversasGanhos, conversasPerdidos, aeGanhos, aePerdidos, efetivosPerdidos };
+      conversasGanhos, conversasPerdidos, aeGanhos, aePerdidos, efetivosPerdidos,
+      tempoResposta, tempoMarcarAE, disciplinaPrincipal: discPrincipal ? discPrincipal[0] : '—', faturacaoReal };
   });
   renderProfTable();
+  renderReceitaPorAluno(pagamentos);
 
   renderGeoMap();
 }
@@ -1589,11 +1850,32 @@ function renderFixando(){
   barChart('chart-ano-mercado', anoE.map(e=>e[0]), anoE.map(e=>e[1]), '#258730');
 
   renderEvolucaoMensal(resolved);
+  renderPenetracaoTable(resolved);
 
   populateFilterOptions();
   renderFixandoTable();
 }
 
+function renderPenetracaoTable(resolved){
+  const tbody = document.querySelector('#table-penetracao tbody');
+  if(!tbody || typeof classifyLocalidade !== 'function') return;
+  const porDistrito = {};
+  resolved.forEach(({p, ficamos})=>{
+    const {distrito} = classifyLocalidade(p.localidade);
+    const key = distrito || 'Não classificado';
+    porDistrito[key] = porDistrito[key] || {legiveis:0, abordados:0, ficamos:0};
+    if(p.legivel){
+      porDistrito[key].legiveis++;
+      if(isAbordado(p)) porDistrito[key].abordados++;
+      if(ficamos.value) porDistrito[key].ficamos++;
+    }
+  });
+  const rows = Object.entries(porDistrito).filter(([,d])=>d.legiveis>0).sort((a,b)=>b[1].legiveis-a[1].legiveis);
+  tbody.innerHTML = rows.length ? rows.map(([nome,d])=>{
+    const pct = (100*d.ficamos/d.legiveis).toFixed(0);
+    return `<tr><td>${nome}</td><td>${d.legiveis}</td><td>${d.abordados}</td><td>${d.ficamos}</td><td>${pct}%</td></tr>`;
+  }).join('') : '<tr><td colspan="5" style="text-align:center; color:var(--muted);">Sem pedidos legíveis classificados por distrito ainda.</td></tr>';
+}
 function renderEvolucaoMensal(resolved){
   const monthsSet = new Set(resolved.map(x=>monthKey(x.p.data)));
   const months = Array.from(monthsSet).sort();
@@ -1744,6 +2026,502 @@ function wireFilterListeners(){
   });
 }
 wireFilterListeners();
+
+/* ============================================================
+   PART 3 — FINANCEIRO (DR + CF, real vs pessimista/objetivo/otimista)
+   ============================================================ */
+let fin = { dr: {real:null, pessimista:null, objetivo:null, otimista:null}, cf: null };
+let lastRetencaoMediaMs = null; // vem do separador Alunos, para LTV
+let lastAtivosPorMesMap = {};   // "AAAA-MM" -> nº alunos ativos, vem do separador Alunos, para ARPU
+const MARKETING_LABELS = ['Google Ads', 'Meta Ads', 'Lendarius']; // linhas da DR consideradas gasto de marketing/aquisição
+
+function anoLetivoInicioAtual(){
+  const hoje = new Date();
+  return hoje.getMonth() >= 8 ? hoje.getFullYear() : hoje.getFullYear()-1;
+}
+function drMonthToKey(monthLabelPt, idx){
+  const NOMES = ['Setembro','Outubro','Novembro','Dezembro','Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto'];
+  const i = idx!==undefined ? idx : NOMES.indexOf(monthLabelPt);
+  if(i<0) return null;
+  const ano = anoLetivoInicioAtual() + (i<4 ? 0 : 1);
+  const mes = ((i+8)%12)+1; // 1-indexado
+  return ano+'-'+String(mes).padStart(2,'0');
+}
+
+function finRowLabel(row){
+  const idx = row.findIndex(c=>c!=='' && c!=null);
+  return idx===-1 ? null : String(row[idx]).trim();
+}
+function finFindLabelRow(aoa, label, from){
+  for(let r=from; r<aoa.length; r++){ if(finRowLabel(aoa[r])===label) return r; }
+  return -1;
+}
+function parseDRSheet(sheet){
+  if(!sheet) return null;
+  const aoa = XLSX.utils.sheet_to_json(sheet, {header:1, defval:''});
+  const headerRowIdx = aoa.findIndex(row => row.some(c=>String(c).trim()==='Setembro'));
+  if(headerRowIdx===-1) return null;
+  const cols = [];
+  aoa[headerRowIdx].forEach((v,i)=>{ if(v && String(v).trim()) cols.push({label:String(v).trim(), col:i}); });
+  const totalCol = cols.find(c=>c.label==='Total');
+  const monthCols = cols.filter(c=>c.label!=='Total');
+  const months = monthCols.map(c=>c.label);
+  function valuesAt(row){
+    const monthly = monthCols.map(c=> Number(row[c.col])||0);
+    const total = totalCol ? (Number(row[totalCol.col])||0) : monthly.reduce((a,b)=>a+b,0);
+    return {monthly, total};
+  }
+  const receitaRow = finFindLabelRow(aoa, 'Receita', headerRowIdx+1);
+  const receita = receitaRow>=0 ? valuesAt(aoa[receitaRow]) : {monthly:months.map(()=>0), total:0};
+
+  const gfHeaderRow = finFindLabelRow(aoa, 'Gastos Fixos', headerRowIdx+1);
+  const gfTotalRow = gfHeaderRow>=0 ? finFindLabelRow(aoa, 'Total', gfHeaderRow+1) : -1;
+  const gastosFixosItems = [];
+  if(gfHeaderRow>=0 && gfTotalRow>=0){
+    for(let r=gfHeaderRow+1; r<gfTotalRow; r++){ const lbl=finRowLabel(aoa[r]); if(lbl) gastosFixosItems.push({label:lbl, ...valuesAt(aoa[r])}); }
+  }
+  const gastosFixosTotal = gfTotalRow>=0 ? valuesAt(aoa[gfTotalRow]) : {monthly:months.map(()=>0), total:0};
+
+  const gvHeaderRow = finFindLabelRow(aoa, 'Gastos Variáveis', (gfTotalRow>=0?gfTotalRow:headerRowIdx)+1);
+  const gvTotalRow = gvHeaderRow>=0 ? finFindLabelRow(aoa, 'Total', gvHeaderRow+1) : -1;
+  const gastosVariaveisItems = [];
+  if(gvHeaderRow>=0 && gvTotalRow>=0){
+    for(let r=gvHeaderRow+1; r<gvTotalRow; r++){ const lbl=finRowLabel(aoa[r]); if(lbl) gastosVariaveisItems.push({label:lbl, ...valuesAt(aoa[r])}); }
+  }
+  const gastosVariaveisTotal = gvTotalRow>=0 ? valuesAt(aoa[gvTotalRow]) : {monthly:months.map(()=>0), total:0};
+
+  const fromRest = (gvTotalRow>=0?gvTotalRow:headerRowIdx)+1;
+  const rendRow = finFindLabelRow(aoa, 'Rendimento', fromRest);
+  const ircRow = finFindLabelRow(aoa, 'IRC', fromRest);
+  const restRow = finFindLabelRow(aoa, 'Restante', fromRest);
+  return {
+    months,
+    receita, gastosFixosItems, gastosFixosTotal, gastosVariaveisItems, gastosVariaveisTotal,
+    rendimento: rendRow>=0 ? valuesAt(aoa[rendRow]) : null,
+    irc: ircRow>=0 ? valuesAt(aoa[ircRow]) : null,
+    restante: restRow>=0 ? valuesAt(aoa[restRow]) : null
+  };
+}
+function parseCFSheet(sheet){
+  if(!sheet) return null;
+  const aoa = XLSX.utils.sheet_to_json(sheet, {header:1, defval:''});
+  const result = {};
+  let searchFrom = 0;
+  ['Pessimista','Objetivo','Otimista','Real'].forEach(sec=>{
+    const secRow = finFindLabelRow(aoa, sec, searchFrom);
+    if(secRow===-1){ result[sec]=null; return; }
+    const headerRowIdx = secRow+1;
+    const cols = [];
+    (aoa[headerRowIdx]||[]).forEach((v,i)=>{ if(v && String(v).trim() && String(v).trim()!=='Total') cols.push({label:String(v).trim(), col:i}); });
+    function valuesAt(row){ return cols.map(c=> Number(row[c.col])||0); }
+    const receitaRow = finFindLabelRow(aoa, 'Receita', headerRowIdx+1);
+    const finRow = finFindLabelRow(aoa, 'Financiamentos Obtidos', headerRowIdx+1);
+    const gfRow = finFindLabelRow(aoa, 'Gastos Fixos', headerRowIdx+1);
+    const gvRow = finFindLabelRow(aoa, 'Gastos Variáveis', headerRowIdx+1);
+    const cfRow = finFindLabelRow(aoa, 'CF', headerRowIdx+1);
+    const caixaRow = finFindLabelRow(aoa, 'Caixa', headerRowIdx+1);
+    result[sec] = {
+      months: cols.map(c=>c.label),
+      receita: receitaRow>=0? valuesAt(aoa[receitaRow]) : [],
+      financiamentos: finRow>=0? valuesAt(aoa[finRow]) : [],
+      gastosFixos: gfRow>=0? valuesAt(aoa[gfRow]) : [],
+      gastosVariaveis: gvRow>=0? valuesAt(aoa[gvRow]) : [],
+      cf: cfRow>=0? valuesAt(aoa[cfRow]) : [],
+      caixa: caixaRow>=0? valuesAt(aoa[caixaRow]) : []
+    };
+    searchFrom = (caixaRow>=0? caixaRow : headerRowIdx) + 1;
+  });
+  return result;
+}
+function findFinSheet(wb, name){
+  const found = wb.SheetNames.find(n=> n.trim().toLowerCase() === name.toLowerCase());
+  return found ? wb.Sheets[found] : null;
+}
+function parseFinanceiroWorkbook(wb){
+  return {
+    dr: {
+      real: parseDRSheet(findFinSheet(wb,'DR')),
+      pessimista: parseDRSheet(findFinSheet(wb,'DR Pessimista')),
+      objetivo: parseDRSheet(findFinSheet(wb,'DR Objetivo')),
+      otimista: parseDRSheet(findFinSheet(wb,'DR Otimista'))
+    },
+    cf: parseCFSheet(findFinSheet(wb,'CF'))
+  };
+}
+async function saveFin(){
+  try{ await window.storage.set('financeiro-data', JSON.stringify(fin), false); }catch(e){ console.error(e); }
+}
+document.getElementById('btn-upload-financeiro').addEventListener('click', ()=> document.getElementById('file-financeiro').click());
+document.getElementById('file-financeiro').addEventListener('change', (e)=>{
+  const file = e.target.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (evt)=>{
+    try{
+      const wb = XLSX.read(evt.target.result, {type:'array', cellDates:true});
+      fin = parseFinanceiroWorkbook(wb);
+      saveFin(); renderFinanceiro();
+    }catch(err){ alert('Não foi possível ler o ficheiro. Confirma que tem as abas "DR", "DR Pessimista", "DR Objetivo", "DR Otimista" e "CF". ('+err.message+')'); }
+  };
+  reader.readAsArrayBuffer(file);
+  e.target.value = '';
+});
+document.getElementById('btn-clear-financeiro').addEventListener('click', ()=>{
+  if(confirm('Apagar todos os dados financeiros importados?')){ fin = {dr:{real:null,pessimista:null,objetivo:null,otimista:null}, cf:null}; saveFin(); renderFinanceiro(); }
+});
+
+function fmtEuro(v){
+  if(v===null || v===undefined || isNaN(v)) return '—';
+  return v.toLocaleString('pt-PT',{style:'currency', currency:'EUR', maximumFractionDigits:0});
+}
+function faceAoObjetivo(real, objetivo, quantoMaiorMelhor){
+  if(real===null || objetivo===null || objetivo===0) return '—';
+  const diffPct = 100*(real-objetivo)/Math.abs(objetivo);
+  const bom = quantoMaiorMelhor ? diffPct>=0 : diffPct<=0;
+  const cor = bom? 'green' : (Math.abs(diffPct)<=15 ? 'mustard' : 'red');
+  const sinal = diffPct>=0? '+' : '';
+  return `<span class="badge ${cor}">${sinal}${diffPct.toFixed(0)}%</span>`;
+}
+
+function renderFinanceiro(){
+  const empty = document.getElementById('financeiro-empty');
+  const content = document.getElementById('financeiro-content');
+  const temDados = fin.dr.real || fin.cf;
+  if(!temDados){ empty.style.display='block'; content.style.display='none'; return; }
+  empty.style.display='none'; content.style.display='block';
+
+  // --- seletores de mês ---
+  const meses = (fin.dr.real && fin.dr.real.months) || (fin.cf && fin.cf.Real && fin.cf.Real.months) || [];
+  const drSel = document.getElementById('fin-dr-mes');
+  const cfSel = document.getElementById('fin-cf-mes');
+  [drSel, cfSel].forEach(sel=>{
+    const current = sel.value;
+    sel.innerHTML = '<option value="total">Total anual</option>' + meses.map((m,i)=>`<option value="${i}" ${String(i)===current?'selected':''}>${m}</option>`).join('');
+    if(!current) sel.value = 'total';
+  });
+
+  renderDRTable();
+  renderCFTable();
+  renderFinCharts();
+  renderFinKPIs();
+}
+
+function drLineAt(line, monthIdx){
+  if(!line) return null;
+  return monthIdx==='total' ? line.total : line.monthly[monthIdx];
+}
+function renderDRTable(){
+  const tbody = document.querySelector('#table-dr tbody');
+  if(!tbody) return;
+  const monthIdx = document.getElementById('fin-dr-mes').value === 'total' ? 'total' : Number(document.getElementById('fin-dr-mes').value);
+  const { real, pessimista, objetivo, otimista } = fin.dr;
+
+  const linhas = [];
+  linhas.push({label:'Receita', get:d=>d && drLineAt(d.receita, monthIdx), maiorMelhor:true, destaque:true});
+  (objetivo?.gastosFixosItems || real?.gastosFixosItems || []).forEach(item=>{
+    linhas.push({label:'　'+item.label, get:d=>{
+      if(!d) return null;
+      const it = d.gastosFixosItems.find(x=>x.label===item.label);
+      return it ? drLineAt(it, monthIdx) : null;
+    }, maiorMelhor:false});
+  });
+  linhas.push({label:'Total Gastos Fixos', get:d=>d && drLineAt(d.gastosFixosTotal, monthIdx), maiorMelhor:false, destaque:true});
+  (objetivo?.gastosVariaveisItems || real?.gastosVariaveisItems || []).forEach(item=>{
+    linhas.push({label:'　'+item.label, get:d=>{
+      if(!d) return null;
+      const it = d.gastosVariaveisItems.find(x=>x.label===item.label);
+      return it ? drLineAt(it, monthIdx) : null;
+    }, maiorMelhor:false});
+  });
+  linhas.push({label:'Total Gastos Variáveis', get:d=>d && drLineAt(d.gastosVariaveisTotal, monthIdx), maiorMelhor:false, destaque:true});
+  linhas.push({label:'Rendimento', get:d=>d && drLineAt(d.rendimento, monthIdx), maiorMelhor:true, destaque:true});
+  if(monthIdx==='total'){
+    linhas.push({label:'IRC', get:d=>d && drLineAt(d.irc, monthIdx), maiorMelhor:false});
+    linhas.push({label:'Restante', get:d=>d && drLineAt(d.restante, monthIdx), maiorMelhor:true, destaque:true});
+  }
+
+  const receitaRealPeriodo = real && drLineAt(real.receita, monthIdx);
+
+  tbody.innerHTML = linhas.map(l=>{
+    const vP = l.get(pessimista), vO = l.get(objetivo), vR = l.get(real), vOt = l.get(otimista);
+    const style = l.destaque ? ' style="font-weight:700; background:var(--sage-soft);"' : '';
+    const pctReceita = (l.label!=='Receita' && vR!==null && vR!==undefined && receitaRealPeriodo) ? (100*vR/receitaRealPeriodo).toFixed(0)+'%' : '—';
+    return `<tr${style}><td>${l.label}</td><td>${fmtEuro(vP)}</td><td>${fmtEuro(vO)}</td><td>${fmtEuro(vR)}</td><td>${fmtEuro(vOt)}</td><td>${faceAoObjetivo(vR, vO, l.maiorMelhor)}</td><td>${pctReceita}</td></tr>`;
+  }).join('');
+}
+function renderCFTable(){
+  const tbody = document.querySelector('#table-cf tbody');
+  if(!tbody || !fin.cf) return;
+  const monthIdx = document.getElementById('fin-cf-mes').value === 'total' ? 'total' : Number(document.getElementById('fin-cf-mes').value);
+  const secs = fin.cf;
+  const at = (arr)=> !arr ? null : (monthIdx==='total' ? arr.reduce((a,b)=>a+b,0) : arr[monthIdx]);
+  const linhas = [
+    {label:'Receita', key:'receita', maiorMelhor:true, destaque:true},
+    {label:'Financiamentos Obtidos', key:'financiamentos', maiorMelhor:true},
+    {label:'Gastos Fixos', key:'gastosFixos', maiorMelhor:false},
+    {label:'Gastos Variáveis', key:'gastosVariaveis', maiorMelhor:false},
+    {label:'CF (líquido do mês)', key:'cf', maiorMelhor:true, destaque:true},
+    {label:'Caixa acumulada', key:'caixa', maiorMelhor:true, destaque:true, semTotal:true}
+  ];
+  tbody.innerHTML = linhas.map(l=>{
+    const gv = (sec)=> secs[sec] ? (l.semTotal && monthIdx==='total' ? secs[sec][l.key][secs[sec][l.key].length-1] : at(secs[sec][l.key])) : null;
+    const vP=gv('Pessimista'), vO=gv('Objetivo'), vR=gv('Real'), vOt=gv('Otimista');
+    const style = l.destaque ? ' style="font-weight:700; background:var(--sage-soft);"' : '';
+    return `<tr${style}><td>${l.label}${l.semTotal && monthIdx==='total'? ' (fim de período)':''}</td><td>${fmtEuro(vP)}</td><td>${fmtEuro(vO)}</td><td>${fmtEuro(vR)}</td><td>${fmtEuro(vOt)}</td><td>${faceAoObjetivo(vR, vO, l.maiorMelhor)}</td></tr>`;
+  }).join('');
+}
+function renderFinCharts(){
+  if(!fin.cf) return;
+  const secs = fin.cf;
+  const months = (secs.Real && secs.Real.months) || (secs.Objetivo && secs.Objetivo.months) || [];
+  const series = (key, color) => Object.entries({Pessimista:'#8B4A3D', Objetivo:'#258730', Otimista:'#CBE170', Real:'#33587F'}).map(([nome,cor])=>{
+    return secs[nome] ? {label:nome, data:secs[nome][key], borderColor:cor, backgroundColor:cor, tension:.25, spanGaps:true} : null;
+  }).filter(Boolean);
+
+  destroyChart('chart-caixa');
+  const ctxCaixa = document.getElementById('chart-caixa');
+  if(ctxCaixa) charts['chart-caixa'] = new Chart(ctxCaixa, {
+    type:'line', data:{labels:months, datasets:series('caixa')},
+    options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:true, position:'top', labels:{boxWidth:10, font:{family:'Bahnschrift', size:11}}}},
+      scales:{x:{grid:{color:'rgba(37,135,48,0.06)'}}, y:{grid:{color:'rgba(37,135,48,0.06)'}, ticks:{callback:v=>fmtEuro(v)}}}}
+  });
+
+  destroyChart('chart-receita-fin');
+  const ctxReceita = document.getElementById('chart-receita-fin');
+  if(ctxReceita) charts['chart-receita-fin'] = new Chart(ctxReceita, {
+    type:'line', data:{labels:months, datasets:series('receita')},
+    options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:true, position:'top', labels:{boxWidth:10, font:{family:'Bahnschrift', size:11}}}},
+      scales:{x:{grid:{color:'rgba(37,135,48,0.06)'}}, y:{grid:{color:'rgba(37,135,48,0.06)'}, ticks:{callback:v=>fmtEuro(v)}}}}
+  });
+
+  // Crescimento mensal (% MoM) da Receita Real
+  const real = fin.dr.real, objetivo = fin.dr.objetivo;
+  destroyChart('chart-crescimento');
+  const ctxCresc = document.getElementById('chart-crescimento');
+  if(ctxCresc && real){
+    const crescimento = real.receita.monthly.map((v,i)=>{
+      const anterior = i>0 ? real.receita.monthly[i-1] : null;
+      return (anterior && anterior>0) ? +(100*(v-anterior)/anterior).toFixed(1) : null;
+    });
+    charts['chart-crescimento'] = new Chart(ctxCresc, {
+      type:'bar',
+      data:{labels:real.months, datasets:[{data:crescimento, backgroundColor:crescimento.map(v=> v===null?'#DDEBD9' : (v>=0?'#258730':'#8B4A3D')), borderRadius:6}]},
+      options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}},
+        scales:{x:{grid:{color:'rgba(37,135,48,0.06)'}}, y:{grid:{color:'rgba(37,135,48,0.06)'}, ticks:{callback:v=>v+'%'}}}}
+    });
+  }
+
+  // Desvio acumulado Real vs Objetivo (Receita e Rendimento)
+  destroyChart('chart-desvio');
+  const ctxDesvio = document.getElementById('chart-desvio');
+  if(ctxDesvio && real && objetivo){
+    let acumReceita = 0, acumRendimento = 0;
+    const desvioReceita = real.receita.monthly.map((v,i)=>{ acumReceita += (v - objetivo.receita.monthly[i]); return +acumReceita.toFixed(0); });
+    const rendReal = real.rendimento ? real.rendimento.monthly : real.months.map(()=>0);
+    const rendObj = objetivo.rendimento ? objetivo.rendimento.monthly : real.months.map(()=>0);
+    const desvioRendimento = rendReal.map((v,i)=>{ acumRendimento += (v - rendObj[i]); return +acumRendimento.toFixed(0); });
+    charts['chart-desvio'] = new Chart(ctxDesvio, {
+      type:'line',
+      data:{labels:real.months, datasets:[
+        {label:'Desvio acumulado — Receita', data:desvioReceita, borderColor:'#33587F', backgroundColor:'#33587F', tension:.2},
+        {label:'Desvio acumulado — Rendimento', data:desvioRendimento, borderColor:'#8B4A3D', backgroundColor:'#8B4A3D', tension:.2}
+      ]},
+      options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:true, position:'top', labels:{boxWidth:10, font:{family:'Bahnschrift', size:11}}}},
+        scales:{x:{grid:{color:'rgba(37,135,48,0.06)'}}, y:{grid:{color:'rgba(37,135,48,0.06)'}, ticks:{callback:v=>fmtEuro(v)}}}}
+    });
+  }
+
+  // Peso de cada gasto (fixo + variável) na Receita Real anual
+  destroyChart('chart-peso-gastos');
+  const ctxPeso = document.getElementById('chart-peso-gastos');
+  if(ctxPeso && real && real.receita.total>0){
+    const itens = [...real.gastosFixosItems, ...real.gastosVariaveisItems].filter(i=>i.total>0);
+    const labels = itens.map(i=>i.label);
+    const pesos = itens.map(i=> +(100*i.total/real.receita.total).toFixed(1));
+    charts['chart-peso-gastos'] = new Chart(ctxPeso, {
+      type:'doughnut',
+      data:{labels: labels.map((l,i)=>`${l} — ${pesos[i]}%`), datasets:[{data:pesos, backgroundColor:PALETTE}]},
+      options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'right', labels:{font:{family:'Bahnschrift', size:11}, boxWidth:11}}}}
+    });
+  }
+
+  // Margem de lucro (%) = Rendimento / Receita, por cenário
+  destroyChart('chart-margem');
+  const ctxMargem = document.getElementById('chart-margem');
+  if(ctxMargem && real){
+    const cenarios = {Pessimista:['#8B4A3D', fin.dr.pessimista], Objetivo:['#258730', fin.dr.objetivo], Otimista:['#CBE170', fin.dr.otimista], Real:['#33587F', real]};
+    const datasets = Object.entries(cenarios).map(([nome,[cor,d]])=>{
+      if(!d || !d.rendimento) return null;
+      const margem = d.receita.monthly.map((rec,i)=> rec>0 ? +(100*d.rendimento.monthly[i]/rec).toFixed(1) : null);
+      return {label:nome, data:margem, borderColor:cor, backgroundColor:cor, tension:.25, spanGaps:true};
+    }).filter(Boolean);
+    charts['chart-margem'] = new Chart(ctxMargem, {
+      type:'line', data:{labels:real.months, datasets},
+      options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:true, position:'top', labels:{boxWidth:10, font:{family:'Bahnschrift', size:11}}}},
+        scales:{x:{grid:{color:'rgba(37,135,48,0.06)'}}, y:{grid:{color:'rgba(37,135,48,0.06)'}, ticks:{callback:v=>v+'%'}}}}
+    });
+  }
+
+  // CAC ao longo do tempo = gasto de marketing (Real) / nº "Ficámos" nesse mês (Mercado)
+  destroyChart('chart-cac');
+  const ctxCac = document.getElementById('chart-cac');
+  if(ctxCac && real){
+    const marketingPorMes = real.months.map((_,i)=> MARKETING_LABELS.reduce((soma,lbl)=>{
+      const item = real.gastosFixosItems.find(x=>x.label===lbl) || real.gastosVariaveisItems.find(x=>x.label===lbl);
+      return soma + (item ? item.monthly[i] : 0);
+    }, 0));
+    const ficamosPorMesKey = {};
+    (typeof pedidos !== 'undefined' ? pedidos : []).forEach(p=>{
+      if(resolveFicamos(p).value){ const k = monthKey(p.data); ficamosPorMesKey[k] = (ficamosPorMesKey[k]||0)+1; }
+    });
+    const cac = real.months.map((m,i)=>{
+      const key = drMonthToKey(m, i);
+      const n = ficamosPorMesKey[key] || 0;
+      return n>0 ? +(marketingPorMes[i]/n).toFixed(0) : null;
+    });
+    charts['chart-cac'] = new Chart(ctxCac, {
+      type:'bar', data:{labels:real.months, datasets:[{data:cac, backgroundColor:'#258730', borderRadius:6}]},
+      options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}},
+        scales:{x:{grid:{color:'rgba(37,135,48,0.06)'}}, y:{grid:{color:'rgba(37,135,48,0.06)'}, ticks:{callback:v=>fmtEuro(v)}}}}
+    });
+  }
+
+  // Gastos por categoria ao longo do tempo (empilhado, Real)
+  destroyChart('chart-gastos-tempo');
+  const ctxGastosTempo = document.getElementById('chart-gastos-tempo');
+  if(ctxGastosTempo && real){
+    const itensComValor = [...real.gastosFixosItems, ...real.gastosVariaveisItems].filter(i=>i.total>0);
+    const datasets = itensComValor.map((item,i)=>({
+      label:item.label, data:item.monthly, backgroundColor:PALETTE[i%PALETTE.length], fill:true, stack:'gastos', tension:.15
+    }));
+    charts['chart-gastos-tempo'] = new Chart(ctxGastosTempo, {
+      type:'line', data:{labels:real.months, datasets},
+      options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:true, position:'right', labels:{boxWidth:10, font:{family:'Bahnschrift', size:10}}}},
+        scales:{x:{grid:{color:'rgba(37,135,48,0.06)'}}, y:{stacked:true, grid:{color:'rgba(37,135,48,0.06)'}, ticks:{callback:v=>fmtEuro(v)}}}}
+    });
+  }
+}
+function renderFinKPIs(){
+  const real = fin.dr.real, objetivo = fin.dr.objetivo;
+  const cf = fin.cf;
+  const kpis = [];
+  let idxAtual = null;
+  if(real && real.receita){
+    // último mês com receita real > 0, senão o primeiro mês
+    let idx = real.receita.monthly.map((v,i)=>({v,i})).filter(x=>x.v>0).map(x=>x.i).pop();
+    if(idx===undefined) idx = 0;
+    idxAtual = idx;
+    const receitaReal = real.receita.monthly[idx];
+    const receitaObj = objetivo ? objetivo.receita.monthly[idx] : null;
+    kpis.push(kpiCard('Receita do mês ('+real.months[idx]+')', fmtEuro(receitaReal), receitaObj!==null? 'objetivo: '+fmtEuro(receitaObj) : null, true, 'card-table-dr', 'Receita real do mês mais recente com dados, comparada com o objetivo para esse mesmo mês.'));
+
+    // Ponto de equilíbrio do mês atual
+    const custoFixoMes = real.gastosFixosTotal.monthly[idx];
+    const custoVarMes = real.gastosVariaveisTotal.monthly[idx];
+    const breakEven = custoFixoMes + custoVarMes;
+    const acimaBreakEven = receitaReal >= breakEven;
+    kpis.push(kpiCard('Ponto de equilíbrio ('+real.months[idx]+')', fmtEuro(breakEven), acimaBreakEven? '✅ receita acima do ponto de equilíbrio' : '⚠️ receita ainda abaixo do ponto de equilíbrio', false, 'card-table-dr', 'Receita necessária nesse mês para cobrir todos os gastos (fixos + variáveis reais desse mês) e ficar com Rendimento = 0.'));
+
+    // ARPU (cruza com Alunos: nº ativos nesse mês)
+    const chaveMes = drMonthToKey(real.months[idx], idx);
+    const alunosAtivosMes = lastAtivosPorMesMap[chaveMes] || null;
+    let arpu = null;
+    if(alunosAtivosMes){
+      arpu = receitaReal / alunosAtivosMes;
+      kpis.push(kpiCard('Receita média por aluno (ARPU)', fmtEuro(arpu), alunosAtivosMes+' aluno(s) ativo(s) em '+real.months[idx], false, 'card-chart-ativos-mes', 'Receita Real do mês a dividir pelo nº de alunos ativos nesse mês (calculado no separador Alunos). Mostra se a receita cresce por mais alunos ou por preços mais altos.'));
+
+      // Ponto de equilíbrio em nº de alunos
+      const breakEvenAlunos = arpu>0 ? Math.ceil(breakEven/arpu) : null;
+      if(breakEvenAlunos!==null){
+        kpis.push(kpiCard('Ponto de equilíbrio (nº alunos)', breakEvenAlunos+' alunos', 'tens atualmente '+alunosAtivosMes, false, 'card-chart-ativos-mes', 'O ponto de equilíbrio em euros, traduzido para nº de alunos usando o ARPU deste mês.'));
+      }
+    }
+
+    // CAC do mês atual (cruza com Mercado: nº "Ficámos" nesse mês)
+    const marketingMes = MARKETING_LABELS.reduce((soma,lbl)=>{
+      const item = real.gastosFixosItems.find(x=>x.label===lbl) || real.gastosVariaveisItems.find(x=>x.label===lbl);
+      return soma + (item ? item.monthly[idx] : 0);
+    }, 0);
+    let ficamosMes = 0;
+    (typeof pedidos !== 'undefined' ? pedidos : []).forEach(p=>{ if(monthKey(p.data)===chaveMes && resolveFicamos(p).value) ficamosMes++; });
+    let cacMes = null;
+    if(ficamosMes>0){
+      cacMes = marketingMes/ficamosMes;
+      kpis.push(kpiCard('CAC ('+real.months[idx]+')', fmtEuro(cacMes), ficamosMes+' aluno(s) via Fixando esse mês', false, 'card-chart-cac', 'Gasto em marketing (Google Ads, Meta Ads, Lendarius) nesse mês, a dividir pelo nº de pedidos do Fixando que se tornaram alunos ("Ficámos") nesse mesmo mês.'));
+    }
+
+    // LTV : CAC
+    if(arpu && lastRetencaoMediaMs){
+      const retencaoMeses = lastRetencaoMediaMs / (30.44*86400000);
+      const ltv = arpu * retencaoMeses;
+      if(cacMes>0){
+        const racio = ltv/cacMes;
+        kpis.push(kpiCard('LTV : CAC', racio.toFixed(1)+' : 1', 'LTV ≈ '+fmtEuro(ltv)+' · CAC ≈ '+fmtEuro(cacMes), false, 'card-chart-cac', 'Valor de vida do aluno (ARPU × retenção média em meses) a dividir pelo CAC. Acima de 3 costuma ser saudável; abaixo de 1 é sinal de alerta — estás a pagar mais para conseguir um aluno do que ele vale.'));
+      }
+      // Período de recuperação do CAC (payback, em meses)
+      if(cacMes>0 && arpu>0){
+        const payback = cacMes/arpu;
+        kpis.push(kpiCard('Período de recuperação do CAC', payback.toFixed(1)+' meses', 'tempo até o aluno "pagar" o custo de aquisição', false, 'card-chart-cac', 'CAC a dividir pelo ARPU — quantos meses de mensalidade de um aluno são precisos para recuperar o que custou angariá-lo.'));
+      }
+    }
+    // RAOS — retorno de marketing (aproximado): receita estimada dos alunos Fixando ativos ÷ gasto em marketing do mês
+    if(arpu && marketingMes>0){
+      const alunosFixandoAtivos = crm.efetivos.filter(a=>!a.dataFim && normStr(a.plataforma).toLowerCase().includes('fixando')).length;
+      if(alunosFixandoAtivos>0){
+        const receitaEstimadaFixando = alunosFixandoAtivos * arpu;
+        const raos = receitaEstimadaFixando / marketingMes;
+        kpis.push(kpiCard('RAOS (retorno de marketing)', raos.toFixed(1)+'x', 'aprox.: '+alunosFixandoAtivos+' aluno(s) ativo(s) via Fixando × ARPU', false, 'card-chart-cac', 'Estimativa: receita mensal gerada pelos alunos atualmente ativos vindos do Fixando, a dividir pelo gasto em marketing desse mês. Quanto retorna, em receita, cada euro investido em publicidade — é uma aproximação, já que não temos o valor de mensalidade exato por aluno.'));
+      }
+    }
+  }
+  if(real && real.rendimento){
+    kpis.push(kpiCard('Rendimento acumulado (Real)', fmtEuro(real.rendimento.total), null, false, 'card-table-dr', 'Soma do Rendimento (Receita menos Gastos Fixos e Variáveis) em todos os meses reais até agora.'));
+  }
+  // Desvio acumulado Real vs Objetivo (Receita), até ao mês atual
+  if(real && objetivo && idxAtual!==null){
+    const desvio = real.receita.monthly.slice(0, idxAtual+1).reduce((a,v,i)=>a + (v - objetivo.receita.monthly[i]), 0);
+    const cor = desvio>=0 ? '✅' : '⚠️';
+    kpis.push(kpiCard('Desvio acumulado vs Objetivo', fmtEuro(desvio), cor+' desde o início do ano letivo até '+real.months[idxAtual], false, 'card-chart-desvio', 'Soma, mês a mês desde o início do ano, da diferença entre a Receita Real e a Receita Objetivo. Positivo = estás à frente do objetivo; negativo = atrás.'));
+  }
+  // ARR estimado e rácio Gastos Fixos : Variáveis
+  if(real && real.receita && idxAtual!==null){
+    const mrr = real.receita.monthly[idxAtual];
+    if(mrr>0){
+      kpis.push(kpiCard('ARR estimado', fmtEuro(mrr*12), 'com base na receita de '+real.months[idxAtual]+' × 12', false, 'card-chart-receita-fin', 'Receita Anual Recorrente estimada, assumindo que a receita do mês mais recente se mantém constante durante 12 meses (MRR × 12).'));
+    }
+    const fixosTotal = real.gastosFixosTotal.total, varTotal = real.gastosVariaveisTotal.total;
+    if(fixosTotal>0 || varTotal>0){
+      const totalGastos = fixosTotal+varTotal;
+      kpis.push(kpiCard('Fixos : Variáveis', Math.round(100*fixosTotal/totalGastos)+'% : '+Math.round(100*varTotal/totalGastos)+'%', 'do total de gastos reais até agora', false, 'card-chart-peso-gastos', 'Proporção dos gastos reais que são fixos (não escalam com o negócio) versus variáveis (escalam com o nº de alunos/pedidos).'));
+    }
+  }
+  if(cf && cf.Real && cf.Real.caixa.length){
+    const caixaAtual = cf.Real.caixa[cf.Real.caixa.length-1];
+    kpis.push(kpiCard('Caixa atual (Real)', fmtEuro(caixaAtual), null, false, 'card-chart-caixa', 'Saldo de caixa acumulado real, no último mês com dados.'));
+    // burn rate médio (meses com CF negativo)
+    const burnMonths = cf.Real.cf.filter(v=>v<0);
+    const burnMedio = burnMonths.length ? burnMonths.reduce((a,b)=>a+b,0)/burnMonths.length : null;
+    let runway = null;
+    if(burnMedio){
+      runway = caixaAtual>0 ? Math.max(0, caixaAtual/Math.abs(burnMedio)) : 0;
+      kpis.push(kpiCard('Runway estimado', runway.toFixed(1)+' meses', 'com base no burn rate médio real', false, 'card-chart-caixa', 'Quantos meses a caixa atual aguenta, ao ritmo médio de consumo (burn rate) dos meses reais em que o CF foi negativo.'));
+    }
+    // Alerta de segurança: caixa vs gastos fixos médios
+    const gastosFixosMedios = real && real.gastosFixosItems.length ? real.gastosFixosTotal.monthly.filter(v=>v>0).reduce((a,b)=>a+b,0)/Math.max(1,real.gastosFixosTotal.monthly.filter(v=>v>0).length) : null;
+    const alertaEl = document.getElementById('fin-alerta-runway');
+    if(alertaEl){
+      const mesesSeguranca = 3;
+      if(gastosFixosMedios && caixaAtual/gastosFixosMedios < mesesSeguranca){
+        alertaEl.style.display = 'block';
+        alertaEl.innerHTML = `⚠️ <b>Atenção:</b> a caixa atual (${fmtEuro(caixaAtual)}) só cobre ${(caixaAtual/gastosFixosMedios).toFixed(1)} mês(es) de gastos fixos médios — abaixo do limite de segurança recomendado (${mesesSeguranca} meses).`;
+      } else {
+        alertaEl.style.display = 'none';
+      }
+    }
+  }
+  document.getElementById('financeiro-kpis').innerHTML = kpis.join('');
+}
+document.getElementById('fin-dr-mes')?.addEventListener('change', renderDRTable);
+document.getElementById('fin-cf-mes')?.addEventListener('change', renderCFTable);
 
 loadState();
 </script>

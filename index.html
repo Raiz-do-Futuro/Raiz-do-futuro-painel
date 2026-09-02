@@ -697,17 +697,10 @@ table.data tr:hover td{background:var(--lime-soft);}
           <div class="chart-card" id="card-chart-peso-gastos"><div class="chart-wrap"><canvas id="chart-peso-gastos"></canvas></div></div>
         </div>
 
-        <div class="two-col">
-          <div class="section">
-            <h3>📈 Margem de lucro (%)</h3>
-            <p class="desc">Rendimento ÷ Receita, mês a mês, nos 4 cenários</p>
-            <div class="chart-card" id="card-chart-margem"><div class="chart-wrap"><canvas id="chart-margem"></canvas></div></div>
-          </div>
-          <div class="section">
-            <h3>🎯 CAC — Custo de Aquisição de Cliente</h3>
-            <p class="desc">Gasto em marketing (Google Ads, Meta Ads, Lendarius) ÷ nº de alunos "Ficámos" nesse mês</p>
-            <div class="chart-card" id="card-chart-cac"><div class="chart-wrap"><canvas id="chart-cac"></canvas></div></div>
-          </div>
+        <div class="section">
+          <h3>🎯 CAC — Custo de Aquisição de Cliente</h3>
+          <p class="desc">(Google Ads + Meta Ads + Lendarius + Fixando) ÷ alunos efetivos vindos de Fixando/Website/Redes Sociais nesse mês</p>
+          <div class="chart-card" id="card-chart-cac"><div class="chart-wrap"><canvas id="chart-cac"></canvas></div></div>
         </div>
 
         <div class="section">
@@ -2033,7 +2026,22 @@ wireFilterListeners();
 let fin = { dr: {real:null, pessimista:null, objetivo:null, otimista:null}, cf: null };
 let lastRetencaoMediaMs = null; // vem do separador Alunos, para LTV
 let lastAtivosPorMesMap = {};   // "AAAA-MM" -> nº alunos ativos, vem do separador Alunos, para ARPU
-const MARKETING_LABELS = ['Google Ads', 'Meta Ads', 'Lendarius']; // linhas da DR consideradas gasto de marketing/aquisição
+const MARKETING_LABELS = ['Google Ads', 'Meta Ads', 'Lendarius', 'Fixando']; // linhas da DR consideradas gasto de marketing/aquisição
+const ORIGENS_MARKETING = ['fixando', 'website', 'redes sociais']; // plataformas de origem contadas no CAC
+function alunosMarketingPorMes(){
+  const contagem = {};
+  const vistos = new Set();
+  (crm.efetivos||[]).forEach(a=>{
+    const k = normKey(a.nome);
+    if(vistos.has(k) || !a.dataInicio) return;
+    const plat = normStr(a.plataforma).toLowerCase();
+    if(!ORIGENS_MARKETING.some(o=>plat.includes(o))) return;
+    vistos.add(k);
+    const mk = monthKey(a.dataInicio);
+    contagem[mk] = (contagem[mk]||0)+1;
+  });
+  return contagem;
+}
 
 function anoLetivoInicioAtual(){
   const hoje = new Date();
@@ -2344,24 +2352,7 @@ function renderFinCharts(){
     });
   }
 
-  // Margem de lucro (%) = Rendimento / Receita, por cenário
-  destroyChart('chart-margem');
-  const ctxMargem = document.getElementById('chart-margem');
-  if(ctxMargem && real){
-    const cenarios = {Pessimista:['#8B4A3D', fin.dr.pessimista], Objetivo:['#258730', fin.dr.objetivo], Otimista:['#CBE170', fin.dr.otimista], Real:['#33587F', real]};
-    const datasets = Object.entries(cenarios).map(([nome,[cor,d]])=>{
-      if(!d || !d.rendimento) return null;
-      const margem = d.receita.monthly.map((rec,i)=> rec>0 ? +(100*d.rendimento.monthly[i]/rec).toFixed(1) : null);
-      return {label:nome, data:margem, borderColor:cor, backgroundColor:cor, tension:.25, spanGaps:true};
-    }).filter(Boolean);
-    charts['chart-margem'] = new Chart(ctxMargem, {
-      type:'line', data:{labels:real.months, datasets},
-      options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:true, position:'top', labels:{boxWidth:10, font:{family:'Bahnschrift', size:11}}}},
-        scales:{x:{grid:{color:'rgba(37,135,48,0.06)'}}, y:{grid:{color:'rgba(37,135,48,0.06)'}, ticks:{callback:v=>v+'%'}}}}
-    });
-  }
-
-  // CAC ao longo do tempo = gasto de marketing (Real) / nº "Ficámos" nesse mês (Mercado)
+  // CAC ao longo do tempo = gasto de marketing (Real) / nº de alunos efetivos vindos de Fixando/Website/Redes Sociais nesse mês
   destroyChart('chart-cac');
   const ctxCac = document.getElementById('chart-cac');
   if(ctxCac && real){
@@ -2369,13 +2360,10 @@ function renderFinCharts(){
       const item = real.gastosFixosItems.find(x=>x.label===lbl) || real.gastosVariaveisItems.find(x=>x.label===lbl);
       return soma + (item ? item.monthly[i] : 0);
     }, 0));
-    const ficamosPorMesKey = {};
-    (typeof pedidos !== 'undefined' ? pedidos : []).forEach(p=>{
-      if(resolveFicamos(p).value){ const k = monthKey(p.data); ficamosPorMesKey[k] = (ficamosPorMesKey[k]||0)+1; }
-    });
+    const alunosMarketingPorMesKey = alunosMarketingPorMes();
     const cac = real.months.map((m,i)=>{
       const key = drMonthToKey(m, i);
-      const n = ficamosPorMesKey[key] || 0;
+      const n = alunosMarketingPorMesKey[key] || 0;
       return n>0 ? +(marketingPorMes[i]/n).toFixed(0) : null;
     });
     charts['chart-cac'] = new Chart(ctxCac, {
@@ -2385,18 +2373,26 @@ function renderFinCharts(){
     });
   }
 
-  // Gastos por categoria ao longo do tempo (empilhado, Real)
+  // Gastos por categoria ao longo do tempo (barras empilhadas, Real) — top categorias + "Outros" para não ficar ilegível
   destroyChart('chart-gastos-tempo');
   const ctxGastosTempo = document.getElementById('chart-gastos-tempo');
   if(ctxGastosTempo && real){
-    const itensComValor = [...real.gastosFixosItems, ...real.gastosVariaveisItems].filter(i=>i.total>0);
-    const datasets = itensComValor.map((item,i)=>({
-      label:item.label, data:item.monthly, backgroundColor:PALETTE[i%PALETTE.length], fill:true, stack:'gastos', tension:.15
+    const TOP_N = 6;
+    const todosItens = [...real.gastosFixosItems, ...real.gastosVariaveisItems].filter(i=>i.total>0).sort((a,b)=>b.total-a.total);
+    const principais = todosItens.slice(0, TOP_N);
+    const restantes = todosItens.slice(TOP_N);
+    const datasets = principais.map((item,i)=>({
+      label:item.label, data:item.monthly, backgroundColor:PALETTE[i%PALETTE.length], stack:'gastos'
     }));
+    if(restantes.length){
+      const outrosMonthly = real.months.map((_,mi)=> restantes.reduce((s,item)=>s+item.monthly[mi], 0));
+      datasets.push({label:'Outros ('+restantes.length+')', data:outrosMonthly, backgroundColor:'#DDD6C7', stack:'gastos'});
+    }
     charts['chart-gastos-tempo'] = new Chart(ctxGastosTempo, {
-      type:'line', data:{labels:real.months, datasets},
-      options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:true, position:'right', labels:{boxWidth:10, font:{family:'Bahnschrift', size:10}}}},
-        scales:{x:{grid:{color:'rgba(37,135,48,0.06)'}}, y:{stacked:true, grid:{color:'rgba(37,135,48,0.06)'}, ticks:{callback:v=>fmtEuro(v)}}}}
+      type:'bar', data:{labels:real.months, datasets},
+      options:{responsive:true, maintainAspectRatio:false,
+        plugins:{legend:{display:true, position:'top', labels:{boxWidth:10, font:{family:'Bahnschrift', size:11}}}},
+        scales:{x:{stacked:true, grid:{display:false}}, y:{stacked:true, grid:{color:'rgba(37,135,48,0.06)'}, ticks:{callback:v=>fmtEuro(v)}}}}
     });
   }
 }
@@ -2436,17 +2432,16 @@ function renderFinKPIs(){
       }
     }
 
-    // CAC do mês atual (cruza com Mercado: nº "Ficámos" nesse mês)
+    // CAC do mês atual = (Google Ads + Meta Ads + Lendarius + Fixando) ÷ alunos efetivos vindos de Fixando/Website/Redes Sociais nesse mês
     const marketingMes = MARKETING_LABELS.reduce((soma,lbl)=>{
       const item = real.gastosFixosItems.find(x=>x.label===lbl) || real.gastosVariaveisItems.find(x=>x.label===lbl);
       return soma + (item ? item.monthly[idx] : 0);
     }, 0);
-    let ficamosMes = 0;
-    (typeof pedidos !== 'undefined' ? pedidos : []).forEach(p=>{ if(monthKey(p.data)===chaveMes && resolveFicamos(p).value) ficamosMes++; });
+    const alunosMktMes = alunosMarketingPorMes()[chaveMes] || 0;
     let cacMes = null;
-    if(ficamosMes>0){
-      cacMes = marketingMes/ficamosMes;
-      kpis.push(kpiCard('CAC ('+real.months[idx]+')', fmtEuro(cacMes), ficamosMes+' aluno(s) via Fixando esse mês', false, 'card-chart-cac', 'Gasto em marketing (Google Ads, Meta Ads, Lendarius) nesse mês, a dividir pelo nº de pedidos do Fixando que se tornaram alunos ("Ficámos") nesse mesmo mês.'));
+    if(alunosMktMes>0){
+      cacMes = marketingMes/alunosMktMes;
+      kpis.push(kpiCard('CAC ('+real.months[idx]+')', fmtEuro(cacMes), alunosMktMes+' aluno(s) de Fixando/Website/Redes Sociais esse mês', false, 'card-chart-cac', 'Gasto em marketing (Google Ads, Meta Ads, Lendarius, Fixando) nesse mês, a dividir pelo nº de alunos efetivos cuja Plataforma é Fixando, Website ou Redes Sociais e cuja Data de Início foi nesse mês.'));
     }
 
     // LTV : CAC
@@ -2463,13 +2458,13 @@ function renderFinKPIs(){
         kpis.push(kpiCard('Período de recuperação do CAC', payback.toFixed(1)+' meses', 'tempo até o aluno "pagar" o custo de aquisição', false, 'card-chart-cac', 'CAC a dividir pelo ARPU — quantos meses de mensalidade de um aluno são precisos para recuperar o que custou angariá-lo.'));
       }
     }
-    // RAOS — retorno de marketing (aproximado): receita estimada dos alunos Fixando ativos ÷ gasto em marketing do mês
+    // RAOS — retorno de marketing (aproximado): receita estimada dos alunos ativos vindos de Fixando/Website/Redes Sociais ÷ gasto em marketing do mês
     if(arpu && marketingMes>0){
-      const alunosFixandoAtivos = crm.efetivos.filter(a=>!a.dataFim && normStr(a.plataforma).toLowerCase().includes('fixando')).length;
-      if(alunosFixandoAtivos>0){
-        const receitaEstimadaFixando = alunosFixandoAtivos * arpu;
-        const raos = receitaEstimadaFixando / marketingMes;
-        kpis.push(kpiCard('RAOS (retorno de marketing)', raos.toFixed(1)+'x', 'aprox.: '+alunosFixandoAtivos+' aluno(s) ativo(s) via Fixando × ARPU', false, 'card-chart-cac', 'Estimativa: receita mensal gerada pelos alunos atualmente ativos vindos do Fixando, a dividir pelo gasto em marketing desse mês. Quanto retorna, em receita, cada euro investido em publicidade — é uma aproximação, já que não temos o valor de mensalidade exato por aluno.'));
+      const alunosMktAtivos = crm.efetivos.filter(a=>!a.dataFim && ORIGENS_MARKETING.some(o=>normStr(a.plataforma).toLowerCase().includes(o))).length;
+      if(alunosMktAtivos>0){
+        const receitaEstimadaMkt = alunosMktAtivos * arpu;
+        const raos = receitaEstimadaMkt / marketingMes;
+        kpis.push(kpiCard('RAOS (retorno de marketing)', raos.toFixed(1)+'x', 'aprox.: '+alunosMktAtivos+' aluno(s) ativo(s) via Fixando/Website/Redes Sociais × ARPU', false, 'card-chart-cac', 'Estimativa: receita mensal gerada pelos alunos atualmente ativos vindos de Fixando, Website ou Redes Sociais, a dividir pelo gasto em marketing desse mês (inclui Fixando). Quanto retorna, em receita, cada euro investido em publicidade — é uma aproximação, já que não temos o valor de mensalidade exato por aluno.'));
       }
     }
   }

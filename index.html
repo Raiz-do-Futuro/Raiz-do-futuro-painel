@@ -396,7 +396,6 @@ table.data tr:hover td{background:var(--lime-soft);}
                 <th data-key="aeGanhos" title="Alunos deste professor que passaram (ganhos) ou foram perdidos na fase de aula experimental.">AE (ganhos/perdidos)</th>
                 <th data-key="efetivosPerdidos" title="Alunos efetivos deste professor que já têm Data de Fim preenchida (saíram/desistiram).">Efetivos perdidos</th>
                 <th data-key="tempoResposta" title="Tempo médio entre o pedido chegar (Momento do contacto, aba Clientes pendentes) e o professor iniciar as conversações (T/i Conversações, aba AEs).">Tempo de resposta</th>
-                <th data-key="tempoMarcarAE" title="Tempo médio entre o início das conversações e a aula experimental ficar marcada.">Tempo até marcar AE</th>
                 <th data-key="disciplinaPrincipal" title="Disciplina mais frequente entre os alunos efetivos deste professor.">Disciplina principal</th>
                 <th data-key="faturacaoReal" title="Soma do 'Valor' pago (aba Pagamentos Alunos) pelos alunos efetivos deste professor.">Faturação (real)</th>
               </tr></thead>
@@ -715,6 +714,17 @@ table.data tr:hover td{background:var(--lime-soft);}
   </main>
 </div>
 
+<div id="modal-classificar" style="display:none; position:fixed; inset:0; background:rgba(30,40,20,0.45); z-index:1000; align-items:center; justify-content:center; padding:20px;">
+  <div style="background:var(--card); border-radius:16px; max-width:600px; width:100%; max-height:80vh; overflow-y:auto; padding:24px; box-shadow:0 20px 50px rgba(0,0,0,0.3);">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+      <h3 style="font-family:'Stardos Stencil','Bahnschrift',sans-serif; color:var(--ink); margin:0; font-size:19px;">📍 Classificar localidades</h3>
+      <button id="btn-fechar-modal-classificar" style="background:none; border:none; font-size:20px; cursor:pointer; color:var(--muted);">✕</button>
+    </div>
+    <p style="font-size:12.5px; color:var(--muted); margin:0 0 16px 0;">Escolhe o distrito de cada localidade — fica guardado para sempre, mesmo depois de reimportares dados.</p>
+    <div id="lista-classificar"></div>
+  </div>
+</div>
+
 <script>
 /* Fallback de armazenamento: fora do ambiente Claude (ex: GitHub Pages, ficheiro local),
    window.storage não existe — este shim usa localStorage do próprio browser em vez disso,
@@ -758,6 +768,7 @@ function reviveDates(obj){
 
 async function loadState(){
   await loadPhoneHistory();
+  await loadDistritoOverrides();
   let hasStoredAlunos = false;
   try{
     const r = await window.storage.get('alunos-data', false);
@@ -1181,7 +1192,7 @@ function renderProfTable(){
   });
   tbody.innerHTML = sorted.map(r=>`<tr><td><b>${r.professor}</b></td><td>${r.nAlunos}</td><td>${fmtDuration(r.retMed)}</td><td>${fmtDuration(r.convMedP)}</td><td>${fmtDuration(r.aeMedP)}</td><td>${r.nAE}</td><td>${r.taxaConversao!==null? r.taxaConversao.toFixed(0)+'%' : '—'}</td>
     <td>${r.conversasGanhos} / ${r.conversasPerdidos}</td><td>${r.aeGanhos} / ${r.aePerdidos}</td><td>${r.efetivosPerdidos}</td>
-    <td>${fmtDuration(r.tempoResposta)}</td><td>${fmtDuration(r.tempoMarcarAE)}</td><td>${r.disciplinaPrincipal}</td><td>${r.faturacaoReal>0? fmtEuro(r.faturacaoReal) : '—'}</td></tr>`).join('');
+    <td>${fmtDuration(r.tempoResposta)}</td><td>${r.disciplinaPrincipal}</td><td>${r.faturacaoReal>0? fmtEuro(r.faturacaoReal) : '—'}</td></tr>`).join('');
 
   document.querySelectorAll('#prof-table-headers th[data-key]').forEach(th=>{
     th.classList.toggle('sort-active', th.dataset.key===key);
@@ -1365,38 +1376,102 @@ let mapSelectedDistrito = null;
 let portugalGeoCache = null;
 
 const DISTRITO_LOCALIDADES = {
-  'Aveiro': ['aveiro','agueda','ilhavo','oliveira de azemeis','ovar','santa maria da feira','sao joao da madeira','espinho','anadia','vale de cambra'],
-  'Beja': ['beja','moura','odemira','serpa','ourique'],
-  'Braga': ['braga','guimaraes','barcelos','famalicao','fafe','povoa de lanhoso','esposende','vieira do minho'],
-  'Bragança': ['braganca','mirandela','macedo de cavaleiros','vinhais'],
-  'Castelo Branco': ['castelo branco','covilha','fundao','serta','idanha-a-nova'],
-  'Coimbra': ['coimbra','figueira da foz','cantanhede','penacova','lousa','montemor-o-velho','condeixa'],
-  'Évora': ['evora','montemor-o-novo','reguengos de monsaraz','vendas novas'],
-  'Faro': ['faro','portimao','loule','lagos','albufeira','olhao','tavira','silves','vila real de santo antonio','lagoa','alcoutim','sao bras de alportel','monchique','aljezur','castro marim','ferreiras','quarteira','alvor'],
-  'Guarda': ['guarda','seia','gouveia','trancoso'],
-  'Leiria': ['leiria','marinha grande','pombal','alcobaca','caldas da rainha','batalha','nazare','peniche','porto de mos','figueiro dos vinhos'],
-  'Lisboa': ['lisboa','sintra','cascais','oeiras','amadora','loures','odivelas','mafra','vila franca de xira','torres vedras','alenquer','arruda dos vinhos','lourinha','arroios','alvalade','belem','avenidas novas','lumiar','beato','santa maria maior','encarnacao','venteira','parque das nacoes','sao vicente'],
-  'Portalegre': ['portalegre','elvas','ponte de sor','nisa','campo maior'],
-  'Porto': ['porto','vila nova de gaia','matosinhos','gondomar','maia','valongo','paredes','penafiel','amarante','povoa de varzim','vila do conde','santo tirso','trofa','marco de canaveses','felgueiras','lousada','pacos de ferreira','baiao','ermesinde','rio tinto','cedofeita','aldoar','ramalde','paranhos','canidelo','foz do sousa','grijo','sermonde','arcozelo'],
-  'Santarém': ['santarem','tomar','torres novas','abrantes','entroncamento','ourem','rio maior','alcanena','cartaxo','almeirim','coruche','salvaterra de magos','chamusca','golega','alpiarca','constancia','macao','ferreira do zezere','vila nova da barquinha','sardoal','benavente'],
-  'Setúbal': ['setubal','almada','seixal','barreiro','montijo','palmela','sesimbra','moita','alcochete','grandola','santiago do cacem','sines','alcacer do sal','corroios','amora','charneca de caparica','costa da caparica','laranjeiro','feijo','alto do seixalinho','quinta do conde','arrentela'],
-  'Viana do Castelo': ['viana do castelo','ponte de lima','valenca','moncao','arcos de valdevez','caminha','melgaco','vila nova de cerveira','paredes de coura','ponte da barca'],
-  'Vila Real': ['vila real','chaves','peso da regua','sabrosa','alijo','valpacos','mesao frio','murca'],
-  'Viseu': ['viseu','lamego','tondela','mangualde','nelas','resende','tarouca','sao pedro do sul','satao','oliveira de frades','cinfaes','vouzela'],
-  'Açores': ['acores','ponta delgada','angra do heroismo','horta'],
-  'Madeira': ['madeira','funchal']
+  'Aveiro': ['agueda','albergaria-a-velha','anadia','arouca','aveiro','castelo de paiva','espinho','estarreja','ilhavo','mealhada','murtosa','oliveira de azemeis','oliveira do bairro','ovar','santa maria da feira','sao joao da madeira','sever do vouga','vagos','vale de cambra'],
+  'Beja': ['aljustrel','almodovar','alvito','barrancos','beja','castro verde','cuba','ferreira do alentejo','mertola','moura','odemira','ourique','serpa','vidigueira'],
+  'Braga': ['amares','barcelos','braga','cabeceiras de basto','celorico de basto','esposende','fafe','guimaraes','povoa de lanhoso','terras de bouro','vieira do minho','vila nova de famalicao','famalicao','vila verde','vizela'],
+  'Bragança': ['alfandega da fe','braganca','carrazeda de ansiaes','freixo de espada a cinta','macedo de cavaleiros','miranda do douro','mirandela','mogadouro','torre de moncorvo','vila flor','vimioso','vinhais'],
+  'Castelo Branco': ['belmonte','castelo branco','covilha','fundao','idanha-a-nova','oleiros','penamacor','proenca-a-nova','serta','vila de rei','vila velha de rodao'],
+  'Coimbra': ['arganil','cantanhede','coimbra','condeixa-a-nova','condeixa','figueira da foz','gois','lousa','mira','miranda do corvo','montemor-o-velho','oliveira do hospital','pampilhosa da serra','penacova','penela','soure','tabua','vila nova de poiares'],
+  'Évora': ['alandroal','arraiolos','borba','estremoz','evora','montemor-o-novo','mora','mourao','portel','redondo','reguengos de monsaraz','vendas novas','viana do alentejo','vila vicosa'],
+  'Faro': ['albufeira','alcoutim','aljezur','castro marim','faro','lagoa','lagos','loule','monchique','olhao','portimao','sao bras de alportel','silves','tavira','vila do bispo','vila real de santo antonio','estombar','parchal','ferreiras','quarteira','alvor'],
+  'Guarda': ['aguiar da beira','almeida','celorico da beira','figueira de castelo rodrigo','fornos de algodres','gouveia','guarda','manteigas','meda','pinhel','sabugal','seia','trancoso','vila nova de foz coa'],
+  'Leiria': ['alcobaca','alvaiazere','ansiao','batalha','bombarral','caldas da rainha','castanheira de pera','figueiro dos vinhos','leiria','marinha grande','nazare','obidos','pedrogao grande','peniche','pombal','porto de mos','carvalhal'],
+  'Lisboa': ['alenquer','amadora','arruda dos vinhos','azambuja','cadaval','cascais','lisboa','loures','lourinha','mafra','odivelas','oeiras','sintra','sobral de monte agraco','torres vedras','vila franca de xira','arroios','alvalade','belem','avenidas novas','lumiar','beato','santa maria maior','encarnacao','venteira','parque das nacoes','sao vicente','alverca'],
+  'Portalegre': ['alter do chao','arronches','avis','campo maior','castelo de vide','crato','elvas','fronteira','gaviao','marvao','monforte','nisa','ponte de sor','portalegre','sousel'],
+  'Porto': ['amarante','baiao','felgueiras','gondomar','lousada','maia','marco de canaveses','matosinhos','pacos de ferreira','paredes','penafiel','porto','povoa de varzim','santo tirso','trofa','valongo','vila do conde','vila nova de gaia','ermesinde','rio tinto','cedofeita','aldoar','ramalde','paranhos','canidelo','foz do sousa','grijo','sermonde','arcozelo','nogueira'],
+  'Santarém': ['abrantes','alcanena','almeirim','alpiarca','benavente','cartaxo','chamusca','constancia','coruche','entroncamento','ferreira do zezere','golega','macao','ourem','rio maior','salvaterra de magos','santarem','sardoal','tomar','torres novas','vila nova da barquinha'],
+  'Setúbal': ['alcacer do sal','alcochete','almada','barreiro','grandola','moita','montijo','palmela','santiago do cacem','seixal','sesimbra','setubal','sines','corroios','amora','charneca de caparica','costa da caparica','laranjeiro','feijo','alto do seixalinho','quinta do conde','arrentela'],
+  'Viana do Castelo': ['arcos de valdevez','caminha','melgaco','moncao','paredes de coura','ponte da barca','ponte de lima','valenca','viana do castelo','vila nova de cerveira'],
+  'Vila Real': ['alijo','boticas','chaves','mesao frio','mondim de basto','montalegre','murca','peso da regua','ribeira de pena','sabrosa','santa marta de penaguiao','valpacos','vila pouca de aguiar','vila real'],
+  'Viseu': ['armamar','carregal do sal','castro daire','cinfaes','lamego','mangualde','moimenta da beira','mortagua','nelas','oliveira de frades','penalva do castelo','penedono','resende','santa comba dao','sao joao da pesqueira','sao pedro do sul','satao','sernancelhe','tabuaco','tarouca','tondela','vila nova de paiva','viseu','vouzela'],
+  'Açores': ['angra do heroismo','calheta','corvo','horta','ponta delgada','povoacao','praia da vitoria','ribeira grande','nordeste','lajes das flores','lajes do pico','madalena','santa cruz da graciosa','santa cruz das flores','sao roque do pico','velas','vila do porto','vila franca do campo'],
+  'Madeira': ['camara de lobos','funchal','machico','ponta do sol','porto moniz','porto santo','ribeira brava','santa cruz','santana','sao vicente madeira']
 };
 function stripAccents(s){ return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
+let manualDistritoOverrides = {}; // "texto normalizado" -> distrito escolhido à mão, permanente
+async function loadDistritoOverrides(){
+  try{
+    const r = await window.storage.get('distrito-overrides', false);
+    if(r && r.value) manualDistritoOverrides = JSON.parse(r.value);
+  }catch(e){ /* ainda sem classificações manuais */ }
+}
+async function saveDistritoOverrides(){
+  try{ await window.storage.set('distrito-overrides', JSON.stringify(manualDistritoOverrides), false); }catch(e){ console.error(e); }
+}
 function classifyLocalidade(raw){
   let text = stripAccents(raw).toLowerCase().replace(/^\d{4}(-\d{3})?,?\s*/, '').trim();
   if(!text) return {distrito:null, concelho:null};
+  if(manualDistritoOverrides[text]) return {distrito:manualDistritoOverrides[text], concelho: text.replace(/^./, c=>c.toUpperCase())};
   for(const [distrito, locs] of Object.entries(DISTRITO_LOCALIDADES)){
     for(const loc of locs){
-      if(text.includes(loc)) return {distrito, concelho: text.replace(/^./, c=>c.toUpperCase())};
+      const re = new RegExp('\\b'+loc.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b');
+      if(re.test(text)) return {distrito, concelho: text.replace(/^./, c=>c.toUpperCase())};
     }
   }
   return {distrito:null, concelho: text.replace(/^./, c=>c.toUpperCase())};
 }
+
+function coletarNaoClassificados(items, getTexto){
+  const contagem = {};
+  items.forEach(item=>{
+    const raw = getTexto(item);
+    if(!raw) return;
+    const {distrito} = classifyLocalidade(raw);
+    if(distrito) return;
+    const key = stripAccents(raw).toLowerCase().replace(/^\d{4}(-\d{3})?,?\s*/, '').trim();
+    if(!key) return;
+    contagem[key] = (contagem[key]||0) + 1;
+  });
+  return Object.entries(contagem).sort((a,b)=>b[1]-a[1]).map(([texto,count])=>({texto, count}));
+}
+function abrirModalClassificacao(localidades, aoGuardar){
+  const modal = document.getElementById('modal-classificar');
+  const lista = document.getElementById('lista-classificar');
+  const distritos = Object.keys(DISTRITO_LOCALIDADES);
+  function desenhar(){
+    if(!localidades.length){
+      lista.innerHTML = '<div class="empty-state">🎉 Já não há localidades por classificar!</div>';
+      return;
+    }
+    lista.innerHTML = localidades.map(({texto,count},i)=>`
+      <div style="display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--border);">
+        <div style="flex:1;">
+          <div style="font-weight:600; color:var(--ink); text-transform:capitalize;">${texto}</div>
+          <div style="font-size:11px; color:var(--muted);">${count} ocorrência(s)</div>
+        </div>
+        <select data-idx="${i}" class="select-classificar" style="font-family:'Bahnschrift','Poppins',sans-serif; font-size:13px; padding:7px 9px; border:1.5px solid var(--border); border-radius:8px; background:var(--bg); color:var(--ink);">
+          <option value="">Escolher distrito…</option>
+          ${distritos.map(d=>`<option value="${d}">${d}</option>`).join('')}
+        </select>
+      </div>`).join('');
+    lista.querySelectorAll('.select-classificar').forEach(sel=>{
+      sel.addEventListener('change', ()=>{
+        const idx = Number(sel.dataset.idx);
+        const {texto} = localidades[idx];
+        manualDistritoOverrides[texto] = sel.value;
+        saveDistritoOverrides();
+        localidades.splice(idx,1);
+        desenhar();
+        if(aoGuardar) aoGuardar();
+      });
+    });
+  }
+  desenhar();
+  modal.style.display = 'flex';
+}
+document.getElementById('btn-fechar-modal-classificar').addEventListener('click', ()=>{
+  document.getElementById('modal-classificar').style.display = 'none';
+});
 
 async function renderGeoMap(){
   const svgWrap = document.getElementById('geo-map-svg-wrap');
@@ -1498,8 +1573,17 @@ function renderConcelhoList(listEl, alunos){
     alunos.forEach(a=>{ const {distrito} = classifyLocalidade(a.localizacao); counts[distrito || 'Não classificado'] = (counts[distrito || 'Não classificado']||0)+1; });
     const rows = Object.entries(counts).sort((a,b)=>b[1]-a[1]);
     listEl.innerHTML = rows.length ? `<table class="data" style="margin-top:12px;"><thead><tr><th>Distrito</th><th>Alunos</th></tr></thead><tbody>${
-      rows.map(([d,n])=>`<tr><td>${d}</td><td>${n}</td></tr>`).join('')
+      rows.map(([d,n])=> d==='Não classificado'
+        ? `<tr style="cursor:pointer;" class="linha-classificar-alunos" title="Clica para classificar"><td>⚠️ ${d} <span style="text-decoration:underline; color:var(--green); font-size:11px;">(classificar)</span></td><td>${n}</td></tr>`
+        : `<tr><td>${d}</td><td>${n}</td></tr>`).join('')
     }</tbody></table>` : '<div class="empty-state" style="margin-top:12px;">Sem localizações classificadas ainda — preenche "Localização" no Excel.</div>';
+    const linhaClassificar = listEl.querySelector('.linha-classificar-alunos');
+    if(linhaClassificar){
+      linhaClassificar.addEventListener('click', ()=>{
+        const itens = coletarNaoClassificados(alunos, a=>a.localizacao);
+        abrirModalClassificacao(itens, ()=>renderGeoMap());
+      });
+    }
     return;
   }
   const counts = {};
@@ -1866,8 +1950,18 @@ function renderPenetracaoTable(resolved){
   const rows = Object.entries(porDistrito).filter(([,d])=>d.legiveis>0).sort((a,b)=>b[1].legiveis-a[1].legiveis);
   tbody.innerHTML = rows.length ? rows.map(([nome,d])=>{
     const pct = (100*d.ficamos/d.legiveis).toFixed(0);
-    return `<tr><td>${nome}</td><td>${d.legiveis}</td><td>${d.abordados}</td><td>${d.ficamos}</td><td>${pct}%</td></tr>`;
+    const nomeCell = nome==='Não classificado'
+      ? `⚠️ ${nome} <span class="linha-classificar-mercado" style="cursor:pointer; text-decoration:underline; color:var(--green); font-size:11px;">(classificar)</span>`
+      : nome;
+    return `<tr><td>${nomeCell}</td><td>${d.legiveis}</td><td>${d.abordados}</td><td>${d.ficamos}</td><td>${pct}%</td></tr>`;
   }).join('') : '<tr><td colspan="5" style="text-align:center; color:var(--muted);">Sem pedidos legíveis classificados por distrito ainda.</td></tr>';
+  const linkClassificar = tbody.querySelector('.linha-classificar-mercado');
+  if(linkClassificar){
+    linkClassificar.addEventListener('click', ()=>{
+      const itens = coletarNaoClassificados(pedidos, p=>p.localidade);
+      abrirModalClassificacao(itens, ()=>renderFixando());
+    });
+  }
 }
 function renderEvolucaoMensal(resolved){
   const monthsSet = new Set(resolved.map(x=>monthKey(x.p.data)));
@@ -1944,7 +2038,7 @@ function renderFixandoTable(){
   if(fDe){ const d=new Date(fDe+'T00:00:00'); rows = rows.filter(({p})=>p.data>=d); }
   if(fAte){ const d=new Date(fAte+'T23:59:59'); rows = rows.filter(({p})=>p.data<=d); }
 
-  rows.sort((a,b)=>b.p.data-a.p.data);
+  rows.sort((a,b)=> (b.p.data-a.p.data) || (b.p.hora-a.p.hora));
 
   document.getElementById('filter-count').textContent = rows.length+' de '+pedidos.length+' pedidos';
 

@@ -483,6 +483,28 @@ table.data tr:hover td{background:var(--lime-soft);}
 
         <hr class="divider">
 
+        <div class="section">
+          <h3>📆 Período dos gráficos abaixo</h3>
+          <p class="desc">Aplica-se a Localidades, Momento do dia, Dia da semana, Disciplinas e Anos de ensino</p>
+          <div class="chart-card" style="padding:14px;">
+            <div style="display:flex; flex-wrap:wrap; gap:12px; align-items:center;">
+              <select id="mercado-periodo-mes" style="font-family:'Bahnschrift','Poppins',sans-serif; font-size:13px; padding:8px 10px; border:1.5px solid var(--border); border-radius:8px; background:var(--bg); color:var(--ink);">
+                <option value="total">Total (todos os meses)</option>
+              </select>
+              <span style="color:var(--muted); font-size:12px;">— ou intervalo personalizado —</span>
+              <div style="display:flex; gap:8px; align-items:center;">
+                <label style="font-size:11px; color:var(--muted);">De</label>
+                <input type="date" id="mercado-periodo-de" style="font-family:'Bahnschrift','Poppins',sans-serif; font-size:13px; padding:7px 8px; border:1.5px solid var(--border); border-radius:8px; background:var(--bg); color:var(--ink);">
+              </div>
+              <div style="display:flex; gap:8px; align-items:center;">
+                <label style="font-size:11px; color:var(--muted);">Até</label>
+                <input type="date" id="mercado-periodo-ate" style="font-family:'Bahnschrift','Poppins',sans-serif; font-size:13px; padding:7px 8px; border:1.5px solid var(--border); border-radius:8px; background:var(--bg); color:var(--ink);">
+              </div>
+              <button class="btn secondary" id="btn-limpar-periodo-mercado" style="padding:8px 14px; font-size:12px;">Limpar</button>
+            </div>
+          </div>
+        </div>
+
         <div class="two-col">
           <div class="section">
             <h3>📍 Localidades com mais procura</h3>
@@ -1907,24 +1929,7 @@ function renderFixando(){
     kpiCard('% ficámos sobre legíveis', pctFicamosLegiveis!==null? pctFicamosLegiveis.toFixed(0)+'%':'—', null, false, 'card-chart-evolucao-mensal', 'Percentagem de todos os pedidos legíveis que acabaram por se tornar alunos efetivos — o funil completo, do pedido ao aluno.')
   ].join('');
 
-  const locTotal = sortedEntries(groupCount(pedidos, p=>p.localidade), 10);
-  barChart('chart-loc-total', locTotal.map(e=>e[0]), locTotal.map(e=>e[1]), '#4C7C63', true);
-
-  const locOnline = sortedEntries(groupCount(online, p=>p.localidade), 10);
-  barChart('chart-loc-online', locOnline.map(e=>e[0]), locOnline.map(e=>e[1]), '#258730', true);
-
-  const periodos = ['0h–8h','8h–12h','12h–15h','15h–18h','18h–21h','21h–24h'];
-  const perCount = groupCount(pedidos, p=>periodo(p.hora));
-  barChart('chart-periodo', periodos, periodos.map(p=>perCount[p]||0), '#8C9C3B');
-
-  const diaCount = groupCount(pedidos, p=>weekdayLabel(p.data));
-  barChart('chart-dia-semana', DIAS_SEMANA, DIAS_SEMANA.map(d=>diaCount[d]||0), '#8B4A3D');
-
-  const discE = sortedEntries(groupCountMulti(pedidos, p=>p.disciplina), 10);
-  barChart('chart-disc-mercado', discE.map(e=>e[0]), discE.map(e=>e[1]), '#4C7C63');
-
-  const anoE = sortedEntries(groupCount(pedidos, p=>p.ano), 10);
-  barChart('chart-ano-mercado', anoE.map(e=>e[0]), anoE.map(e=>e[1]), '#258730');
+  renderMercadoCharts();
 
   renderEvolucaoMensal(resolved);
   renderPenetracaoTable(resolved);
@@ -1963,6 +1968,68 @@ function renderPenetracaoTable(resolved){
     });
   }
 }
+function popularSeletorPeriodoMercado(){
+  const sel = document.getElementById('mercado-periodo-mes');
+  if(!sel) return;
+  const current = sel.value;
+  const mesesUnicos = Array.from(new Set(pedidos.map(p=>monthKey(p.data)))).sort();
+  sel.innerHTML = '<option value="total">Total (todos os meses)</option>' +
+    mesesUnicos.map(mk=>`<option value="${mk}" ${mk===current?'selected':''}>${monthLabel(mk)}</option>`).join('');
+  if(!current) sel.value = 'total';
+}
+function getPedidosNoPeriodoMercado(){
+  const de = document.getElementById('mercado-periodo-de')?.value;
+  const ate = document.getElementById('mercado-periodo-ate')?.value;
+  if(de || ate){
+    const dDe = de ? new Date(de+'T00:00:00') : null;
+    const dAte = ate ? new Date(ate+'T23:59:59') : null;
+    return pedidos.filter(p=> (!dDe || p.data>=dDe) && (!dAte || p.data<=dAte));
+  }
+  const mes = document.getElementById('mercado-periodo-mes')?.value;
+  if(mes && mes!=='total') return pedidos.filter(p=>monthKey(p.data)===mes);
+  return pedidos;
+}
+function renderMercadoCharts(){
+  popularSeletorPeriodoMercado();
+  const pedidosPeriodo = getPedidosNoPeriodoMercado();
+  const onlinePeriodo = pedidosPeriodo.filter(p=>p.modalidade==='Online');
+
+  const locTotal = sortedEntries(groupCount(pedidosPeriodo, p=>p.localidade), 10);
+  barChart('chart-loc-total', locTotal.map(e=>e[0]), locTotal.map(e=>e[1]), '#4C7C63', true);
+
+  const locOnline = sortedEntries(groupCount(onlinePeriodo, p=>p.localidade), 10);
+  barChart('chart-loc-online', locOnline.map(e=>e[0]), locOnline.map(e=>e[1]), '#258730', true);
+
+  const periodos = ['0h–8h','8h–12h','12h–15h','15h–18h','18h–21h','21h–24h'];
+  const perCount = groupCount(pedidosPeriodo, p=>periodo(p.hora));
+  barChart('chart-periodo', periodos, periodos.map(p=>perCount[p]||0), '#8C9C3B');
+
+  const diaCount = groupCount(pedidosPeriodo, p=>weekdayLabel(p.data));
+  barChart('chart-dia-semana', DIAS_SEMANA, DIAS_SEMANA.map(d=>diaCount[d]||0), '#8B4A3D');
+
+  const discE = sortedEntries(groupCountMulti(pedidosPeriodo, p=>p.disciplina), 10);
+  barChart('chart-disc-mercado', discE.map(e=>e[0]), discE.map(e=>e[1]), '#4C7C63');
+
+  const anoE = sortedEntries(groupCount(pedidosPeriodo, p=>p.ano), 10);
+  barChart('chart-ano-mercado', anoE.map(e=>e[0]), anoE.map(e=>e[1]), '#258730');
+}
+document.getElementById('mercado-periodo-mes')?.addEventListener('change', ()=>{
+  document.getElementById('mercado-periodo-de').value = '';
+  document.getElementById('mercado-periodo-ate').value = '';
+  renderMercadoCharts();
+});
+['mercado-periodo-de','mercado-periodo-ate'].forEach(id=>{
+  document.getElementById(id)?.addEventListener('change', ()=>{
+    document.getElementById('mercado-periodo-mes').value = 'total';
+    renderMercadoCharts();
+  });
+});
+document.getElementById('btn-limpar-periodo-mercado')?.addEventListener('click', ()=>{
+  document.getElementById('mercado-periodo-mes').value = 'total';
+  document.getElementById('mercado-periodo-de').value = '';
+  document.getElementById('mercado-periodo-ate').value = '';
+  renderMercadoCharts();
+});
 function renderEvolucaoMensal(resolved){
   const monthsSet = new Set(resolved.map(x=>monthKey(x.p.data)));
   const months = Array.from(monthsSet).sort();

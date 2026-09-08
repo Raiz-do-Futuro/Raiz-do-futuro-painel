@@ -252,6 +252,13 @@ table.data th.sort-active::after{content:' ▾'; font-size:9px;}
 table.data th.sort-active.sort-asc::after{content:' ▴'; font-size:9px;}
 table.data td{padding:8px 10px; border-bottom:1px solid var(--border); color:var(--body);}
 table.data tr:hover td{background:var(--accent-soft);}
+table.data tr.row-media td{
+  background:var(--accent-soft); font-weight:700; color:var(--ink);
+  border-top:1.5px solid var(--accent); border-bottom:1.5px solid var(--accent);
+}
+table.data tr.row-media:hover td{background:var(--accent-light);}
+table.data tr.row-media td:first-child{border-left:1.5px solid var(--accent); border-radius:8px 0 0 8px;}
+table.data tr.row-media td:last-child{border-right:1.5px solid var(--accent); border-radius:0 8px 8px 0;}
 
 .empty-state{
   border:1.5px dashed var(--accent-light); border-radius:16px; padding:40px 20px; text-align:center; color:var(--muted); transition:border-color .3s ease;
@@ -557,8 +564,9 @@ table.data tr:hover td{background:var(--accent-soft);}
                 <th data-key="conversasGanhos" title="Alunos deste professor que passaram (ganhos) ou foram perdidos na fase de conversações, antes da aula experimental.">Conversações (ganhos/perdidos)</th>
                 <th data-key="aeGanhos" title="Alunos deste professor que passaram (ganhos) ou foram perdidos na fase de aula experimental.">AE (ganhos/perdidos)</th>
                 <th data-key="efetivosPerdidos" title="Alunos efetivos deste professor que já têm Data de Fim preenchida (saíram/desistiram).">Efetivos perdidos</th>
-                <th data-key="tempoResposta" title="Tempo médio entre o pedido chegar (Momento do contacto, aba Clientes pendentes) e o professor iniciar as conversações (T/i Conversações, aba AEs).">Tempo de resposta</th>
-                <th data-key="disciplinaPrincipal" title="Disciplina mais frequente entre os alunos efetivos deste professor.">Disciplina principal</th>
+                <th data-key="tempoEfetivacao" title="Tempo médio entre o T/i de conversações e o T/f de AE (aba &quot;AEs&quot;), só para alunos com Estado = Efetivo.">Tempo de efetivação</th>
+                <th data-key="disciplinaPrincipal" title="Disciplina(s) mais frequente(s) entre os alunos efetivos deste professor (cada disciplina separada por vírgula conta à parte; mostra 2 só em caso de empate).">Disciplina principal</th>
+                <th data-key="aulasPorAluno" title="Nº total de aulas (aba Pagamentos Alunos) dos alunos efetivos deste professor, a dividir pelo Nº de Alunos.">Nº aulas / aluno</th>
                 <th data-key="faturacaoReal" title="Soma do 'Valor' pago (aba Pagamentos Alunos) pelos alunos efetivos deste professor.">Faturação (real)</th>
               </tr></thead>
               <tbody></tbody>
@@ -1346,6 +1354,10 @@ function fmtDays(d){
   return d+' dias';
 }
 function normStr(v){ return (v===undefined||v===null) ? '' : String(v).trim(); }
+// Um aluno só conta como "efetivo" (headcount real) se ainda não tiver Data Fim
+// e a coluna "Pagamento" (aba Clientes Efetivos) disser "Sim".
+function isAlunoEfetivoValido(a){ return !a.dataFim && normStr(a.pagamento).toLowerCase()==='sim'; }
+function isAEEstadoEfetivo(a){ return normStr(a.estado).toLowerCase()==='efetivo'; }
 function groupCount(arr, keyFn){
   const map = {};
   arr.forEach(item=>{
@@ -1495,7 +1507,8 @@ function parseCrmWorkbook(wb){
         contacto: normStr(o['Contacto']), ano: normStr(o['Ano']) || 'Não especificado',
         online: normStr(o['Online']), plataforma: normStr(o['Plataforma']) || 'Não especificado',
         dataInicio: parseDate(o['Data Início']), dataFim: parseDate(o['Data Fim']),
-        localizacao: normStr(o['Localização']) || 'Não especificado'
+        localizacao: normStr(o['Localização']) || 'Não especificado',
+        pagamento: normStr(o['Pagamento'])
       };
     }
     return {
@@ -1651,6 +1664,31 @@ function renderReceitaPorAluno(pagamentos){
   });
   barChart('chart-faixa-aulas', Object.keys(faixas), Object.values(faixas), ['#8B4A3D','#258730','#CBE170']);
 }
+// Média geral de todas as estatísticas numéricas da tabela por professor, para a linha fixa "Média".
+function avgIgnoreNull(vals){
+  const v = vals.filter(x=>x!==null && x!==undefined && !isNaN(x));
+  return v.length ? v.reduce((a,b)=>a+b,0)/v.length : null;
+}
+function mediaProfRow(rows){
+  if(!rows || !rows.length) return null;
+  const campo = k => rows.map(r=>r[k]);
+  return {
+    nAlunos: avgIgnoreNull(campo('nAlunos')) || 0,
+    retMed: avgIgnoreNull(campo('retMed')),
+    convMedP: avgIgnoreNull(campo('convMedP')),
+    aeMedP: avgIgnoreNull(campo('aeMedP')),
+    nAE: avgIgnoreNull(campo('nAE')) || 0,
+    taxaConversao: avgIgnoreNull(campo('taxaConversao')),
+    conversasGanhos: avgIgnoreNull(campo('conversasGanhos')) || 0,
+    conversasPerdidos: avgIgnoreNull(campo('conversasPerdidos')) || 0,
+    aeGanhos: avgIgnoreNull(campo('aeGanhos')) || 0,
+    aePerdidos: avgIgnoreNull(campo('aePerdidos')) || 0,
+    efetivosPerdidos: avgIgnoreNull(campo('efetivosPerdidos')) || 0,
+    tempoEfetivacao: avgIgnoreNull(campo('tempoEfetivacao')),
+    aulasPorAluno: avgIgnoreNull(campo('aulasPorAluno')),
+    faturacaoReal: avgIgnoreNull(campo('faturacaoReal')) || 0,
+  };
+}
 function renderProfTable(){
   const tbody = document.querySelector('#table-professores tbody');
   if(!tbody) return;
@@ -1663,9 +1701,16 @@ function renderProfTable(){
     if(typeof va === 'string') return va.localeCompare(vb) * mult;
     return (va-vb) * mult;
   });
-  tbody.innerHTML = sorted.map(r=>`<tr><td><b>${r.professor}</b></td><td>${r.nAlunos}</td><td>${fmtDuration(r.retMed)}</td><td>${fmtDuration(r.convMedP)}</td><td>${fmtDuration(r.aeMedP)}</td><td>${r.nAE}</td><td>${r.taxaConversao!==null? r.taxaConversao.toFixed(0)+'%' : '—'}</td>
+
+  const rowHtml = r => `<tr><td><b>${r.professor}</b></td><td>${r.nAlunos}</td><td>${fmtDuration(r.retMed)}</td><td>${fmtDuration(r.convMedP)}</td><td>${fmtDuration(r.aeMedP)}</td><td>${r.nAE}</td><td>${r.taxaConversao!==null? r.taxaConversao.toFixed(0)+'%' : '—'}</td>
     <td>${r.conversasGanhos} / ${r.conversasPerdidos}</td><td>${r.aeGanhos} / ${r.aePerdidos}</td><td>${r.efetivosPerdidos}</td>
-    <td>${fmtDuration(r.tempoResposta)}</td><td>${r.disciplinaPrincipal}</td><td>${r.faturacaoReal>0? fmtEuro(r.faturacaoReal) : '—'}</td></tr>`).join('');
+    <td>${fmtDuration(r.tempoEfetivacao)}</td><td>${r.disciplinaPrincipal}</td><td>${r.aulasPorAluno!==null? r.aulasPorAluno.toFixed(1) : '—'}</td><td>${r.faturacaoReal>0? fmtEuro(r.faturacaoReal) : '—'}</td></tr>`;
+
+  const media = mediaProfRow(lastProfRows);
+  tbody.innerHTML = (media ? `<tr class="row-media"><td><b>⭐ Média</b></td><td>${media.nAlunos.toFixed(1)}</td><td>${fmtDuration(media.retMed)}</td><td>${fmtDuration(media.convMedP)}</td><td>${fmtDuration(media.aeMedP)}</td><td>${media.nAE.toFixed(1)}</td><td>${media.taxaConversao!==null? media.taxaConversao.toFixed(0)+'%' : '—'}</td>
+    <td>${media.conversasGanhos.toFixed(1)} / ${media.conversasPerdidos.toFixed(1)}</td><td>${media.aeGanhos.toFixed(1)} / ${media.aePerdidos.toFixed(1)}</td><td>${media.efetivosPerdidos.toFixed(1)}</td>
+    <td>${fmtDuration(media.tempoEfetivacao)}</td><td>—</td><td>${media.aulasPorAluno!==null? media.aulasPorAluno.toFixed(1) : '—'}</td><td>${media.faturacaoReal>0? fmtEuro(media.faturacaoReal) : '—'}</td></tr>` : '')
+    + sorted.map(rowHtml).join('');
 
   document.querySelectorAll('#prof-table-headers th[data-key]').forEach(th=>{
     th.classList.toggle('sort-active', th.dataset.key===key);
@@ -1695,13 +1740,17 @@ function renderAlunos(){
   const unicos = [];
   efetivos.forEach(a=>{ const k=normKey(a.nome); if(!seen.has(k)){ seen.add(k); unicos.push(a); } });
 
-  const nomesEfetivos = new Set(unicos.map(a=>normKey(a.nome)));
-  const ativos = unicos.filter(a=>!a.dataFim).length;
+  // "aluno efetivo" válido = sem Data Fim e com "Sim" na coluna Pagamento (aba Clientes Efetivos)
+  const unicosValidos = unicos.filter(isAlunoEfetivoValido);
   lastUnicosAlunos = unicos; // cache para o mapa interativo
 
-  // conversão AE -> Efetivo (por correspondência de nome entre a aba AEs e Clientes Efetivos)
-  const aeConvertidos = aes.filter(a=>nomesEfetivos.has(normKey(a.nome)));
-  const taxaConversaoAE = aes.length ? 100*aeConvertidos.length/aes.length : null;
+  // conversão AE -> Efetivo, a partir da coluna "Estado" da própria aba AEs
+  const aeEfetivosCount = aes.filter(isAEEstadoEfetivo).length;
+  const taxaConversaoAE = aes.length ? 100*aeEfetivosCount/aes.length : null;
+
+  // alunos que reservam logo a aula experimental, sem passar pela fase de conversações
+  const aeDiretas = aes.filter(a=> a.tiAE && !a.tiConv && !a.tfConv);
+  const pctAeDiretas = aes.length ? 100*aeDiretas.length/aes.length : null;
 
   // retenção média (só quem já tem Data Fim preenchida)
   const duracoesFim = unicos.filter(a=>a.dataInicio && a.dataFim).map(a=> a.dataFim - a.dataInicio);
@@ -1723,8 +1772,9 @@ function renderAlunos(){
   const convMedGlobal = convDur.length ? convDur.reduce((x,y)=>x+y,0)/convDur.length : null;
 
   document.getElementById('alunos-kpis').innerHTML = [
-    kpiCard('Alunos efetivos', unicos.length, ativos+' sem data de fim (ativos) · '+efetivos.length+' matrículas no total', true, 'card-chart-ativos-mes', 'Número de alunos únicos atualmente na folha "Clientes Efetivos" — cada aluno conta uma vez, mesmo que tenha mais do que uma disciplina.'),
-    kpiCard('Taxa de conversão AE → Efetivo', taxaConversaoAE!==null? taxaConversaoAE.toFixed(0)+'%' : '— (sem AEs registadas)', aes.length+' aulas experimentais na aba "AEs"', false, 'card-table-professores', 'Percentagem de alunos com aula experimental (aba "AEs") cujo nome aparece depois em "Clientes Efetivos" — ou seja, que passaram de AE a aluno efetivo.'),
+    kpiCard('Alunos efetivos', unicosValidos.length, unicosValidos.length+' sem data de fim e com pagamento confirmado · '+efetivos.length+' matrículas no total (histórico)', true, 'card-chart-ativos-mes', 'Alunos únicos sem Data Fim preenchida e com "Sim" na coluna Pagamento da folha "Clientes Efetivos" — o headcount real de alunos a pagar neste momento.'),
+    kpiCard('Taxa de conversão AE → Efetivo', taxaConversaoAE!==null? taxaConversaoAE.toFixed(0)+'%' : '— (sem AEs registadas)', aes.length+' aulas experimentais na aba "AEs"', false, 'card-table-professores', 'Percentagem de aulas experimentais (aba "AEs") cuja coluna "Estado" está marcada como "Efetivo".'),
+    kpiCard('Reservam AE diretamente', aeDiretas.length, pctAeDiretas!==null? pctAeDiretas.toFixed(0)+'% do total de AEs — sem passar pela fase de conversações' : 'sem AEs registadas', false, 'card-table-professores', 'Alunos com T/i de Aula Experimental preenchido mas sem qualquer T/i ou T/f de conversações — avançaram diretamente para a AE.'),
     kpiCard('Retenção média', fmtDuration(retencaoMedia), duracoesFim.length? 'com base em '+duracoesFim.length+' aluno(s) já com Data Fim' : 'ainda sem "Data Fim" preenchida', false, 'card-table-professores', 'Tempo médio entre a Data de Início e a Data de Fim dos alunos que já saíram — quanto tempo, em média, um aluno fica connosco.'),
     kpiCard('Desistência antes do fim do ano', taxaDesistAntes!==null? taxaDesistAntes.toFixed(0)+'%' : '— (sem "Data Fim" suficiente)', saidos.length+' aluno(s) já com data de saída registada', false, 'card-chart-inicio-fim', 'Entre os alunos que já saíram, a percentagem cuja Data de Fim foi antes de 30 de junho do respetivo ano letivo — ou seja, que desistiram a meio do ano em vez de terminarem naturalmente.'),
     kpiCard('Tempo médio em conversações', fmtDuration(convMedGlobal), 'do 1º contacto do professor até marcar AE', false, 'card-table-professores', 'Tempo médio entre o início e o fim das conversações (aba "AEs") — do primeiro contacto do professor com o aluno até se marcar a aula experimental.'),
@@ -1789,7 +1839,7 @@ function renderAlunos(){
     ...aes.map(a=>a.professor)
   ])).filter(p=>p && p!=='Não especificado').sort();
   lastProfRows = profNames.map(p=>{
-    const nAlunos = new Set(efetivos.filter(a=>a.professor===p).map(a=>normKey(a.nome))).size;
+    const nAlunos = new Set(efetivos.filter(a=>a.professor===p && isAlunoEfetivoValido(a)).map(a=>normKey(a.nome))).size;
     const dur = unicos.filter(a=> efetivos.some(e=>normKey(e.nome)===normKey(a.nome) && e.professor===p) && a.dataInicio && a.dataFim).map(a=>a.dataFim-a.dataInicio);
     const retMed = dur.length? dur.reduce((x,y)=>x+y,0)/dur.length : null;
 
@@ -1806,33 +1856,42 @@ function renderAlunos(){
     });
     const aeMedP = aeToStartP.length? aeToStartP.reduce((x,y)=>x+y,0)/aeToStartP.length : null;
 
-    const convertidosP = aesProf.filter(a=>nomesEfetivos.has(normKey(a.nome))).length;
+    // taxa de conversão pela coluna "Estado" da aba AEs (Efetivo vs. Perdido)
+    const convertidosP = aesProf.filter(isAEEstadoEfetivo).length;
     const taxaConversao = aesProf.length? 100*convertidosP/aesProf.length : null;
 
+    // "ganho" = tem T/i e T/f na categoria; "perdido" = tem T/i mas não tem T/f
     const conversasGanhos = aesProf.filter(a=>a.tiConv && a.tfConv).length;
-    const conversasPerdidos = aesProf.filter(a=>a.tiConv && a.tfConvPerdido).length;
+    const conversasPerdidos = aesProf.filter(a=>a.tiConv && !a.tfConv).length;
     const aeGanhos = aesProf.filter(a=>a.tiAE && a.tfAE).length;
-    const aePerdidos = aesProf.filter(a=>a.tiAE && a.tfAEPerdido).length;
+    const aePerdidos = aesProf.filter(a=>a.tiAE && !a.tfAE).length;
     const efetivosPerdidos = efetivos.filter(a=>a.professor===p && a.dataFim).length;
 
-    const tempoRespostaDur = aesProf.filter(a=>a.tiConv).map(a=>{
-      const pend = pendentes.find(pp=>normKey(pp.nome)===normKey(a.nome));
-      return (pend && pend.momentoContacto && a.tiConv>pend.momentoContacto) ? a.tiConv-pend.momentoContacto : null;
-    }).filter(v=>v!==null);
-    const tempoResposta = tempoRespostaDur.length? tempoRespostaDur.reduce((x,y)=>x+y,0)/tempoRespostaDur.length : null;
+    // tempo de efetivação = do T/i de conversações ao T/f de AE, só para quem ficou "Efetivo"
+    const tempoEfetivacaoDur = aesProf.filter(a=> isAEEstadoEfetivo(a) && a.tiConv && a.tfAE).map(a=>a.tfAE-a.tiConv);
+    const tempoEfetivacao = tempoEfetivacaoDur.length? tempoEfetivacaoDur.reduce((x,y)=>x+y,0)/tempoEfetivacaoDur.length : null;
 
     const tempoMarcarAEDur = aesProf.filter(a=>a.tiConv && a.tiAE && a.tiAE>a.tiConv).map(a=>a.tiAE-a.tiConv);
     const tempoMarcarAE = tempoMarcarAEDur.length? tempoMarcarAEDur.reduce((x,y)=>x+y,0)/tempoMarcarAEDur.length : null;
 
-    const discCountProf = groupCount(efetivos.filter(a=>a.professor===p), a=>a.disciplina);
-    const discPrincipal = Object.entries(discCountProf).sort((a,b)=>b[1]-a[1])[0];
+    // disciplina principal: cada disciplina separada por "," conta individualmente; só mostra 2 se houver empate no 1º lugar
+    const discCountProf = groupCountMulti(efetivos.filter(a=>a.professor===p), a=>a.disciplina);
+    const discEntriesProf = Object.entries(discCountProf).sort((a,b)=>b[1]-a[1]);
+    let disciplinaPrincipal = '—';
+    if(discEntriesProf.length){
+      const topCount = discEntriesProf[0][1];
+      disciplinaPrincipal = discEntriesProf.filter(e=>e[1]===topCount).map(e=>e[0]).slice(0,2).join(' / ');
+    }
 
-    const nomesAlunosProf = new Set(efetivos.filter(a=>a.professor===p).map(a=>normKey(a.nome)));
-    const faturacaoReal = pagamentos.filter(pg=>nomesAlunosProf.has(normKey(pg.aluno))).reduce((s,pg)=>s+pg.valor, 0);
+    const nomesAlunosProf = new Set(efetivos.filter(a=>a.professor===p && isAlunoEfetivoValido(a)).map(a=>normKey(a.nome)));
+    const pagamentosProf = pagamentos.filter(pg=>nomesAlunosProf.has(normKey(pg.aluno)));
+    const faturacaoReal = pagamentosProf.reduce((s,pg)=>s+pg.valor, 0);
+    const aulasTotalProf = pagamentosProf.reduce((s,pg)=>s+pg.nAulas, 0);
+    const aulasPorAluno = nAlunos ? aulasTotalProf/nAlunos : null;
 
     return { professor:p, nAlunos, retMed, convMedP, aeMedP, nAE: aesProf.length, taxaConversao,
       conversasGanhos, conversasPerdidos, aeGanhos, aePerdidos, efetivosPerdidos,
-      tempoResposta, tempoMarcarAE, disciplinaPrincipal: discPrincipal ? discPrincipal[0] : '—', faturacaoReal };
+      tempoEfetivacao, tempoMarcarAE, disciplinaPrincipal, aulasPorAluno, faturacaoReal };
   });
   renderProfTable();
   renderReceitaPorAluno(pagamentos);

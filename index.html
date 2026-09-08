@@ -337,7 +337,8 @@ table.data tr:hover td{background:var(--accent-soft);}
   cursor:pointer; text-decoration:underline; font-family:'Bahnschrift','Poppins',sans-serif; z-index:3;
 }
 #tree-logout:hover{color:var(--rust);}
-.tree-svg-wrap{position:relative; width:min(880px,96vw); margin-top:6px; flex:1; display:flex; align-items:center;}
+.tree-svg-wrap{position:relative; width:min(880px,96vw); margin-top:6px; flex:1; min-height:0; display:flex; align-items:center; justify-content:center; overflow:hidden;}
+.tree-svg-wrap svg{width:100%; height:100%; max-width:880px;}
 .tree-mascot{
   position:absolute; width:90px; left:calc(50% - 260px); bottom:6%; animation:mascotFloat 3.4s ease-in-out infinite;
   filter:drop-shadow(0 6px 10px rgba(37,60,20,0.25)); pointer-events:none; z-index:2;
@@ -1167,7 +1168,7 @@ function buildTree(){
   });
   bgLeaves += '</g>';
 
-  let svg = `<svg viewBox="0 0 ${W} ${H}" width="100%" style="max-width:880px; overflow:visible;">`;
+  let svg = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">`;
   svg += decor;
   svg += bgLeaves;
 

@@ -58,15 +58,71 @@ body{
   box-shadow:2px 0 18px rgba(30,60,20,0.18);
 }
 
-#back-to-tree{
+.top-actions{
   position:fixed; top:18px; left:20px; z-index:50;
+  display:flex; align-items:center; gap:10px;
+}
+.top-actions button{
   display:flex; align-items:center; gap:7px;
   background:var(--card); border:1.5px solid var(--accent); color:var(--accent);
   font-family:'Bahnschrift','Poppins',sans-serif; font-weight:700; font-size:12.5px;
   padding:9px 16px 9px 13px; border-radius:999px; cursor:pointer;
   box-shadow:0 4px 14px rgba(37,60,20,0.16); transition:transform .12s, box-shadow .12s, color .2s, border-color .2s;
 }
-#back-to-tree:hover{transform:translateY(-2px); box-shadow:0 8px 20px rgba(37,60,20,0.24);}
+.top-actions button:hover{transform:translateY(-2px); box-shadow:0 8px 20px rgba(37,60,20,0.24);}
+#btn-glossario{border-color:var(--sage); color:var(--body);}
+#btn-glossario:hover{border-color:var(--accent); color:var(--accent);}
+
+/* ===================== GLOSSÁRIO ===================== */
+#glossario-screen{
+  display:none; position:fixed; inset:0; z-index:2500; overflow-y:auto;
+  background:
+    radial-gradient(circle, rgba(37,135,48,0.10) 1.5px, transparent 2px) 0 0/20px 20px,
+    var(--bg);
+}
+.gloss-wrap{max-width:920px; margin:0 auto; padding:90px 40px 80px 40px;}
+.gloss-close{
+  position:fixed; top:18px; left:20px; z-index:2510;
+  display:flex; align-items:center; gap:7px;
+  background:var(--card); border:1.5px solid var(--accent); color:var(--accent);
+  font-family:'Bahnschrift','Poppins',sans-serif; font-weight:700; font-size:12.5px;
+  padding:9px 16px 9px 13px; border-radius:999px; cursor:pointer;
+  box-shadow:0 4px 14px rgba(37,60,20,0.16); transition:transform .12s, box-shadow .12s;
+}
+.gloss-close:hover{transform:translateY(-2px); box-shadow:0 8px 20px rgba(37,60,20,0.24);}
+.gloss-head{margin-bottom:30px;}
+.gloss-head .eyebrow{
+  font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.14em; text-transform:uppercase;
+  color:var(--green); font-weight:700;
+}
+.gloss-head h1{
+  font-family:'Stardos Stencil','Bahnschrift',sans-serif; font-size:32px; font-weight:700; color:var(--ink); margin:6px 0 6px 0;
+}
+.gloss-head p{font-size:14px; color:var(--muted); margin:0; max-width:640px; line-height:1.5;}
+.gloss-section{margin-bottom:34px;}
+.gloss-section h2{
+  font-family:'Stardos Stencil','Bahnschrift',sans-serif; font-size:19px; font-weight:700; color:var(--green);
+  margin:0 0 14px 0; padding-bottom:8px; border-bottom:2px solid var(--sage);
+}
+.gloss-grid{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+@media (max-width:760px){.gloss-grid{grid-template-columns:1fr;}}
+.gloss-item{
+  background:var(--card); border:1.5px solid var(--border); border-left:4px solid var(--accent);
+  border-radius:12px; padding:14px 16px; box-shadow:0 3px 10px rgba(84,69,65,0.05);
+}
+.gloss-item b{
+  display:block; font-family:'Bahnschrift','Poppins',sans-serif; font-size:13.5px; color:var(--ink); margin-bottom:4px;
+}
+.gloss-item span{font-size:12.5px; color:var(--body); line-height:1.5;}
+.gloss-item code{
+  font-family:'IBM Plex Mono',monospace; font-size:11px; background:var(--sage-soft); color:var(--ink);
+  padding:1px 5px; border-radius:4px;
+}
+.gloss-list{background:var(--card); border:1.5px solid var(--border); border-radius:12px; padding:6px 18px;}
+.gloss-list .gloss-row{padding:12px 0; border-bottom:1px solid var(--border);}
+.gloss-list .gloss-row:last-child{border-bottom:none;}
+.gloss-list .gloss-row b{font-family:'Bahnschrift','Poppins',sans-serif; font-size:13.5px; color:var(--ink); display:block; margin-bottom:3px;}
+.gloss-list .gloss-row span{font-size:12.5px; color:var(--body); line-height:1.5;}
 .brand{
   padding:0 22px 24px 22px;
   border-bottom:2px solid var(--lime);
@@ -101,7 +157,7 @@ body{
 }
 
 /* Main */
-.main{flex:1; padding:86px 56px 60px 56px; max-width:1440px; margin:0 auto; transition:background .3s ease;}
+.main{flex:1; min-width:0; padding:86px 56px 60px 56px; max-width:1440px; margin:0 auto; transition:background .3s ease;}
 
 /* Painéis retrácteis (details/summary) — para reduzir informação visível por defeito */
 .fold{
@@ -411,9 +467,72 @@ table.data tr.row-media td:last-child{border-right:1.5px solid var(--accent); bo
   <div class="tree-svg-wrap" id="tree-svg-wrap"></div>
 </div>
 
+<div id="glossario-screen">
+  <button id="btn-glossario-fechar" class="gloss-close">← Fechar glossário</button>
+  <div class="gloss-wrap">
+    <div class="gloss-head">
+      <div class="eyebrow">📖 Raiz do Futuro</div>
+      <h1>Glossário de estatísticas</h1>
+      <p>Como cada número da página "Alunos efetivos" é calculado — para saberes sempre de onde vêm os dados.</p>
+    </div>
+
+    <div class="gloss-section">
+      <h2>As 7 estatísticas principais</h2>
+      <div class="gloss-grid">
+        <div class="gloss-item"><b>Alunos efetivos</b><span>Alunos únicos da aba "Clientes Efetivos" <b>sem "Data Fim"</b> e com <b>"Pagamento" = "Sim"</b>. Cada aluno conta uma só vez, mesmo com 2 disciplinas.</span></div>
+        <div class="gloss-item"><b>Taxa de conversão AE → Efetivo</b><span>Linhas da aba "AEs" com <code>Estado = Efetivo</code> ÷ total de linhas da aba "AEs", em %.</span></div>
+        <div class="gloss-item"><b>Reservam AE diretamente</b><span>Linhas da aba "AEs" com <code>T/i AE</code> preenchido mas <b>sem</b> T/i nem T/f de Conversações — foram direto à aula experimental.</span></div>
+        <div class="gloss-item"><b>Retenção média</b><span>Para alunos únicos com "Data Fim" preenchida: média de <code>Data Fim − Data Início</code>.</span></div>
+        <div class="gloss-item"><b>Desistência antes do fim do ano</b><span>Entre quem já saiu, % cuja "Data Fim" foi antes de 30 de junho do ano letivo da respetiva "Data Início".</span></div>
+        <div class="gloss-item"><b>Tempo médio em conversações</b><span>Linhas da aba "AEs" com T/i e T/f de Conversações: média de <code>T/f − T/i</code>.</span></div>
+        <div class="gloss-item"><b>Média de disciplinas por aluno</b><span>Total de matrículas (aluno + disciplina) ÷ nº de alunos únicos.</span></div>
+      </div>
+    </div>
+
+    <div class="gloss-section">
+      <h2>Gráficos e mapa</h2>
+      <div class="gloss-list">
+        <div class="gloss-row"><b>🗺️ Distribuição geográfica</b><span>Alunos únicos agrupados pelo texto da coluna "Localização" — top 10.</span></div>
+        <div class="gloss-row"><b>📚 Alunos por disciplina</b><span>Contagem por <b>matrícula</b> (não por aluno único); disciplinas separadas por vírgula contam à parte — top 10.</span></div>
+        <div class="gloss-row"><b>🎓 Alunos por Ano de Ensino</b><span>Alunos únicos agrupados pela coluna "Ano" — top 12.</span></div>
+        <div class="gloss-row"><b>🌍 Mapa interativo</b><span>Reconhece distrito/concelho a partir do texto da "Localização"; o que não reconhece cai em "Não classificado".</span></div>
+        <div class="gloss-row"><b>📈 Início vs. desistência por mês</b><span>Por mês, nº de alunos únicos com "Data Início" nesse mês vs. com "Data Fim" nesse mês.</span></div>
+        <div class="gloss-row"><b>👥 Alunos ativos por mês</b><span>Por mês, desde o 1º "Data Início" registado até hoje: alunos já começados e ainda não terminados nesse mês.</span></div>
+        <div class="gloss-row"><b>🔗 Origem dos alunos</b><span>Alunos únicos agrupados pela coluna "Plataforma".</span></div>
+        <div class="gloss-row"><b>🍎 Alunos por professor</b><span>Contagem por matrícula (não por aluno único), agrupada por "Professor" — top 12.</span></div>
+        <div class="gloss-row"><b>🔻 Funil de pendentes → efetivação</b><span>Linhas de "Clientes pendentes" agrupadas pela coluna "Estado".</span></div>
+        <div class="gloss-row"><b>💶 Receita por aluno (Total)</b><span>Soma, por aluno, de todas as linhas da aba "Pagamentos Alunos" (todos os meses) — top 10 por valor pago.</span></div>
+        <div class="gloss-row"><b>📚 Alunos por nº de aulas/mês</b><span>Só o mês mais recente com dados em "Pagamentos Alunos": Abaixo (&lt;4), Dentro (4–9) ou Acima (&gt;9) aulas.</span></div>
+      </div>
+    </div>
+
+    <div class="gloss-section">
+      <h2>🏆 Tabela "Desempenho por professor"</h2>
+      <div class="gloss-list">
+        <div class="gloss-row"><b>Nº Alunos</b><span>Alunos únicos deste professor, sem Data Fim e com Pagamento = "Sim".</span></div>
+        <div class="gloss-row"><b>Retenção média</b><span><code>Data Fim − Data Início</code>, só de alunos deste professor que já têm Data Fim.</span></div>
+        <div class="gloss-row"><b>Tempo médio em conversações</b><span><code>T/f Conversações − T/i Conversações</code> (aba AEs), deste professor.</span></div>
+        <div class="gloss-row"><b>Tempo médio AE → Efetivação</b><span><code>T/f AE − T/i AE</code> (só a aba AEs), só para AEs com Estado = "Efetivo".</span></div>
+        <div class="gloss-row"><b>Nº AE</b><span>Total de linhas na aba AEs para este professor.</span></div>
+        <div class="gloss-row"><b>Taxa conversão AE</b><span>% dessas linhas com Estado = "Efetivo".</span></div>
+        <div class="gloss-row"><b>Conversações (ganhos/perdidos)</b><span>Ganho = tem T/i e T/f de Conversações. Perdido = tem T/i mas não tem T/f.</span></div>
+        <div class="gloss-row"><b>AE (ganhos/perdidos)</b><span>Mesma lógica do T/i e T/f, mas para Aula Experimental.</span></div>
+        <div class="gloss-row"><b>Efetivos perdidos</b><span>Alunos deste professor (Clientes Efetivos) que já têm "Data Fim" preenchida.</span></div>
+        <div class="gloss-row"><b>Disciplina principal</b><span>Disciplinas separadas por vírgula contam à parte; mostra 2 disciplinas só se houver empate no 1º lugar.</span></div>
+        <div class="gloss-row"><b>Nº aulas / aluno</b><span>Soma do nº de aulas (Pagamentos Alunos) dos alunos válidos deste professor ÷ Nº Alunos.</span></div>
+        <div class="gloss-row"><b>Faturação (real)</b><span>Soma do "Valor" (Pagamentos Alunos) desses mesmos alunos.</span></div>
+        <div class="gloss-row"><b>⭐ Média</b><span>Linha fixa no topo da tabela — média simples de cada coluna entre todos os professores.</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="app" id="app-root" style="display:none;">
 
-  <button id="back-to-tree">🌳 Voltar à árvore</button>
+  <div class="top-actions">
+    <button id="back-to-tree">🌳 Voltar à árvore</button>
+    <button id="btn-glossario">📖 Glossário</button>
+  </div>
 
   <nav class="rail">
     <div class="brand" data-home title="Voltar à árvore">
@@ -1124,6 +1243,15 @@ document.getElementById('tree-logout').addEventListener('click', ()=>{
 
 document.querySelector('.brand[data-home]').addEventListener('click', ()=> showTree(false));
 document.getElementById('back-to-tree').addEventListener('click', ()=> showTree(false));
+
+const glossarioScreen = document.getElementById('glossario-screen');
+document.getElementById('btn-glossario').addEventListener('click', ()=>{
+  glossarioScreen.style.display = 'block';
+  glossarioScreen.scrollTop = 0;
+});
+document.getElementById('btn-glossario-fechar').addEventListener('click', ()=>{
+  glossarioScreen.style.display = 'none';
+});
 
 /* Ponto sobre uma curva quadrática de Bézier, usado para espalhar folhagem ao longo dos ramos. */
 function qPoint(x0,y0,cx,cy,x1,y1,t){

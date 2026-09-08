@@ -558,7 +558,7 @@ table.data tr.row-media td:last-child{border-right:1.5px solid var(--accent); bo
                 <th data-key="nAlunos" title="Número de alunos efetivos atualmente atribuídos a este professor.">Nº Alunos</th>
                 <th data-key="retMed" title="Tempo médio entre a Data de Início e a Data de Fim dos alunos deste professor que já saíram.">Retenção média</th>
                 <th data-key="convMedP" title="Tempo médio entre o início e o fim das conversações (aba &quot;AEs&quot;) para os alunos deste professor.">Tempo médio em conversações</th>
-                <th data-key="aeMedP" title="Tempo médio entre a aula experimental e a efetivação, para os alunos deste professor.">Tempo médio AE → Efetivação</th>
+                <th data-key="aeMedP" title="Tempo médio entre o T/i e o T/f de Aula Experimental (aba &quot;AEs&quot;), só para alunos com Estado = Efetivo.">Tempo médio AE → Efetivação</th>
                 <th data-key="nAE" title="Número de aulas experimentais registadas na aba &quot;AEs&quot; para este professor.">Nº AE</th>
                 <th data-key="taxaConversao" title="Percentagem das aulas experimentais deste professor que resultaram em aluno efetivo.">Taxa conversão AE</th>
                 <th data-key="conversasGanhos" title="Alunos deste professor que passaram (ganhos) ou foram perdidos na fase de conversações, antes da aula experimental.">Conversações (ganhos/perdidos)</th>
@@ -1847,13 +1847,8 @@ function renderAlunos(){
     const convDurP = aesProf.filter(a=>a.tiConv && a.tfConv).map(a=>a.tfConv-a.tiConv);
     const convMedP = convDurP.length? convDurP.reduce((x,y)=>x+y,0)/convDurP.length : null;
 
-    const aeToStartP = aesProf.filter(a=>{
-      const eff = efetivos.find(e=>normKey(e.nome)===normKey(a.nome));
-      return eff && eff.dataInicio && (a.tfAE || a.tiAE);
-    }).map(a=>{
-      const eff = efetivos.find(e=>normKey(e.nome)===normKey(a.nome));
-      return eff.dataInicio - (a.tfAE || a.tiAE);
-    });
+    // tempo médio AE → Efetivação: só com base na própria aba AEs (T/i AE ao T/f AE), para quem ficou "Efetivo"
+    const aeToStartP = aesProf.filter(a=> isAEEstadoEfetivo(a) && a.tiAE && a.tfAE).map(a=> a.tfAE - a.tiAE);
     const aeMedP = aeToStartP.length? aeToStartP.reduce((x,y)=>x+y,0)/aeToStartP.length : null;
 
     // taxa de conversão pela coluna "Estado" da aba AEs (Efetivo vs. Perdido)

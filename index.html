@@ -170,13 +170,19 @@ body{
   background:none; border:none; padding:0; cursor:pointer;
 }
 .hub-mod-btn .hub-mod-label{
-  font-family:'Bahnschrift','Poppins',sans-serif; font-size:11px; font-weight:700; color:var(--ink);
-  text-align:center; line-height:1.25; background:var(--card); padding:5px 10px; border-radius:10px;
-  border:1.5px solid var(--accent-light); box-shadow:0 3px 8px rgba(84,69,65,0.1);
-  display:inline-block; width:max-content; max-width:128px;
-  transition:border-color .15s, transform .15s;
+  font-family:'Stardos Stencil','Bahnschrift',sans-serif; font-size:13px; font-weight:700; color:var(--ink);
+  text-align:center; line-height:1.28; letter-spacing:.01em; max-width:150px;
+  text-shadow:
+    0 1px 0 var(--bg), 0 -1px 0 var(--bg), 1px 0 0 var(--bg), -1px 0 0 var(--bg),
+    1px 1px 0 var(--bg), -1px -1px 0 var(--bg), 1px -1px 0 var(--bg), -1px 1px 0 var(--bg),
+    0 3px 7px rgba(74,56,48,0.28);
+  transition:transform .15s, opacity .15s;
 }
-.hub-mod-btn:hover .hub-mod-label{border-color:var(--accent); transform:translateY(-1px);}
+.hub-mod-btn .hub-mod-underline{
+  width:22px; height:3px; border-radius:2px; margin:5px auto 0; transition:width .15s;
+}
+.hub-mod-btn:hover .hub-mod-label{transform:translateY(-1px);}
+.hub-mod-btn:hover .hub-mod-underline{width:34px;}
 .brand{
   padding:0 22px 24px 22px;
   border-bottom:2px solid var(--lime);
@@ -3641,7 +3647,7 @@ function buildProfHub(){
     btn.dataset.mod = m.key;
     btn.style.left = left+'%';
     btn.style.top = top+'%';
-    btn.innerHTML = `<span class="hub-mod-label">${m.icon} ${m.label}</span>`;
+    btn.innerHTML = `<span class="hub-mod-label">${m.icon} ${m.label}</span><span class="hub-mod-underline" style="background:${theme.accent};"></span>`;
     btn.addEventListener('click', ()=> zoomHubIntoModule(btn, m.key));
     wrap.appendChild(btn);
   });

@@ -164,15 +164,10 @@ body{
 .hub-head p{font-size:13px; color:var(--muted); margin:0;}
 .hub-wrap{position:relative; width:min(880px,96vw); flex:1; min-height:0;}
 .hub-branch-svg{position:absolute; inset:0; width:100%; height:100%; pointer-events:none;}
-@keyframes hubLeafFloat{
-  0%,100%{transform:translate(-50%,-50%) translateY(0) rotate(-1.5deg);}
-  50%{transform:translate(-50%,-50%) translateY(-7px) rotate(1.5deg);}
-}
 .hub-mod-btn{
   position:absolute; transform:translate(-50%,-50%);
   display:flex; flex-direction:column; align-items:center; gap:8px;
   width:150px; background:none; border:none; padding:0; cursor:pointer;
-  animation:hubLeafFloat 4.6s ease-in-out infinite;
 }
 .hub-mod-btn svg{width:112px; height:106px; filter:drop-shadow(0 5px 9px rgba(30,40,20,0.22)); transition:transform .15s;}
 .hub-mod-btn:hover svg{transform:scale(1.1);}
@@ -3541,52 +3536,105 @@ function hubLeafPath(rot, scale, fill, veinColor){
     <line x1="0" y1="-20" x2="0" y2="26" stroke="${veinColor}" stroke-width="1.1" opacity="0.4"/>
   </g>`;
 }
-/* Um raminho: várias folhas bem separadas, cada uma no seu talo, a abrir em leque — como na referência. */
-function hubLeafCluster(cx, cy, scale, colors, veinColor, stemColor){
-  const angles = [-52, -26, -2, 24, 50];
-  let g = `<g transform="translate(${cx},${cy})">`;
-  angles.forEach((a,i)=>{
-    const dist = (30 + (i%2)*8) * scale;
-    const dx = Math.sin(a*Math.PI/180)*dist, dy = -Math.cos(a*Math.PI/180)*dist;
-    g += `<line x1="0" y1="0" x2="${dx.toFixed(1)}" y2="${dy.toFixed(1)}" stroke="${stemColor}" stroke-width="${(2*scale).toFixed(1)}" stroke-linecap="round"/>`;
-    g += `<g transform="translate(${dx.toFixed(1)},${dy.toFixed(1)})">${hubLeafPath(a, scale*0.85, colors[i%colors.length], veinColor)}</g>`;
+/* Converte uma direção no ecrã (ângulo "normal", 0°=direita) no ângulo de rotate() do SVG
+   que faz a ponta da folha (que por natureza aponta para "cima") apontar nessa direção. */
+function screenAngleToLeafRotate(screenAngleDeg){
+  const rad = screenAngleDeg*Math.PI/180;
+  const ux = Math.cos(rad), uy = Math.sin(rad);
+  return Math.atan2(ux, -uy) * 180/Math.PI;
+}
+/* Um raminho fino que sai do ramo principal e tem várias folhas presas ao longo do seu comprimento
+   (não só na ponta) — para as folhas nascerem visivelmente do ramo, como na referência. */
+function leafyTwig(x0, y0, cx, cy, x1, y1, branchWidth, leafScale, colors, dark, light){
+  let g = `<path d="M ${x0},${y0} Q ${cx},${cy} ${x1},${y1}" stroke="${dark}" stroke-width="${branchWidth}" fill="none" stroke-linecap="round"/>`;
+  g += `<path d="M ${x0},${y0} Q ${cx},${cy} ${x1},${y1}" stroke="${light}" stroke-width="${Math.max(1.4,branchWidth*0.35)}" fill="none" stroke-linecap="round" opacity="0.5"/>`;
+  const ts = [0.22, 0.4, 0.56, 0.72, 0.86, 1];
+  ts.forEach((t,i)=>{
+    const [px,py] = qPoint(x0,y0,cx,cy,x1,y1,t);
+    const t2 = Math.min(1, t+0.04);
+    const [px2,py2] = qPoint(x0,y0,cx,cy,x1,y1,t2);
+    const tangent = Math.atan2(py2-py, px2-px)*180/Math.PI;
+    const side = i%2===0 ? 1 : -1;
+    const dirDeg = tangent + side*(64 + (i%3)*8);
+    const dist = (11 + (i%2)*3) * leafScale;
+    const dx = Math.cos(dirDeg*Math.PI/180)*dist, dy = Math.sin(dirDeg*Math.PI/180)*dist;
+    const lx = px+dx, ly = py+dy;
+    g += `<line x1="${px.toFixed(1)}" y1="${py.toFixed(1)}" x2="${lx.toFixed(1)}" y2="${ly.toFixed(1)}" stroke="${dark}" stroke-width="${(1.5*leafScale).toFixed(1)}" stroke-linecap="round"/>`;
+    const rot = screenAngleToLeafRotate(dirDeg);
+    g += `<g transform="translate(${lx.toFixed(1)},${ly.toFixed(1)})">${hubLeafPath(rot, leafScale*(0.78+ (i%3)*0.1), colors[i%colors.length], dark)}</g>`;
   });
-  g += `</g>`;
   return g;
 }
 function buildProfHub(){
   const wrap = document.getElementById('hub-wrap');
   const theme = TAB_THEME['professores'] || shadeAccent('#2F7A63');
   const W = 900, H = 520;
-  // ramo sinuoso a atravessar o ecrã, como na imagem de referência, com um leve efeito de casca (2 traços)
-  const branchD = 'M 20,410 C 90,300 150,250 190,340 C 230,440 340,410 380,300 C 410,210 470,150 520,110 C 560,80 590,190 610,330 C 625,420 700,440 780,300 C 810,245 850,240 880,255';
+  // tronco grosso a entrar pela direita, a afunilar para a esquerda, com um garfo a subir — como na referência
+  const trunkD  = 'M 900,500 C 800,455 720,415 645,370';
+  const midD    = 'M 655,375 C 560,325 470,325 400,295';
+  const twigD   = 'M 405,295 C 320,262 200,282 55,300';
+  const forkD   = 'M 650,372 C 665,290 660,210 645,120';
+  const BARK_DARK = '#4A3830', BARK_LIGHT = '#6B5342';
+  const leafColors = [theme.accent, theme.mid, theme.light, theme.accent, theme.dark, theme.mid];
+  const decorColors = [theme.mid, theme.accent, theme.light, theme.mid, theme.accent];
+
+  // cada raminho: [x0,y0, cx,cy, x1,y1] — sai de um ponto do ramo principal (x0,y0) até à ponta (x1,y1)
   const modules = [
-    {key:'localizacao', icon:'📍', label:'Localização & Atribuição', x:190, y:340},
-    {key:'experiencia', icon:'🎓', label:'Experiência', x:520, y:110},
-    {key:'horarios', icon:'🕒', label:'Horários & Disponibilidade', x:380, y:300},
-    {key:'avaliacao', icon:'⭐', label:'Avaliação de Desempenho', x:780, y:300},
+    {key:'localizacao', icon:'📍', label:'Localização & Atribuição', pts:[110,296, 70,255, 34,222], scale:1.15},
+    {key:'experiencia', icon:'🎓', label:'Experiência', pts:[646,180, 660,120, 636,70], scale:1.25},
+    {key:'horarios', icon:'🕒', label:'Horários & Disponibilidade', pts:[300,271, 285,220, 256,178], scale:1.15},
+    {key:'avaliacao', icon:'⭐', label:'Avaliação de Desempenho', pts:[715,398, 758,368, 790,335], scale:1.15},
   ];
-  const decorSpots = [[90,330,0.5],[300,375,0.45],[460,180,0.5],[610,330,0.45],[860,270,0.45]];
+  const decorTwigs = [
+    [170,283, 150,250, 128,215, 0.85],
+    [370,286, 392,335, 400,378, 0.8],
+    [455,308, 438,352, 420,388, 0.75],
+    [520,318, 545,278, 560,240, 0.8],
+    [600,335, 615,300, 628,265, 0.75],
+    [610,255, 622,200, 615,155, 0.85],
+    [800,447, 828,415, 848,378, 0.85],
+    [860,478, 882,452, 898,420, 0.75],
+    [900,500, 870,470, 848,445, 0.8],
+  ];
 
   let svg = `<svg class="hub-branch-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">`;
-  svg += `<path d="${branchD}" stroke="#4A3830" stroke-width="17" fill="none" stroke-linecap="round"/>`;
-  svg += `<path d="${branchD}" stroke="#6B5342" stroke-width="6" fill="none" stroke-linecap="round" opacity="0.55" transform="translate(-3,-4)"/>`;
-  decorSpots.forEach(([x,y,s])=>{
-    svg += hubLeafCluster(x, y, s, [theme.light, theme.mid, theme.light], theme.dark, '#4A3830');
+  // tronco (mais grosso) -> ramo médio -> raminho fino, sobrepostos para dar efeito de afunilamento
+  [[trunkD,34],[midD,22],[twigD,13]].forEach(([d,w])=>{
+    svg += `<path d="${d}" stroke="${BARK_DARK}" stroke-width="${w}" fill="none" stroke-linecap="round"/>`;
+    svg += `<path d="${d}" stroke="${BARK_LIGHT}" stroke-width="${Math.max(3,w*0.35)}" fill="none" stroke-linecap="round" opacity="0.5" transform="translate(-2,-3)"/>`;
+  });
+  svg += `<path d="${forkD}" stroke="${BARK_DARK}" stroke-width="12" fill="none" stroke-linecap="round"/>`;
+  svg += `<path d="${forkD}" stroke="${BARK_LIGHT}" stroke-width="4" fill="none" stroke-linecap="round" opacity="0.5" transform="translate(-2,-2)"/>`;
+  // anéis de casca na base grossa, do lado direito
+  [[870,485,26],[840,460,22]].forEach(([x,y,r])=>{
+    svg += `<path d="M ${x-r*0.7},${y+r*0.5} Q ${x},${y-r} ${x+r*0.7},${y+r*0.5}" stroke="${BARK_LIGHT}" stroke-width="2.5" fill="none" opacity="0.5"/>`;
+  });
+  // raminhos decorativos, com folhas presas ao longo de todo o comprimento
+  decorTwigs.forEach(([x0,y0,cx,cy,x1,y1,s])=>{
+    svg += leafyTwig(x0,y0,cx,cy,x1,y1, 6, s, decorColors, BARK_DARK, BARK_LIGHT);
+  });
+  // raminhos dos 4 módulos — mesma técnica, só um pouco maiores/mais cheios, com uma área de clique à volta da ponta
+  modules.forEach(m=>{
+    const [x0,y0,cx,cy,x1,y1] = m.pts;
+    svg += leafyTwig(x0,y0,cx,cy,x1,y1, 7, m.scale, leafColors, BARK_DARK, BARK_LIGHT);
+    svg += `<circle class="hub-mod-hit" data-mod="${m.key}" cx="${x1}" cy="${y1}" r="${48*m.scale}" fill="#000" opacity="0" style="pointer-events:auto; cursor:pointer;"/>`;
   });
   svg += `</svg>`;
   wrap.innerHTML = svg;
 
-  modules.forEach((m,i)=>{
-    const left = (m.x/W*100).toFixed(2), top = (m.y/H*100).toFixed(2);
+  wrap.querySelectorAll('.hub-mod-hit').forEach(hit=>{
+    hit.addEventListener('click', ()=> zoomHubIntoModule(hit, hit.dataset.mod));
+  });
+
+  modules.forEach((m)=>{
+    const [,,,,x1,y1] = m.pts;
+    const left = (x1/W*100).toFixed(2), top = ((y1+58*m.scale)/H*100).toFixed(2);
     const btn = document.createElement('button');
     btn.className = 'hub-mod-btn';
     btn.dataset.mod = m.key;
     btn.style.left = left+'%';
     btn.style.top = top+'%';
-    btn.style.animationDelay = (i*0.35)+'s';
-    btn.innerHTML = `<svg viewBox="-70 -66 140 132">${hubLeafCluster(0, 8, 1.15, [theme.accent, theme.mid, theme.accent, theme.dark, theme.mid], theme.dark, '#4A3830')}</svg>
-      <span class="hub-mod-label">${m.icon} ${m.label}</span>`;
+    btn.innerHTML = `<span class="hub-mod-label">${m.icon} ${m.label}</span>`;
     btn.addEventListener('click', ()=> zoomHubIntoModule(btn, m.key));
     wrap.appendChild(btn);
   });

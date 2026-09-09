@@ -1123,7 +1123,7 @@ table.data tr.row-media td:last-child{border-right:1.5px solid var(--accent); bo
           <button class="btn danger" id="btn-clear-professores">Limpar professores</button>
         </div>
         <div class="notice">
-          O ficheiro deve ter as colunas <b>Professor</b>, <b>Morada</b>, <b>Disciplinas</b> (separadas por vírgula) e <b>Anos</b> (ex.: "10º, 11º, 12º"). A morada de cada professor é convertida em coordenadas automaticamente (OpenStreetMap/Nominatim) — fica guardada, por isso só demora na primeira vez.
+          Usa o teu ficheiro habitual: aba <b>"Professores"</b> com as colunas <b>"Professores"</b> e <b>"Localização"</b> (podes pôr mais do que uma localidade separada por ";", ou "Online"), e opcionalmente a aba <b>"Currículo"</b> para trazer também Formação, Estado, Experiência, Contacto e Email. Cada localidade é convertida em coordenadas automaticamente (OpenStreetMap/Nominatim) — fica guardada, só demora da primeira vez. <b>Disciplinas e anos de ensino ainda não aparecem aqui</b> — vão vir automaticamente da Amelia assim que ligarmos essa integração.
         </div>
         <div id="prof-loc-empty" class="empty-state">
           <b>Ainda sem professores importados</b>
@@ -1154,7 +1154,7 @@ table.data tr.row-media td:last-child{border-right:1.5px solid var(--accent); bo
           <h2>🎓 Experiência dos Professores</h2>
           <p>Percurso profissional e académico de cada professor, com pesquisa avançada por critérios.</p>
         </div>
-        <div class="notice">Usa os mesmos professores importados no módulo "Localização &amp; Atribuição". Seleciona um na lista para preencheres a ficha.</div>
+        <div class="notice">Usa os mesmos professores importados no módulo "Localização &amp; Atribuição". Formação, Estado e Experiência já vêm preenchidos automaticamente da aba "Currículo" — só precisas de acrescentar Certificações e Notas à mão. Seleciona um na lista para veres/editares a ficha.</div>
         <div id="prof-exp-empty" class="empty-state">
           <b>Ainda sem professores</b>
           Importa o Excel no módulo "Localização &amp; Atribuição" primeiro.
@@ -3646,17 +3646,60 @@ function haversineKm(a, b){
 }
 
 /* --- Importação do Excel de professores --- */
+/* Converte texto tipo "Desde 2009" ou "Desde 24/25" (ou um ano solto) em nº de anos de experiência. */
+function parseAnosExperiencia(text){
+  if(text===null || text===undefined || text==='') return null;
+  const s = String(text);
+  const m2 = s.match(/(\d{2})\s*\/\s*(\d{2})/);
+  if(m2) return Math.max(0, new Date().getFullYear() - (2000+parseInt(m2[1])));
+  const m4 = s.match(/(19\d{2}|20\d{2})/);
+  if(m4) return Math.max(0, new Date().getFullYear() - parseInt(m4[1]));
+  return null;
+}
+/* "2840, Seixal; 2855, Corroios" -> ["2840, Seixal", "2855, Corroios"] */
+function splitLocais(v){
+  return String(v||'').split(';').map(s=>s.trim()).filter(Boolean);
+}
+/* Lê o ficheiro tal como já o usam: aba "Professores" (Professores/Localização) +
+   aba "Currículo" (Formação/Estado/Experiência/Contacto/Email). Disciplinas e anos
+   de ensino NÃO vêm daqui — ficam vazios até ligarmos a Amelia. */
 function parseProfessoresWorkbook(wb){
-  const sheet = wb.Sheets[wb.SheetNames[0]];
-  const rows = XLSX.utils.sheet_to_json(sheet, {defval:''});
-  return rows.map(o=>({
-    nome: normStr(o['Professor']),
-    morada: normStr(o['Morada']),
-    disciplinas: splitMulti(o['Disciplinas']),
-    anos: splitMulti(o['Anos']),
-    lat: null, lng: null,
-    exp: {anosExp:null, formacao:'', certificacoes:'', notas:''}
-  })).filter(p=>p.nome);
+  const sheetProf = findSheet(wb, 'professor');
+  const rowsProf = readSheetFrom(sheetProf, 'Professores');
+  const sheetCv = findSheet(wb, 'curr');
+  const rowsCv = sheetCv ? readSheetFrom(sheetCv, 'Professores') : [];
+  const cvByName = {};
+  rowsCv.forEach(o=>{
+    const nome = normStr(o['Professores']);
+    if(!nome) return;
+    const experiencia = normStr(o['Experiência']);
+    cvByName[normKey(nome)] = {
+      contacto: normStr(o['Contacto telefónico']),
+      email: normStr(o['Correio eletónico']) || normStr(o['Correio eletrónico']),
+      formacao: normStr(o['Formação']),
+      estado: normStr(o['Estado']),
+      desde: experiencia,
+      anosExp: parseAnosExperiencia(experiencia)
+    };
+  });
+  return rowsProf.map(o=>{
+    const nome = normStr(o['Professores']);
+    if(!nome) return null;
+    const locaisRaw = splitLocais(o['Localização']);
+    const online = locaisRaw.some(l=>l.toLowerCase()==='online');
+    const locais = locaisRaw.filter(l=>l.toLowerCase()!=='online').map(texto=>({texto, lat:null, lng:null}));
+    const cv = cvByName[normKey(nome)] || {};
+    return {
+      nome, locais, online,
+      disciplinas: [], anos: [], // por sincronizar da Amelia
+      exp: {
+        anosExp: cv.anosExp!=null ? cv.anosExp : null,
+        formacao: cv.formacao || '', estado: cv.estado || '', desde: cv.desde || '',
+        contacto: cv.contacto || '', email: cv.email || '',
+        certificacoes: '', notas: ''
+      }
+    };
+  }).filter(Boolean);
 }
 document.getElementById('btn-upload-professores').addEventListener('click', ()=> document.getElementById('file-professores').click());
 document.getElementById('file-professores').addEventListener('change', (e)=>{
@@ -3670,13 +3713,24 @@ document.getElementById('file-professores').addEventListener('change', (e)=>{
       profs.forEach(p=>{ antigos[normKey(p.nome)] = p; });
       profs = novos.map(p=>{
         const prev = antigos[normKey(p.nome)];
-        return prev ? {...p, lat:prev.lat, lng:prev.lng, exp:prev.exp} : p;
+        if(!prev) return p;
+        // preserva coordenadas já calculadas para moradas iguais, e mantém disciplinas/anos se já tiverem vindo da Amelia
+        p.locais.forEach(loc=>{
+          const prevLoc = prev.locais.find(pl=>normKey(pl.texto)===normKey(loc.texto));
+          if(prevLoc){ loc.lat = prevLoc.lat; loc.lng = prevLoc.lng; }
+        });
+        if(prev.disciplinas.length) p.disciplinas = prev.disciplinas;
+        if(prev.anos.length) p.anos = prev.anos;
+        // mantém notas/certificações escritas à mão; o resto vem sempre do ficheiro mais recente
+        p.exp.certificacoes = prev.exp.certificacoes;
+        p.exp.notas = prev.exp.notas;
+        return p;
       });
       profSelectedIdx = null;
       await saveProfs();
       renderProfLoc(); renderProfExp();
       geocodeAllProfessores();
-    }catch(err){ alert('Não foi possível ler o ficheiro. Confirma que tem as colunas Professor, Morada, Disciplinas e Anos. ('+err.message+')'); }
+    }catch(err){ alert('Não foi possível ler o ficheiro. Confirma que tem uma aba "Professores" com as colunas "Professores" e "Localização". ('+err.message+')'); }
   };
   reader.readAsArrayBuffer(file);
   e.target.value = '';
@@ -3685,25 +3739,40 @@ document.getElementById('btn-clear-professores').addEventListener('click', ()=>{
   if(confirm('Apagar todos os professores importados?')){ profs = []; profSelectedIdx = null; saveProfs(); renderProfLoc(); renderProfExp(); }
 });
 document.getElementById('btn-template-professores').addEventListener('click', ()=>{
-  const headers = ['Professor','Morada','Disciplinas','Anos'];
-  const example = ['Maria João','Rua Exemplo 123, Ovar','Matemática, Físico-Química','10º, 11º, 12º'];
-  const ws = XLSX.utils.aoa_to_sheet([headers, example]);
-  ws['!cols'] = headers.map(()=>({wch:28}));
+  const wsProf = XLSX.utils.aoa_to_sheet([
+    ['', 'Professores','Localização'],
+    ['', 'Maria João','2840, Seixal; 2855, Corroios'],
+    ['', 'Joana Filipe','Online'],
+  ]);
+  wsProf['!cols'] = [{wch:2},{wch:24},{wch:32}];
+  const wsCv = XLSX.utils.aoa_to_sheet([
+    ['', 'Professores','Contacto telefónico','Correio eletónico','Formação','Estado','Experiência'],
+    ['', 'Maria João','+351 900 000 000','maria.joao@email.com','Licenciatura em Matemática (FCUP)','Terminado','Desde 2015'],
+  ]);
+  wsCv['!cols'] = [{wch:2},{wch:24},{wch:20},{wch:26},{wch:36},{wch:14},{wch:14}];
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Professores');
+  XLSX.utils.book_append_sheet(wb, wsProf, 'Professores');
+  XLSX.utils.book_append_sheet(wb, wsCv, 'Currículo');
   XLSX.writeFile(wb, 'modelo_professores.xlsx');
 });
 async function geocodeAllProfessores(){
-  const pendentes = profs.filter(p=>p.morada && p.lat==null);
+  const pendentes = [];
+  profs.forEach(p=> p.locais.forEach(loc=>{ if(loc.texto && loc.lat==null) pendentes.push(loc); }));
   if(!pendentes.length) return;
   const statusEl = document.getElementById('ploc-status');
   for(let i=0;i<pendentes.length;i++){
     if(statusEl) statusEl.textContent = `A localizar moradas dos professores… (${i+1}/${pendentes.length})`;
-    const coords = await geocode(pendentes[i].morada);
+    const coords = await geocode(pendentes[i].texto + ', Portugal');
     if(coords){ pendentes[i].lat = coords.lat; pendentes[i].lng = coords.lng; }
   }
   if(statusEl) statusEl.textContent = '';
   await saveProfs();
+}
+/* Distância ao professor = a menor entre todas as suas moradas; "Online" conta sempre como 0. */
+function distanciaProf(alunoCoords, p){
+  if(p.online) return 0;
+  const dists = p.locais.map(l=> haversineKm(alunoCoords, l)).filter(d=>d!=null);
+  return dists.length ? Math.min(...dists) : null;
 }
 
 /* --- Módulo 1: Localização & Atribuição --- */
@@ -3722,20 +3791,26 @@ document.getElementById('btn-ploc-procurar').addEventListener('click', async ()=
   if(!morada){ statusEl.textContent = 'Indica a localização do aluno.'; return; }
   statusEl.textContent = 'A localizar…';
   tbody.innerHTML = '';
-  const alunoCoords = await geocode(morada);
+  const alunoCoords = await geocode(morada+', Portugal');
   if(!alunoCoords){ statusEl.textContent = 'Não foi possível localizar essa morada — tenta ser mais específico (ex.: cidade + concelho).'; return; }
+  // enquanto a Amelia não estiver ligada, um professor sem disciplinas/anos sincronizados não é excluído — aparece com "por sincronizar"
   let candidatos = profs.filter(p=>
-    (!disciplina || p.disciplinas.some(d=>d.toLowerCase().includes(disciplina))) &&
-    (!ano || p.anos.some(a=>a.toLowerCase().includes(ano)))
-  ).map(p=>({...p, dist: haversineKm(alunoCoords, p)}));
+    (!disciplina || !p.disciplinas.length || p.disciplinas.some(d=>d.toLowerCase().includes(disciplina))) &&
+    (!ano || !p.anos.length || p.anos.some(a=>a.toLowerCase().includes(ano)))
+  ).map(p=>({...p, dist: distanciaProf(alunoCoords, p)}));
   candidatos.sort((a,b)=>{
     if(a.dist===null) return 1;
     if(b.dist===null) return -1;
     return a.dist-b.dist;
   });
   statusEl.textContent = candidatos.length ? candidatos.length+' professor(es) encontrado(s), dos mais próximos aos mais longe.' : '';
-  tbody.innerHTML = candidatos.length ? candidatos.map(p=>`<tr><td><b>${p.nome}</b></td><td>${p.dist!=null? p.dist.toFixed(1)+' km' : '—'}</td><td>${p.disciplinas.join(', ')||'—'}</td><td>${p.anos.join(', ')||'—'}</td><td>${p.morada||'—'}</td></tr>`).join('')
-    : '<tr><td colspan="5" style="text-align:center; color:var(--muted);">Nenhum professor encontrado com esses critérios.</td></tr>';
+  tbody.innerHTML = candidatos.length ? candidatos.map(p=>{
+    const disc = p.disciplinas.length ? p.disciplinas.join(', ') : 'Por sincronizar (Amelia)';
+    const anos = p.anos.length ? p.anos.join(', ') : 'Por sincronizar (Amelia)';
+    const distTxt = p.online ? '🌐 Online' : (p.dist!=null? p.dist.toFixed(1)+' km' : '—');
+    const localTxt = p.locais.map(l=>l.texto).join('; ') + (p.online? (p.locais.length? ' + Online' : 'Online') : '');
+    return `<tr><td><b>${p.nome}</b></td><td>${distTxt}</td><td>${disc}</td><td>${anos}</td><td>${localTxt||'—'}</td></tr>`;
+  }).join('') : '<tr><td colspan="5" style="text-align:center; color:var(--muted);">Nenhum professor encontrado com esses critérios.</td></tr>';
 });
 
 /* --- Módulo 2: Experiência --- */
@@ -3753,14 +3828,14 @@ function renderProfExpLista(){
   const fAnosVal = document.getElementById('pexp-f-anos').value;
   const minAnos = fAnosVal ? Number(fAnosVal) : null;
   const filtrados = profs.filter(p=>
-    (!fDisc || p.disciplinas.some(d=>d.toLowerCase().includes(fDisc))) &&
-    (!fAno || p.anos.some(a=>a.toLowerCase().includes(fAno))) &&
+    (!fDisc || !p.disciplinas.length || p.disciplinas.some(d=>d.toLowerCase().includes(fDisc))) &&
+    (!fAno || !p.anos.length || p.anos.some(a=>a.toLowerCase().includes(fAno))) &&
     (minAnos===null || (p.exp.anosExp!=null && p.exp.anosExp>=minAnos))
   );
   wrap.innerHTML = filtrados.length ? filtrados.map(p=>{
     const idx = profs.indexOf(p);
     return `<div class="prof-row${idx===profSelectedIdx?' selected':''}" data-idx="${idx}">
-      <div><div class="pname">${p.nome}</div><div class="pmeta">${p.disciplinas.join(', ')||'Sem disciplinas'}</div></div>
+      <div><div class="pname">${p.nome}</div><div class="pmeta">${p.disciplinas.join(', ')||'Disciplinas por sincronizar'}</div></div>
       <div class="pmeta">${p.exp.anosExp!=null? p.exp.anosExp+' anos exp.' : 'sem ficha'}</div>
     </div>`;
   }).join('') : '<div class="empty-state"><b>Sem resultados</b>Ajusta os filtros de pesquisa.</div>';
@@ -3771,7 +3846,7 @@ function renderProfExpLista(){
 function selectProfExp(idx){
   profSelectedIdx = idx;
   const p = profs[idx];
-  document.getElementById('pexp-ficha-nome').textContent = p.nome+' — '+(p.disciplinas.join(', ')||'sem disciplinas');
+  document.getElementById('pexp-ficha-nome').innerHTML = `<b>${p.nome}</b>` + (p.exp.contacto||p.exp.email? ' — '+[p.exp.contacto,p.exp.email].filter(Boolean).join(' · ') : '');
   document.getElementById('pexp-form').style.display = 'grid';
   document.getElementById('pexp-anos-exp').value = p.exp.anosExp!=null ? p.exp.anosExp : '';
   document.getElementById('pexp-formacao').value = p.exp.formacao || '';
@@ -3782,12 +3857,10 @@ function selectProfExp(idx){
 document.getElementById('btn-pexp-guardar').addEventListener('click', async ()=>{
   if(profSelectedIdx===null) return;
   const p = profs[profSelectedIdx];
-  p.exp = {
-    anosExp: document.getElementById('pexp-anos-exp').value ? Number(document.getElementById('pexp-anos-exp').value) : null,
-    formacao: document.getElementById('pexp-formacao').value.trim(),
-    certificacoes: document.getElementById('pexp-certificacoes').value.trim(),
-    notas: document.getElementById('pexp-notas').value.trim()
-  };
+  p.exp.anosExp = document.getElementById('pexp-anos-exp').value ? Number(document.getElementById('pexp-anos-exp').value) : null;
+  p.exp.formacao = document.getElementById('pexp-formacao').value.trim();
+  p.exp.certificacoes = document.getElementById('pexp-certificacoes').value.trim();
+  p.exp.notas = document.getElementById('pexp-notas').value.trim();
   await saveProfs();
   renderProfExpLista();
 });

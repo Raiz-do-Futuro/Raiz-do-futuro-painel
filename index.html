@@ -165,17 +165,18 @@ body{
 .hub-wrap{position:relative; width:min(1300px,96vw); flex:1; min-height:0;}
 .hub-branch-svg{position:absolute; inset:0; width:100%; height:100%; pointer-events:none;}
 .hub-mod-btn{
-  position:absolute; transform:translate(-50%,-50%);
-  display:flex; flex-direction:column; align-items:center; gap:8px;
-  width:150px; background:none; border:none; padding:0; cursor:pointer;
+  position:absolute; transform:translate(-50%,0);
+  display:flex; flex-direction:column; align-items:center;
+  background:none; border:none; padding:0; cursor:pointer;
 }
-.hub-mod-btn svg{width:112px; height:106px; filter:drop-shadow(0 5px 9px rgba(30,40,20,0.22)); transition:transform .15s;}
-.hub-mod-btn:hover svg{transform:scale(1.1);}
 .hub-mod-btn .hub-mod-label{
-  font-family:'Bahnschrift','Poppins',sans-serif; font-size:12px; font-weight:700; color:var(--ink);
-  text-align:center; line-height:1.3; background:var(--card); padding:6px 12px; border-radius:12px;
-  border:1.5px solid var(--accent-light); box-shadow:0 3px 8px rgba(84,69,65,0.1); white-space:normal;
+  font-family:'Bahnschrift','Poppins',sans-serif; font-size:11px; font-weight:700; color:var(--ink);
+  text-align:center; line-height:1.25; background:var(--card); padding:5px 10px; border-radius:10px;
+  border:1.5px solid var(--accent-light); box-shadow:0 3px 8px rgba(84,69,65,0.1);
+  display:inline-block; width:max-content; max-width:128px;
+  transition:border-color .15s, transform .15s;
 }
+.hub-mod-btn:hover .hub-mod-label{border-color:var(--accent); transform:translateY(-1px);}
 .brand{
   padding:0 22px 24px 22px;
   border-bottom:2px solid var(--lime);
@@ -3549,6 +3550,7 @@ function leafyTwig(x0, y0, cx, cy, x1, y1, branchWidth, leafScale, colors, dark,
   let g = `<path d="M ${x0},${y0} Q ${cx},${cy} ${x1},${y1}" stroke="${dark}" stroke-width="${branchWidth}" fill="none" stroke-linecap="round"/>`;
   g += `<path d="M ${x0},${y0} Q ${cx},${cy} ${x1},${y1}" stroke="${light}" stroke-width="${Math.max(1.4,branchWidth*0.35)}" fill="none" stroke-linecap="round" opacity="0.5"/>`;
   const ts = [0.22, 0.4, 0.56, 0.72, 0.86, 1];
+  const leafPts = [];
   ts.forEach((t,i)=>{
     const [px,py] = qPoint(x0,y0,cx,cy,x1,y1,t);
     const t2 = Math.min(1, t+0.04);
@@ -3559,11 +3561,12 @@ function leafyTwig(x0, y0, cx, cy, x1, y1, branchWidth, leafScale, colors, dark,
     const dist = (11 + (i%2)*3) * leafScale;
     const dx = Math.cos(dirDeg*Math.PI/180)*dist, dy = Math.sin(dirDeg*Math.PI/180)*dist;
     const lx = px+dx, ly = py+dy;
+    leafPts.push([lx,ly]);
     g += `<line x1="${px.toFixed(1)}" y1="${py.toFixed(1)}" x2="${lx.toFixed(1)}" y2="${ly.toFixed(1)}" stroke="${dark}" stroke-width="${(1.5*leafScale).toFixed(1)}" stroke-linecap="round"/>`;
     const rot = screenAngleToLeafRotate(dirDeg);
     g += `<g transform="translate(${lx.toFixed(1)},${ly.toFixed(1)})">${hubLeafPath(rot, leafScale*(0.78+ (i%3)*0.1), colors[i%colors.length], dark)}</g>`;
   });
-  return g;
+  return {svg:g, leafPts};
 }
 function buildProfHub(){
   const wrap = document.getElementById('hub-wrap');
@@ -3611,13 +3614,18 @@ function buildProfHub(){
   });
   // raminhos decorativos, com folhas presas ao longo de todo o comprimento
   decorTwigs.forEach(([x0,y0,cx,cy,x1,y1,s])=>{
-    svg += leafyTwig(x0,y0,cx,cy,x1,y1, 6, s, decorColors, BARK_DARK, BARK_LIGHT);
+    svg += leafyTwig(x0,y0,cx,cy,x1,y1, 6, s, decorColors, BARK_DARK, BARK_LIGHT).svg;
   });
-  // raminhos dos 4 módulos — mesma técnica, só um pouco maiores/mais cheios, com uma área de clique à volta da ponta
+  // raminhos dos 4 módulos — mesma técnica, só um pouco maiores/mais cheios, com uma área de clique à volta do molho de folhas
   modules.forEach(m=>{
     const [x0,y0,cx,cy,x1,y1] = m.pts;
-    svg += leafyTwig(x0,y0,cx,cy,x1,y1, 7, m.scale, leafColors, BARK_DARK, BARK_LIGHT);
-    svg += `<circle class="hub-mod-hit" data-mod="${m.key}" cx="${x1}" cy="${y1}" r="${48*m.scale}" fill="#000" opacity="0" style="pointer-events:auto; cursor:pointer;"/>`;
+    const twig = leafyTwig(x0,y0,cx,cy,x1,y1, 7, m.scale, leafColors, BARK_DARK, BARK_LIGHT);
+    svg += twig.svg;
+    // centro real do molho de folhas (não a ponta matemática do raminho) — para a folha e a etiqueta ficarem alinhadas
+    m.centerX = twig.leafPts.reduce((s,p)=>s+p[0],0)/twig.leafPts.length;
+    m.centerY = twig.leafPts.reduce((s,p)=>s+p[1],0)/twig.leafPts.length;
+    m.maxY = Math.max(...twig.leafPts.map(p=>p[1]));
+    svg += `<circle class="hub-mod-hit" data-mod="${m.key}" cx="${m.centerX.toFixed(1)}" cy="${m.centerY.toFixed(1)}" r="${46*m.scale}" fill="#000" opacity="0" style="pointer-events:auto; cursor:pointer;"/>`;
   });
   svg += `</svg>`;
   wrap.innerHTML = svg;
@@ -3627,8 +3635,7 @@ function buildProfHub(){
   });
 
   modules.forEach((m)=>{
-    const [,,,,x1,y1] = m.pts;
-    const left = (x1/W*100).toFixed(2), top = ((y1+58*m.scale)/H*100).toFixed(2);
+    const left = (m.centerX/W*100).toFixed(2), top = ((m.maxY+22)/H*100).toFixed(2);
     const btn = document.createElement('button');
     btn.className = 'hub-mod-btn';
     btn.dataset.mod = m.key;

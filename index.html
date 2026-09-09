@@ -165,24 +165,27 @@ body{
 .hub-wrap{position:relative; width:min(1300px,96vw); flex:1; min-height:0;}
 .hub-branch-svg{position:absolute; inset:0; width:100%; height:100%; pointer-events:none;}
 .hub-mod-btn{
-  position:absolute; transform:translate(-50%,0);
-  display:flex; flex-direction:column; align-items:center;
-  background:none; border:none; padding:0; cursor:pointer;
+  position:absolute; transform:translate(-50%,-50%);
+  background:none; border:none; padding:0; pointer-events:none;
 }
-.hub-mod-btn .hub-mod-label{
-  font-family:'Stardos Stencil','Bahnschrift',sans-serif; font-size:13px; font-weight:700; color:var(--ink);
-  text-align:center; line-height:1.28; letter-spacing:.01em; max-width:150px;
-  text-shadow:
-    0 1px 0 var(--bg), 0 -1px 0 var(--bg), 1px 0 0 var(--bg), -1px 0 0 var(--bg),
-    1px 1px 0 var(--bg), -1px -1px 0 var(--bg), 1px -1px 0 var(--bg), -1px 1px 0 var(--bg),
-    0 3px 7px rgba(74,56,48,0.28);
-  transition:transform .15s, opacity .15s;
+.hub-mod-underline{
+  width:0; height:3px; border-radius:2px; background:var(--green);
+  opacity:0; transition:width .2s ease, opacity .2s ease;
 }
-.hub-mod-btn .hub-mod-underline{
-  width:22px; height:3px; border-radius:2px; margin:5px auto 0; transition:width .15s;
+.hub-mod-btn.is-hover .hub-mod-underline{width:40px; opacity:1;}
+.hub-mod-callout{
+  position:absolute; transform:translate(-50%,-100%); margin-top:-10px;
+  font-family:'Bahnschrift','Poppins',sans-serif; font-size:12px; font-weight:700; color:var(--ink);
+  text-align:center; line-height:1.3; width:max-content; max-width:150px;
+  background:var(--card); border:1.5px solid var(--green); border-radius:10px; padding:7px 13px;
+  box-shadow:0 6px 14px rgba(84,69,65,0.18);
+  opacity:0; pointer-events:none; transition:opacity .18s ease, transform .18s ease;
 }
-.hub-mod-btn:hover .hub-mod-label{transform:translateY(-1px);}
-.hub-mod-btn:hover .hub-mod-underline{width:34px;}
+.hub-mod-callout::after{
+  content:''; position:absolute; left:50%; top:100%; transform:translateX(-50%);
+  border:6px solid transparent; border-top-color:var(--green);
+}
+.hub-mod-callout.is-hover{opacity:1; transform:translate(-50%,-100%) translateY(-4px);}
 .brand{
   padding:0 22px 24px 22px;
   border-bottom:2px solid var(--lime);
@@ -3631,25 +3634,36 @@ function buildProfHub(){
     m.centerX = twig.leafPts.reduce((s,p)=>s+p[0],0)/twig.leafPts.length;
     m.centerY = twig.leafPts.reduce((s,p)=>s+p[1],0)/twig.leafPts.length;
     m.maxY = Math.max(...twig.leafPts.map(p=>p[1]));
+    m.minY = Math.min(...twig.leafPts.map(p=>p[1]));
     svg += `<circle class="hub-mod-hit" data-mod="${m.key}" cx="${m.centerX.toFixed(1)}" cy="${m.centerY.toFixed(1)}" r="${46*m.scale}" fill="#000" opacity="0" style="pointer-events:auto; cursor:pointer;"/>`;
   });
   svg += `</svg>`;
   wrap.innerHTML = svg;
 
-  wrap.querySelectorAll('.hub-mod-hit').forEach(hit=>{
-    hit.addEventListener('click', ()=> zoomHubIntoModule(hit, hit.dataset.mod));
-  });
-
   modules.forEach((m)=>{
-    const left = (m.centerX/W*100).toFixed(2), top = ((m.maxY+22)/H*100).toFixed(2);
-    const btn = document.createElement('button');
-    btn.className = 'hub-mod-btn';
-    btn.dataset.mod = m.key;
-    btn.style.left = left+'%';
-    btn.style.top = top+'%';
-    btn.innerHTML = `<span class="hub-mod-label">${m.icon} ${m.label}</span><span class="hub-mod-underline" style="background:${theme.accent};"></span>`;
-    btn.addEventListener('click', ()=> zoomHubIntoModule(btn, m.key));
-    wrap.appendChild(btn);
+    // sublinhado verde vivo, mesmo por baixo da folha
+    const underlineWrap = document.createElement('div');
+    underlineWrap.className = 'hub-mod-btn';
+    underlineWrap.style.left = (m.centerX/W*100).toFixed(2)+'%';
+    underlineWrap.style.top = (m.maxY/H*100).toFixed(2)+'%';
+    underlineWrap.innerHTML = `<span class="hub-mod-underline"></span>`;
+    wrap.appendChild(underlineWrap);
+
+    // caixa com o nome da categoria, por cima da folha
+    const callout = document.createElement('div');
+    callout.className = 'hub-mod-callout';
+    callout.style.left = (m.centerX/W*100).toFixed(2)+'%';
+    callout.style.top = ((m.minY-14)/H*100).toFixed(2)+'%';
+    callout.innerHTML = `${m.icon} ${m.label}`;
+    wrap.appendChild(callout);
+
+    // a folha (área de clique no SVG) é o que realmente reage ao rato e ao clique
+    const hit = wrap.querySelector(`.hub-mod-hit[data-mod="${m.key}"]`);
+    if(hit){
+      hit.addEventListener('click', ()=> zoomHubIntoModule(hit, m.key));
+      hit.addEventListener('mouseenter', ()=>{ underlineWrap.classList.add('is-hover'); callout.classList.add('is-hover'); });
+      hit.addEventListener('mouseleave', ()=>{ underlineWrap.classList.remove('is-hover'); callout.classList.remove('is-hover'); });
+    }
   });
 }
 function showProfHub(){

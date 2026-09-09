@@ -162,25 +162,25 @@ body{
   font-family:'Stardos Stencil','Bahnschrift',sans-serif; font-size:28px; font-weight:700; color:var(--ink); margin:4px 0 4px 0;
 }
 .hub-head p{font-size:13px; color:var(--muted); margin:0;}
-.hub-wrap{position:relative; width:min(760px,94vw); flex:1; min-height:0; display:flex; align-items:center; justify-content:center;}
+.hub-wrap{position:relative; width:min(880px,96vw); flex:1; min-height:0;}
+.hub-branch-svg{position:absolute; inset:0; width:100%; height:100%; pointer-events:none;}
 @keyframes hubLeafFloat{
-  0%,100%{transform:translate(-50%,-50%) translateY(0);}
-  50%{transform:translate(-50%,-50%) translateY(-8px);}
+  0%,100%{transform:translate(-50%,-50%) translateY(0) rotate(-1.5deg);}
+  50%{transform:translate(-50%,-50%) translateY(-7px) rotate(1.5deg);}
 }
-.hub-leaf{
-  position:absolute; display:flex; flex-direction:column; align-items:center; justify-content:center;
-  width:128px; height:150px; cursor:pointer; background:none; border:none; padding:0;
-  animation:hubLeafFloat 4.2s ease-in-out infinite;
+.hub-mod-btn{
+  position:absolute; transform:translate(-50%,-50%);
+  display:flex; flex-direction:column; align-items:center; gap:8px;
+  width:150px; background:none; border:none; padding:0; cursor:pointer;
+  animation:hubLeafFloat 4.6s ease-in-out infinite;
 }
-.hub-leaf svg{width:100%; height:100%; filter:drop-shadow(0 6px 12px rgba(30,40,20,0.22)); transition:transform .15s;}
-.hub-leaf:hover svg{transform:scale(1.06);}
-.hub-leaf .hub-leaf-icon{position:absolute; top:38%; left:50%; transform:translate(-50%,-50%); font-size:26px;}
-.hub-leaf .hub-leaf-label{
-  position:absolute; top:68%; left:50%; transform:translate(-50%,0); width:100px; text-align:center;
-  font-family:'Bahnschrift','Poppins',sans-serif; font-size:11.5px; font-weight:700; color:#fff; line-height:1.2;
-  text-shadow:0 1px 3px rgba(0,0,0,0.25);
+.hub-mod-btn svg{width:78px; height:78px; filter:drop-shadow(0 5px 9px rgba(30,40,20,0.22)); transition:transform .15s;}
+.hub-mod-btn:hover svg{transform:scale(1.1);}
+.hub-mod-btn .hub-mod-label{
+  font-family:'Bahnschrift','Poppins',sans-serif; font-size:12px; font-weight:700; color:var(--ink);
+  text-align:center; line-height:1.3; background:var(--card); padding:6px 12px; border-radius:12px;
+  border:1.5px solid var(--accent-light); box-shadow:0 3px 8px rgba(84,69,65,0.1); white-space:normal;
 }
-.hub-decor-leaf{position:absolute; pointer-events:none;}
 .brand{
   padding:0 22px 24px 22px;
   border-bottom:2px solid var(--lime);
@@ -3533,33 +3533,55 @@ document.getElementById('fin-cf-mes')?.addEventListener('change', renderCFTable)
    experiência e horários (Amelia por ligar).
    ============================================================ */
 let profHubBuilt = false;
+/* Uma folha simples (ponta + talo), igual ao resto do site — usada aos molhos, como na árvore. */
+function hubLeafPath(cx, cy, rot, scale, fill, veinColor){
+  return `<g transform="translate(${cx},${cy}) rotate(${rot}) scale(${scale})">
+    <path d="M0,-20 C12,-16 18,-4 15,8 C13,18 6,25 0,30 C-6,25 -13,18 -15,8 C-18,-4 -12,-16 0,-20 Z" fill="${fill}"/>
+    <line x1="0" y1="-15" x2="0" y2="24" stroke="${veinColor}" stroke-width="1.1" opacity="0.4"/>
+  </g>`;
+}
+/* Molho de 3 folhas a abrir em leque a partir de um ponto do ramo. */
+function hubLeafCluster(cx, cy, scale, colors, veinColor){
+  const angles = [-26, 0, 26];
+  return angles.map((a,i)=>{
+    const dx = Math.sin(a*Math.PI/180)*15*scale, dy = -Math.cos(a*Math.PI/180)*15*scale - 6*scale;
+    return hubLeafPath(cx+dx, cy+dy, a, scale*(i===1?1.15:1), colors[i%colors.length], veinColor);
+  }).join('');
+}
 function buildProfHub(){
   const wrap = document.getElementById('hub-wrap');
   const theme = TAB_THEME['professores'] || shadeAccent('#2F7A63');
-  const LEAF_D = 'M 0,-50 C 30,-46 50,-16 46,14 C 43,40 22,58 0,66 C -22,58 -43,40 -46,14 C -50,-16 -30,-46 0,-50 Z';
+  const W = 900, H = 520;
+  // ramo sinuoso a atravessar o ecrã, como na imagem de referência
+  const branchD = 'M 20,410 C 90,300 150,250 190,340 C 230,440 340,410 380,300 C 410,210 470,150 520,110 C 560,80 590,190 610,330 C 625,420 700,440 780,300 C 810,245 850,240 880,255';
   const modules = [
-    {key:'localizacao', icon:'📍', label:'Localização & Atribuição', left:14, top:16, fill:theme.accent, rot:-8},
-    {key:'experiencia', icon:'🎓', label:'Experiência', left:60, top:10, fill:theme.mid, rot:6},
-    {key:'horarios', icon:'🕒', label:'Horários & Disponibilidade', left:10, top:62, fill:theme.dark, rot:5},
-    {key:'avaliacao', icon:'⭐', label:'Avaliação de Desempenho', left:58, top:60, fill:theme.accent, rot:-6},
+    {key:'localizacao', icon:'📍', label:'Localização & Atribuição', x:190, y:340, side:1},
+    {key:'experiencia', icon:'🎓', label:'Experiência', x:520, y:110, side:-1},
+    {key:'horarios', icon:'🕒', label:'Horários & Disponibilidade', x:380, y:300, side:1},
+    {key:'avaliacao', icon:'⭐', label:'Avaliação de Desempenho', x:780, y:300, side:1},
   ];
-  const decorSpots = [[36,4,-15,0.5],[86,34,20,0.45],[16,86,-10,0.45],[88,84,15,0.5],[50,90,8,0.4]];
-  let html = '';
-  decorSpots.forEach(([l,t,rot,scale])=>{
-    html += `<div class="hub-decor-leaf" style="left:${l}%; top:${t}%; transform:translate(-50%,-50%) rotate(${rot}deg) scale(${scale});">
-      <svg viewBox="-52 -60 104 130" width="90" height="112"><path d="${LEAF_D}" fill="${theme.light}"/></svg>
-    </div>`;
+  const decorSpots = [[90,330,0.6],[300,370,0.55],[460,180,0.6],[610,330,0.55],[860,270,0.55]];
+
+  let svg = `<svg class="hub-branch-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">`;
+  svg += `<path d="${branchD}" stroke="#544541" stroke-width="9" fill="none" stroke-linecap="round"/>`;
+  decorSpots.forEach(([x,y,s])=>{
+    svg += hubLeafCluster(x, y, s, [theme.light, theme.mid, theme.light], theme.dark);
   });
+  svg += `</svg>`;
+  wrap.innerHTML = svg;
+
   modules.forEach((m,i)=>{
-    html += `<button class="hub-leaf" data-mod="${m.key}" style="left:${m.left}%; top:${m.top}%; animation-delay:${i*0.4}s;">
-      <svg viewBox="-52 -60 104 130"><path d="${LEAF_D}" fill="${m.fill}" style="transform:rotate(${m.rot}deg); transform-origin:center;"/></svg>
-      <span class="hub-leaf-icon">${m.icon}</span>
-      <span class="hub-leaf-label">${m.label}</span>
-    </button>`;
-  });
-  wrap.innerHTML = html;
-  wrap.querySelectorAll('.hub-leaf').forEach(btn=>{
-    btn.addEventListener('click', ()=> zoomHubIntoModule(btn, btn.dataset.mod));
+    const left = (m.x/W*100).toFixed(2), top = (m.y/H*100).toFixed(2);
+    const btn = document.createElement('button');
+    btn.className = 'hub-mod-btn';
+    btn.dataset.mod = m.key;
+    btn.style.left = left+'%';
+    btn.style.top = top+'%';
+    btn.style.animationDelay = (i*0.35)+'s';
+    btn.innerHTML = `<svg viewBox="-40 -34 80 74">${hubLeafCluster(0, 6, 1.5, [theme.accent, theme.mid, theme.accent], theme.dark)}</svg>
+      <span class="hub-mod-label">${m.icon} ${m.label}</span>`;
+    btn.addEventListener('click', ()=> zoomHubIntoModule(btn, m.key));
+    wrap.appendChild(btn);
   });
 }
 function showProfHub(){

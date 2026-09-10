@@ -542,11 +542,12 @@ table.data tr.row-media td:last-child{border-right:1.5px solid var(--accent); bo
     <div class="gloss-head">
       <div class="eyebrow">📖 Raiz do Futuro</div>
       <h1>Glossário de estatísticas</h1>
-      <p>Como cada número da página "Alunos efetivos" é calculado — para saberes sempre de onde vêm os dados.</p>
+      <p id="gloss-head-desc">Como cada número da página "Alunos efetivos" é calculado — para saberes sempre de onde vêm os dados.</p>
     </div>
 
+    <div class="gloss-tab-content" data-glosstab="alunos">
     <div class="gloss-section">
-      <h2>As 7 estatísticas principais</h2>
+      <h2>As 8 estatísticas principais</h2>
       <div class="gloss-grid">
         <div class="gloss-item"><b>Alunos efetivos</b><span>Alunos únicos da aba "Clientes Efetivos" <b>sem "Data Fim"</b> e com <b>"Pagamento" = "Sim"</b>. Cada aluno conta uma só vez, mesmo com 2 disciplinas.</span></div>
         <div class="gloss-item"><b>Taxa de conversão AE → Efetivo</b><span>Linhas da aba "AEs" com <code>Estado = Efetivo</code> ÷ total de linhas da aba "AEs", em %.</span></div>
@@ -555,6 +556,7 @@ table.data tr.row-media td:last-child{border-right:1.5px solid var(--accent); bo
         <div class="gloss-item"><b>Desistência antes do fim do ano</b><span>Entre quem já saiu, % cuja "Data Fim" foi antes de 30 de junho do ano letivo da respetiva "Data Início".</span></div>
         <div class="gloss-item"><b>Tempo médio em conversações</b><span>Linhas da aba "AEs" com T/i e T/f de Conversações: média de <code>T/f − T/i</code>.</span></div>
         <div class="gloss-item"><b>Média de disciplinas por aluno</b><span>Total de matrículas (aluno + disciplina) ÷ nº de alunos únicos.</span></div>
+        <div class="gloss-item"><b>Potencial de renovação</b><span>Alunos efetivos no <b>10º ano ou menos</b>, mais os que estão em anos além do 10º mas têm <b>pelo menos uma disciplina fora</b> da lista "sem renovação" (Biologia, Físico-Química, Geometria Descritiva, Economia, Geografia, Filosofia, História, Cultura das Artes). Um aluno com uma dessas disciplinas + outra fora da lista ainda conta. Mostra nº absoluto e % sobre o total de alunos efetivos.</span></div>
       </div>
     </div>
 
@@ -588,10 +590,135 @@ table.data tr.row-media td:last-child{border-right:1.5px solid var(--accent); bo
         <div class="gloss-row"><b>AE (ganhos/perdidos)</b><span>Mesma lógica do T/i e T/f, mas para Aula Experimental.</span></div>
         <div class="gloss-row"><b>Efetivos perdidos</b><span>Alunos deste professor (Clientes Efetivos) que já têm "Data Fim" preenchida.</span></div>
         <div class="gloss-row"><b>Disciplina principal</b><span>Disciplinas separadas por vírgula contam à parte; mostra 2 disciplinas só se houver empate no 1º lugar.</span></div>
-        <div class="gloss-row"><b>Nº aulas / aluno</b><span>Soma do nº de aulas (Pagamentos Alunos) dos alunos válidos deste professor ÷ Nº Alunos.</span></div>
-        <div class="gloss-row"><b>Faturação (real)</b><span>Soma do "Valor" (Pagamentos Alunos) desses mesmos alunos.</span></div>
+        <div class="gloss-row"><b>Nº de aulas dadas</b><span>Soma do "Nº de aulas" de todos os registos da tabela "Aulas por professor (Amélia)" deste professor, dentro do período escolhido no filtro acima da tabela (mensal, anual ou intervalo — "Total" soma tudo).</span></div>
+        <div class="gloss-row"><b>Nº de aulas / aluno</b><span>Nº de aulas dadas (definição acima) ÷ nº de alunos que estiveram ativos com este professor em cada mês desse período (aluno com "Data Início" e sem "Data Fim", ou "Data Fim" nesse mês, na aba "Clientes Efetivos"). Ex.: em 2 meses com 13 alunos ativos cada, soma-se 26 no denominador.</span></div>
+        <div class="gloss-row"><b>Lucro (sem gastos)</b><span>Para cada registo de "Aulas por professor (Amélia)" no período escolhido: nº de aulas × lucro por aula — o lucro por aula varia consoante o Ano de Ensino e o Plano (ou Singular) desse registo, segundo a tabela "Lucro/aula" do Preçário. Soma-se o resultado de todos os registos do professor. Substitui a antiga "Faturação (real)".</span></div>
         <div class="gloss-row"><b>⭐ Média</b><span>Linha fixa no topo da tabela — média simples de cada coluna entre todos os professores.</span></div>
+        <div class="gloss-row"><b>📅 Filtro de período</b><span>Mensal, anual ou por intervalo de meses — afeta apenas "Nº de aulas dadas", "Nº de aulas / aluno" e "Lucro (sem gastos)" (as únicas colunas com data associada, através do campo "Mês" de cada registo da Amélia). As restantes colunas continuam a refletir todo o histórico.</span></div>
+        <div class="gloss-row"><b>🅰️ Aulas por professor (Amélia)</b><span>Ainda sem ligação automática à Amélia — regista-se à mão ou importa-se em lote (Professor, Mês, Ano de Ensino, Plano/Singular, Nº de aulas). Assim que a Amélia estiver ligada, isto passa a vir de lá sozinho.</span></div>
+        <div class="gloss-row"><b>🔄 Histórico de alterações de professor</b><span>Sempre que importas um Excel novo e o professor de uma matrícula (aluno+disciplina) mudou desde a última importação, fica aqui um registo com o professor anterior, o novo e a data da troca — para nunca perder o histórico de quem deu aulas antes da mudança. Os registos da Amélia já têm o professor certo associado a cada mês, por isso o "Nº de aulas dadas" e o "Lucro (sem gastos)" ficam sempre corretamente divididos entre o professor antigo e o novo, mesmo depois da troca.</span></div>
       </div>
+    </div>
+    </div>
+
+    <div class="gloss-tab-content" data-glosstab="mercado" style="display:none;">
+    <div class="gloss-section">
+      <h2>As 5 estatísticas principais</h2>
+      <div class="gloss-grid">
+        <div class="gloss-item"><b>Pedidos / mês (média)</b><span>Total de pedidos registados dividido pelo número de meses diferentes em que há pelo menos um pedido.</span></div>
+        <div class="gloss-item"><b>Pedidos online / mês (média)</b><span>O mesmo cálculo que "Pedidos / mês", mas contando só os pedidos com Modalidade = Online.</span></div>
+        <div class="gloss-item"><b>% abordados sobre legíveis</b><span>Entre os pedidos marcados como "Legível", a percentagem em que clicaste em "Marcar abordámos" (ou seja, o telemóvel do cliente já é conhecido).</span></div>
+        <div class="gloss-item"><b>% ficámos sobre abordados</b><span>Entre os pedidos que abordaste, a percentagem cujo telemóvel apareceu depois em "Clientes Efetivos" — ou seja, que se tornaram alunos.</span></div>
+        <div class="gloss-item"><b>% ficámos sobre legíveis</b><span>Percentagem de todos os pedidos legíveis que acabaram por se tornar alunos efetivos — o funil completo, do pedido ao aluno.</span></div>
+      </div>
+    </div>
+
+    <div class="gloss-section">
+      <h2>"Abordámos" e "Ficámos"</h2>
+      <div class="gloss-list">
+        <div class="gloss-row"><b>Abordámos</b><span>Marca-se à mão na tabela "Registo de pedidos" — clicas em "Marcar abordámos" e indicas o telemóvel do cliente (só o sabes depois de contactares o pedido no Fixando).</span></div>
+        <div class="gloss-row"><b>Ficámos</b><span>100% automático: assim que esse mesmo telemóvel aparecer em "Clientes Efetivos" (Plataforma Fixando) no teu Excel de Alunos, o pedido passa sozinho a "Ficámos = Sim".</span></div>
+      </div>
+    </div>
+
+    <div class="gloss-section">
+      <h2>📆 Período dos gráficos</h2>
+      <div class="gloss-list">
+        <div class="gloss-row"><b>Filtro de período</b><span>Um mês específico ou um intervalo de datas personalizado ("De"/"Até") — aplica-se a Localidades, Momento do dia, Dia da semana, Disciplinas e Anos de ensino. "Total" mostra todos os meses.</span></div>
+      </div>
+    </div>
+
+    <div class="gloss-section">
+      <h2>Gráficos e tabelas</h2>
+      <div class="gloss-list">
+        <div class="gloss-row"><b>📍 Localidades com mais procura</b><span>Todos os pedidos do período, agrupados por localidade.</span></div>
+        <div class="gloss-row"><b>💻 Localidades — procura online</b><span>O mesmo, só para pedidos com Modalidade = Online.</span></div>
+        <div class="gloss-row"><b>🕐 Momento do dia</b><span>Pedidos do período agrupados em 6 janelas horárias (0h–8h, 8h–12h, 12h–15h, 15h–18h, 18h–21h, 21h–24h) pela "Hora" do pedido.</span></div>
+        <div class="gloss-row"><b>📅 Dia da semana</b><span>Pedidos do período agrupados pelo dia da semana da "Data do pedido".</span></div>
+        <div class="gloss-row"><b>📖 Disciplinas mais requisitadas</b><span>Pedidos do período agrupados por "Disciplina".</span></div>
+        <div class="gloss-row"><b>🎓 Anos de ensino mais requisitados</b><span>Pedidos do período agrupados por "Ano de ensino".</span></div>
+        <div class="gloss-row"><b>🗺️ Taxa de penetração por distrito</b><span>Por distrito (a partir da "Localidade"): nº de pedidos legíveis, quantos abordámos, quantos ficaram alunos, e % Penetração = Ficámos ÷ Legíveis — quanto do potencial de mercado dessa região já é nosso.</span></div>
+        <div class="gloss-row"><b>📈 Evolução mensal</b><span>Pedidos por mês (barras) sobrepostos com as taxas de abordagem e conversão ao longo do tempo (linhas) — todo o histórico, sem filtro de período.</span></div>
+        <div class="gloss-row"><b>🗂️ Registo de pedidos</b><span>Todos os pedidos registados. Contacto, Modalidade e Legível são editáveis diretamente na tabela; Abordámos tem "marcar"/"anular"; Ficámos é sempre automático.</span></div>
+      </div>
+    </div>
+    </div>
+
+    <div class="gloss-tab-content" data-glosstab="financeiro" style="display:none;">
+    <div class="gloss-section">
+      <h2>Estatísticas principais</h2>
+      <p style="font-size:12.5px; color:var(--muted); margin:-6px 0 14px 0;">Nem todas aparecem sempre — algumas só surgem quando há dados suficientes no mês (ex: gasto em marketing &gt; 0 para calcular CAC).</p>
+      <div class="gloss-grid">
+        <div class="gloss-item"><b>Receita do mês</b><span>Receita real do mês mais recente com dados, comparada com o objetivo para esse mesmo mês (aba DR).</span></div>
+        <div class="gloss-item"><b>Ponto de equilíbrio (mês)</b><span>Receita necessária nesse mês para cobrir todos os gastos (fixos + variáveis reais desse mês) e ficar com Rendimento = 0.</span></div>
+        <div class="gloss-item"><b>Ponto de equilíbrio (nº alunos)</b><span>O ponto de equilíbrio em euros, traduzido para nº de alunos usando o ARPU desse mês.</span></div>
+        <div class="gloss-item"><b>Receita média por aluno (ARPU)</b><span>Receita Real do mês a dividir pelo nº de alunos ativos nesse mês (calculado no separador Alunos). Mostra se a receita cresce por mais alunos ou por preços mais altos.</span></div>
+        <div class="gloss-item"><b>CAC — Custo de Aquisição de Cliente</b><span>Gasto em marketing (Google Ads, Meta Ads, Lendarius, Fixando) nesse mês, a dividir pelo nº de alunos efetivos cuja Plataforma é Fixando, Website ou Redes Sociais e cuja Data de Início foi nesse mês.</span></div>
+        <div class="gloss-item"><b>LTV : CAC</b><span>Valor de vida do aluno (ARPU × retenção média em meses) a dividir pelo CAC. Acima de 3 costuma ser saudável; abaixo de 1 é sinal de alerta.</span></div>
+        <div class="gloss-item"><b>Período de recuperação do CAC</b><span>CAC a dividir pelo ARPU — quantos meses de mensalidade de um aluno são precisos para recuperar o que custou angariá-lo.</span></div>
+        <div class="gloss-item"><b>RAOS (retorno de marketing)</b><span>Estimativa: receita mensal gerada pelos alunos atualmente ativos vindos de Fixando, Website ou Redes Sociais, a dividir pelo gasto em marketing desse mês.</span></div>
+        <div class="gloss-item"><b>Rendimento acumulado (Real)</b><span>Soma do Rendimento (Receita menos Gastos Fixos e Variáveis) em todos os meses reais até agora.</span></div>
+        <div class="gloss-item"><b>Desvio acumulado vs Objetivo</b><span>Soma, mês a mês desde o início do ano, da diferença entre a Receita Real e a Receita Objetivo. Positivo = à frente do objetivo; negativo = atrás.</span></div>
+        <div class="gloss-item"><b>ARR estimado</b><span>Receita Anual Recorrente estimada, assumindo que a receita do mês mais recente se mantém constante durante 12 meses (MRR × 12).</span></div>
+        <div class="gloss-item"><b>Fixos : Variáveis</b><span>Proporção dos gastos reais que são fixos (não escalam com o negócio) versus variáveis (escalam com o nº de alunos/pedidos).</span></div>
+        <div class="gloss-item"><b>Caixa atual (Real)</b><span>Saldo de caixa acumulado real, no último mês com dados (aba CF).</span></div>
+        <div class="gloss-item"><b>Runway estimado</b><span>Quantos meses a caixa atual aguenta, ao ritmo médio de consumo (burn rate) dos meses reais em que o Cash Flow foi negativo.</span></div>
+      </div>
+    </div>
+
+    <div class="gloss-section">
+      <h2>Tabelas e gráficos</h2>
+      <div class="gloss-list">
+        <div class="gloss-row"><b>📊 Demonstração de Resultados</b><span>Linhas da aba DR (Pessimista/Objetivo/Real/Otimista) para o mês escolhido, com "Face ao objetivo" (Real vs Objetivo) e "% da Receita" (essa linha Real como % da Receita Real do mesmo período).</span></div>
+        <div class="gloss-row"><b>💰 Fluxo de Caixa</b><span>Linhas da aba CF nos 4 cenários, para o mês escolhido, com "Face ao objetivo".</span></div>
+        <div class="gloss-row"><b>📈 Evolução da Caixa</b><span>Saldo de caixa acumulado, mês a mês, nos 4 cenários.</span></div>
+        <div class="gloss-row"><b>📈 Evolução da Receita</b><span>Receita mensal nos 4 cenários.</span></div>
+        <div class="gloss-row"><b>📊 Crescimento mensal (Receita Real)</b><span>Variação % da Receita Real face ao mês anterior.</span></div>
+        <div class="gloss-row"><b>📉 Desvio acumulado — Real vs Objetivo</b><span>Diferença acumulada, mês a mês, entre Receita/Rendimento Real e Objetivo.</span></div>
+        <div class="gloss-row"><b>🥧 Peso de cada gasto na Receita</b><span>Gastos fixos e variáveis reais, cada um como % da Receita Real (total anual).</span></div>
+        <div class="gloss-row"><b>🎯 CAC ao longo do tempo</b><span>(Google Ads + Meta Ads + Lendarius + Fixando) ÷ alunos efetivos vindos de Fixando/Website/Redes Sociais, mês a mês.</span></div>
+        <div class="gloss-row"><b>📊 Gastos por categoria ao longo do tempo</b><span>Cada categoria de gasto real, mês a mês, em barras empilhadas.</span></div>
+      </div>
+    </div>
+    </div>
+
+    <div class="gloss-tab-content" data-glosstab="professores" style="display:none;">
+    <div class="gloss-section">
+      <h2>📍 Localização &amp; Atribuição</h2>
+      <div class="gloss-list">
+        <div class="gloss-row"><b>Fonte dos professores</b><span>Aba "Professores" do teu Excel habitual — colunas "Professores" e "Localização" (várias localidades separadas por ";", ou "Online").</span></div>
+        <div class="gloss-row"><b>Geocodificação</b><span>Cada localidade é convertida em coordenadas automaticamente via OpenStreetMap/Nominatim (gratuito) e fica guardada — só demora da primeira vez.</span></div>
+        <div class="gloss-row"><b>Procurar (Localização, Disciplina, Ano)</b><span>Ordena os professores pela distância (fórmula de Haversine) à morada indicada; Disciplina e Ano ainda não filtram de verdade, porque essa informação ainda não vem do Excel — vai vir da Amélia.</span></div>
+      </div>
+    </div>
+
+    <div class="gloss-section">
+      <h2>🎓 Experiência</h2>
+      <div class="gloss-list">
+        <div class="gloss-row"><b>Formação, Estado, Experiência, Contacto, Email</b><span>Vêm automaticamente da aba "Currículo" do mesmo Excel de professores, associados pelo nome.</span></div>
+        <div class="gloss-row"><b>Certificações, Notas</b><span>Só existem à mão — não vêm de nenhum Excel; preenches diretamente na ficha do professor.</span></div>
+        <div class="gloss-row"><b>Pesquisa avançada</b><span>Filtra a lista de professores por Disciplina, Ano de ensino e Experiência mínima (anos).</span></div>
+      </div>
+    </div>
+
+    <div class="gloss-section">
+      <h2>🕒 Horários &amp; Disponibilidade</h2>
+      <div class="gloss-list">
+        <div class="gloss-row"><b>Estado atual</b><span>Interface pronta mas ainda sem ligação à Amélia — precisa da chave de API da Amélia e do URL do site WordPress. Quando ligada, "Procurar" (Dia, Hora, Disciplina, Ano) passa a mostrar disponibilidade real em tempo real.</span></div>
+      </div>
+    </div>
+
+    <div class="gloss-section">
+      <h2>⭐ Avaliação de Desempenho</h2>
+      <div class="gloss-list">
+        <div class="gloss-row"><b>Estado atual</b><span>Módulo ainda em construção — reservado para futuras métricas como avaliações de alunos, retenção por professor ou notas internas.</span></div>
+      </div>
+    </div>
+
+    <div class="gloss-section">
+      <h2>🏆 Desempenho por professor (na página Alunos)</h2>
+      <p style="font-size:12.5px; color:var(--body); line-height:1.5; margin:0;">A tabela "Desempenho por professor" — com Nº Alunos, Retenção, conversões de AE, Nº de aulas dadas, Nº de aulas/aluno, Lucro (sem gastos), histórico de alterações de professor, etc. — vive na página <b>01 · Alunos</b>, não aqui. Abre o glossário a partir dessa página para veres essas definições.</p>
+    </div>
     </div>
   </div>
 </div>
@@ -748,8 +875,86 @@ table.data tr.row-media td:last-child{border-right:1.5px solid var(--accent); bo
         </div>
 
         <div class="section">
+          <h3>🅰️ Aulas por professor (Amélia)</h3>
+          <p class="desc">Fonte dos dados de "Nº de aulas dadas", "Nº de aulas / aluno" e "Lucro (sem gastos)" da tabela abaixo</p>
+
+          <details class="fold">
+            <summary>ℹ️ Ainda sem ligação automática à Amélia</summary>
+            <div class="fold-body">
+            <p style="font-size:13px; color:var(--body); line-height:1.55; margin:0;">
+            Assim que ligares a Amélia, o nº de aulas por professor (e a respetiva combinação de Ano de Ensino + Plano/Singular) passa a vir de lá automaticamente. Até lá, regista aqui manualmente ou importa em lote — o resto do painel (aulas dadas, aulas/aluno e lucro sem gastos) calcula-se sozinho a partir destes registos.
+            </p>
+            </div>
+          </details>
+
+          <div class="toolbar">
+            <button class="btn secondary" id="btn-template-amelia">↓ Descarregar modelo Excel</button>
+            <button class="btn secondary" id="btn-upload-amelia">↑ Importar em lote</button>
+            <input type="file" id="file-amelia" accept=".xlsx,.xls,.csv">
+            <button class="btn danger" id="btn-clear-amelia">Limpar dados</button>
+          </div>
+
+          <div class="entry-form" id="amelia-form">
+            <div class="field"><label>Professor</label><input type="text" id="am-professor" list="am-professores-list" placeholder="ex: Ana Martins"></div>
+            <datalist id="am-professores-list"></datalist>
+            <div class="field"><label>Mês</label><input type="month" id="am-mes"></div>
+            <div class="field"><label>Ano de ensino</label>
+              <select id="am-ano">
+                <option>2º Ciclo</option>
+                <option>3º Ciclo</option>
+                <option>Secundário</option>
+                <option>Exame +23</option>
+                <option>Universidade</option>
+              </select>
+            </div>
+            <div class="field"><label>Plano / Singular</label>
+              <select id="am-plano">
+                <option>Singular</option>
+                <option>Plano 9 aulas</option>
+                <option>Plano 13 aulas</option>
+                <option>Plano 17 aulas</option>
+                <option>Plano 22 aulas</option>
+                <option>Plano 27 aulas</option>
+                <option>Plano 31 aulas</option>
+                <option>Plano 35 aulas</option>
+              </select>
+            </div>
+            <div class="field"><label>Nº de aulas</label><input type="number" id="am-naulas" min="0" step="1" placeholder="ex: 13"></div>
+            <div class="field" style="align-self:end;"><button class="btn" id="btn-add-amelia" style="width:100%;">+ Adicionar registo</button></div>
+          </div>
+
+          <div class="chart-card" id="card-table-amelia" style="margin-top:14px;">
+            <div style="overflow-x:auto;">
+            <table class="data" id="table-amelia">
+              <thead><tr><th>Professor</th><th>Mês</th><th>Ano de ensino</th><th>Plano</th><th>Nº de aulas</th><th></th></tr></thead>
+              <tbody></tbody>
+            </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
           <h3>🏆 Desempenho por professor</h3>
-          <p class="desc">Retenção, tempo médio em conversações e entre aula experimental (AE) e efetivação, com base na aba "AEs"</p>
+          <p class="desc">Retenção, tempo médio em conversações e entre aula experimental (AE) e efetivação, com base na aba "AEs" — as colunas "Nº de aulas dadas", "Nº de aulas / aluno" e "Lucro (sem gastos)" respeitam o período escolhido abaixo</p>
+
+          <div class="chart-card" style="padding:14px; margin-bottom:14px;">
+            <div style="display:flex; flex-wrap:wrap; gap:12px; align-items:center;">
+              <select id="prof-periodo-mes" style="font-family:'Bahnschrift','Poppins',sans-serif; font-size:13px; padding:8px 10px; border:1.5px solid var(--border); border-radius:8px; background:var(--bg); color:var(--ink);">
+                <option value="total">Total (todo o histórico)</option>
+              </select>
+              <span style="color:var(--muted); font-size:12px;">— ou intervalo personalizado —</span>
+              <div style="display:flex; gap:8px; align-items:center;">
+                <label style="font-size:11px; color:var(--muted);">De</label>
+                <input type="month" id="prof-periodo-de" style="font-family:'Bahnschrift','Poppins',sans-serif; font-size:13px; padding:7px 8px; border:1.5px solid var(--border); border-radius:8px; background:var(--bg); color:var(--ink);">
+              </div>
+              <div style="display:flex; gap:8px; align-items:center;">
+                <label style="font-size:11px; color:var(--muted);">Até</label>
+                <input type="month" id="prof-periodo-ate" style="font-family:'Bahnschrift','Poppins',sans-serif; font-size:13px; padding:7px 8px; border:1.5px solid var(--border); border-radius:8px; background:var(--bg); color:var(--ink);">
+              </div>
+              <button class="btn secondary" id="btn-limpar-periodo-prof" style="padding:8px 14px; font-size:12px;">Limpar</button>
+            </div>
+          </div>
+
           <div class="chart-card" id="card-table-professores">
             <div style="overflow-x:auto;">
             <table class="data" id="table-professores">
@@ -766,13 +971,27 @@ table.data tr.row-media td:last-child{border-right:1.5px solid var(--accent); bo
                 <th data-key="efetivosPerdidos" title="Alunos efetivos deste professor que já têm Data de Fim preenchida (saíram/desistiram).">Efetivos perdidos</th>
                 <th data-key="tempoEfetivacao" title="Tempo médio entre o T/i de conversações e o T/f de AE (aba &quot;AEs&quot;), só para alunos com Estado = Efetivo.">Tempo de efetivação</th>
                 <th data-key="disciplinaPrincipal" title="Disciplina(s) mais frequente(s) entre os alunos efetivos deste professor (cada disciplina separada por vírgula conta à parte; mostra 2 só em caso de empate).">Disciplina principal</th>
-                <th data-key="aulasPorAluno" title="Nº total de aulas (aba Pagamentos Alunos) dos alunos efetivos deste professor, a dividir pelo Nº de Alunos.">Nº aulas / aluno</th>
-                <th data-key="faturacaoReal" title="Soma do 'Valor' pago (aba Pagamentos Alunos) pelos alunos efetivos deste professor.">Faturação (real)</th>
+                <th data-key="aulasDadas" title="Total de aulas dadas por este professor no período escolhido acima (fonte: Amélia).">Nº de aulas dadas</th>
+                <th data-key="aulasPorAluno" title="Nº de aulas dadas (Amélia) no período escolhido ÷ nº de alunos que estiveram ativos com este professor nos meses desse período.">Nº de aulas / aluno</th>
+                <th data-key="lucroSemGastos" title="Para cada registo da Amélia no período escolhido: nº de aulas × lucro por aula (varia por Ano de Ensino e Plano/Singular, tabela de Preçário) — soma de todos os registos deste professor.">Lucro (sem gastos)</th>
               </tr></thead>
               <tbody></tbody>
             </table>
             </div>
           </div>
+
+          <details class="fold" style="margin-top:14px;">
+            <summary>🔄 Histórico de alterações de professor <span id="prof-history-count" style="color:var(--muted); font-weight:400;"></span></summary>
+            <div class="fold-body">
+            <div style="overflow-x:auto;">
+            <table class="data" id="table-prof-history">
+              <thead><tr><th>Aluno</th><th>Disciplina</th><th>De</th><th>Para</th><th>Data da alteração</th></tr></thead>
+              <tbody></tbody>
+            </table>
+            </div>
+            <p style="font-size:12px; color:var(--muted); margin:10px 0 0 0;">Cada vez que importas um Excel atualizado e o professor de uma matrícula mudou desde a última importação, fica aqui registado — os dados dessa matrícula de antes da troca não se perdem, continuam disponíveis através deste histórico.</p>
+            </div>
+          </details>
         </div>
 
       </div>
@@ -1328,6 +1547,16 @@ async function loadState(){
   let precisaGuardar = false;
   pedidos.forEach(p=>{ if(!p.sourceKey){ p.sourceKey = pedidoKey(p); precisaGuardar = true; } });
   if(precisaGuardar) savePedidos();
+
+  try{
+    const rAmelia = await window.storage.get('amelia-aulas-professor', false);
+    if(rAmelia && rAmelia.value) ameliaAulas = JSON.parse(rAmelia.value);
+  }catch(e){ /* ainda sem registos da Amélia */ }
+  try{
+    const rHist = await window.storage.get('prof-matricula-history', false);
+    if(rHist && rHist.value) profMatriculaHistory = JSON.parse(rHist.value).map(reviveDates);
+  }catch(e){ /* ainda sem histórico */ }
+
   renderAlunos();
   renderFixando();
 
@@ -1349,6 +1578,8 @@ async function loadState(){
   }catch(e){ /* ainda sem professores */ }
   renderProfLoc();
   renderProfExp();
+  renderAmeliaAulas();
+  renderProfHistory();
 }
 async function saveAlunos(){
   try{ await window.storage.set('alunos-data', JSON.stringify(crm), false); }catch(e){ console.error('storage error', e); }
@@ -1472,7 +1703,17 @@ document.querySelector('.brand[data-home]').addEventListener('click', ()=> showT
 document.getElementById('back-to-tree').addEventListener('click', ()=> showTree(false));
 
 const glossarioScreen = document.getElementById('glossario-screen');
+const GLOSS_HEAD_DESC = {
+  alunos: 'Como cada número da página "Alunos efetivos" é calculado — para saberes sempre de onde vêm os dados.',
+  mercado: 'Como cada número da página "Mercado de explicações (Fixando)" é calculado — para saberes sempre de onde vêm os dados.',
+  financeiro: 'Como cada número da página "Gestão financeira" é calculado — para saberes sempre de onde vêm os dados.',
+  professores: 'Como cada número da página "Professores" é calculado — para saberes sempre de onde vêm os dados.'
+};
 document.getElementById('btn-glossario').addEventListener('click', ()=>{
+  const activeTab = document.querySelector('.tab-btn.active')?.dataset.tab || 'alunos';
+  document.querySelectorAll('.gloss-tab-content').forEach(el=>{ el.style.display = el.dataset.glosstab===activeTab ? '' : 'none'; });
+  const descEl = document.getElementById('gloss-head-desc');
+  if(descEl) descEl.textContent = GLOSS_HEAD_DESC[activeTab] || GLOSS_HEAD_DESC.alunos;
   glossarioScreen.style.display = 'block';
   glossarioScreen.scrollTop = 0;
 });
@@ -1713,6 +1954,26 @@ function normStr(v){ return (v===undefined||v===null) ? '' : String(v).trim(); }
 // e a coluna "Pagamento" (aba Clientes Efetivos) disser "Sim".
 function isAlunoEfetivoValido(a){ return !a.dataFim && normStr(a.pagamento).toLowerCase()==='sim'; }
 function isAEEstadoEfetivo(a){ return normStr(a.estado).toLowerCase()==='efetivo'; }
+
+/* ============================================================
+   POTENCIAL DE RENOVAÇÃO — conta um aluno efetivo se estiver no 10º ano ou menos,
+   OU se tiver pelo menos 1 disciplina fora da lista "sem renovação" (disciplinas de
+   exame/opção do 11º-12º que não continuam para o ano seguinte).
+   ============================================================ */
+const DISCIPLINAS_SEM_RENOVACAO = ['Biologia','Físico-Química','Geometria Descritiva','Economia','Geografia','Filosofia','História','Cultura das Artes'];
+const DISCIPLINAS_SEM_RENOVACAO_NORM = DISCIPLINAS_SEM_RENOVACAO.map(d=>stripAccents(d).toLowerCase());
+function anoNumero(anoRaw){
+  const m = String(anoRaw||'').match(/(\d+)/);
+  return m ? Number(m[1]) : null;
+}
+function temPotencialRenovacao(anoRaw, disciplinasDoAluno){
+  const anoN = anoNumero(anoRaw);
+  if(anoN !== null && anoN <= 10) return true;
+  const discs = [];
+  disciplinasDoAluno.forEach(disc=>{ String(disc||'').split(',').map(d=>d.trim()).filter(Boolean).forEach(d=>discs.push(d)); });
+  if(!discs.length) return true; // sem disciplina registada — não assumir que só tem "sem renovação"
+  return discs.some(d=> !DISCIPLINAS_SEM_RENOVACAO_NORM.includes(stripAccents(d).toLowerCase()));
+}
 function groupCount(arr, keyFn){
   const map = {};
   arr.forEach(item=>{
@@ -1849,6 +2110,66 @@ function findSheet(wb, includes){
 
 let crm = { efetivos: [], pendentes: [], aes: [] }; // efetivos = 1 linha por matrícula (aluno+disciplina)
 
+/* ============================================================
+   LUCRO POR AULA — tabela fixa (RF Preçário.xlsx, bloco "Lucro/aula"),
+   varia por Ano de Ensino x Plano (ou Singular). Usada para "Lucro (sem gastos)".
+   ============================================================ */
+const LUCRO_AULA_TABLE = {
+  '2º Ciclo':     {'Singular':6, 'Plano 9 aulas':5.33, 'Plano 13 aulas':4.69, 'Plano 17 aulas':4.35, 'Plano 22 aulas':4.27, 'Plano 27 aulas':4.04, 'Plano 31 aulas':3.94, 'Plano 35 aulas':5.4},
+  '3º Ciclo':     {'Singular':6, 'Plano 9 aulas':5.44, 'Plano 13 aulas':4.85, 'Plano 17 aulas':4.53, 'Plano 22 aulas':4.41, 'Plano 27 aulas':4.15, 'Plano 31 aulas':4.06, 'Plano 35 aulas':5.6},
+  'Secundário':   {'Singular':6, 'Plano 9 aulas':5.67, 'Plano 13 aulas':5.15, 'Plano 17 aulas':4.88, 'Plano 22 aulas':4.68, 'Plano 27 aulas':4.37, 'Plano 31 aulas':4.32, 'Plano 35 aulas':5.8},
+  'Exame +23':    {'Singular':7, 'Plano 9 aulas':6.11, 'Plano 13 aulas':5.77, 'Plano 17 aulas':5.59, 'Plano 22 aulas':5.45, 'Plano 27 aulas':5.37, 'Plano 31 aulas':5.16, 'Plano 35 aulas':7},
+  'Universidade': {'Singular':7, 'Plano 9 aulas':6.33, 'Plano 13 aulas':6.08, 'Plano 17 aulas':5.65, 'Plano 22 aulas':5.50, 'Plano 27 aulas':5.41, 'Plano 31 aulas':5.26, 'Plano 35 aulas':7.2}
+};
+const ANOS_ENSINO_TIERS = Object.keys(LUCRO_AULA_TABLE);
+const PLANOS_TIERS = ['Singular','Plano 9 aulas','Plano 13 aulas','Plano 17 aulas','Plano 22 aulas','Plano 27 aulas','Plano 31 aulas','Plano 35 aulas'];
+function lucroPorAula(anoEnsino, plano){
+  const row = LUCRO_AULA_TABLE[anoEnsino];
+  if(!row) return 0;
+  return row[plano] ?? 0;
+}
+
+/* ============================================================
+   AULAS POR PROFESSOR (Amélia) — enquanto a Amélia não está ligada, os registos
+   são inseridos à mão ou importados em lote. Cada registo: 1 professor, 1 mês,
+   1 combinação Ano de Ensino x Plano, e o nº de aulas dadas nessa combinação.
+   ============================================================ */
+let ameliaAulas = []; // {id, professor, mes:'AAAA-MM', anoEnsino, plano, nAulas}
+async function saveAmeliaAulas(){
+  try{ await window.storage.set('amelia-aulas-professor', JSON.stringify(ameliaAulas), false); }catch(e){ console.error('storage error', e); }
+}
+
+/* ============================================================
+   HISTÓRICO DE ALTERAÇÕES DE PROFESSOR — regista quando uma matrícula (aluno+disciplina)
+   muda de professor entre duas importações do Excel, para nunca perder a informação
+   de quem deu aulas a um aluno antes da troca.
+   ============================================================ */
+let profMatriculaHistory = []; // {alunoKey, aluno, disciplina, de, para, data}
+async function saveProfMatriculaHistory(){
+  try{ await window.storage.set('prof-matricula-history', JSON.stringify(profMatriculaHistory), false); }catch(e){ console.error('storage error', e); }
+}
+function matriculaKey(nome, disciplina){ return normKey(nome)+'|'+normKey(disciplina); }
+// Só compara matrículas (nome+disciplina) inequívocas — quando o mesmo par se repete (ex: disciplina
+// vazia em 2 linhas do mesmo aluno), não há forma fiável de saber qual delas mudou, por isso ignora-se
+// em vez de arriscar registar uma troca de professor falsa.
+function detetarAlteracoesProfessor(efetivosAntigos, efetivosNovos){
+  const contarChaves = arr=>{ const c={}; arr.forEach(a=>{ const k=matriculaKey(a.nome,a.disciplina); c[k]=(c[k]||0)+1; }); return c; };
+  const countAntigos = contarChaves(efetivosAntigos);
+  const countNovos = contarChaves(efetivosNovos);
+  const antigoPorMatricula = {};
+  efetivosAntigos.forEach(a=>{ const k=matriculaKey(a.nome, a.disciplina); if(countAntigos[k]===1) antigoPorMatricula[k]=a.professor; });
+  const alteracoes = [];
+  efetivosNovos.forEach(a=>{
+    const k = matriculaKey(a.nome, a.disciplina);
+    if(countNovos[k]!==1 || countAntigos[k]!==1) return;
+    const profAntigo = antigoPorMatricula[k];
+    if(profAntigo && profAntigo !== a.professor && profAntigo !== 'Não especificado' && a.professor !== 'Não especificado'){
+      alteracoes.push({ alunoKey:k, aluno:a.nome, disciplina:a.disciplina, de:profAntigo, para:a.professor, data:new Date() });
+    }
+  });
+  return alteracoes;
+}
+
 document.getElementById('btn-upload-alunos').addEventListener('click', ()=> document.getElementById('file-alunos').click());
 function parseCrmWorkbook(wb){
   // --- Clientes Efetivos (com forward-fill para linhas de continuação: 2ª disciplina do mesmo aluno) ---
@@ -1978,7 +2299,13 @@ document.getElementById('file-alunos').addEventListener('change', (e)=>{
   reader.onload = (evt)=>{
     try{
       const wb = XLSX.read(evt.target.result, {type:'array', cellDates:true});
+      const efetivosAntigos = crm.efetivos;
       crm = parseCrmWorkbook(wb);
+      const novasAlteracoes = detetarAlteracoesProfessor(efetivosAntigos, crm.efetivos);
+      if(novasAlteracoes.length){
+        profMatriculaHistory = profMatriculaHistory.concat(novasAlteracoes);
+        saveProfMatriculaHistory();
+      }
       saveAlunos(); renderAlunos();
     }catch(err){ alert('Não foi possível ler o ficheiro. Confirma que tem as abas "Clientes Efetivos", "Clientes pendentes" e "AEs". ('+err.message+')'); }
   };
@@ -2040,8 +2367,9 @@ function mediaProfRow(rows){
     aePerdidos: avgIgnoreNull(campo('aePerdidos')) || 0,
     efetivosPerdidos: avgIgnoreNull(campo('efetivosPerdidos')) || 0,
     tempoEfetivacao: avgIgnoreNull(campo('tempoEfetivacao')),
+    aulasDadas: avgIgnoreNull(campo('aulasDadas')) || 0,
     aulasPorAluno: avgIgnoreNull(campo('aulasPorAluno')),
-    faturacaoReal: avgIgnoreNull(campo('faturacaoReal')) || 0,
+    lucroSemGastos: avgIgnoreNull(campo('lucroSemGastos')) || 0,
   };
 }
 function renderProfTable(){
@@ -2059,12 +2387,12 @@ function renderProfTable(){
 
   const rowHtml = r => `<tr><td><b>${r.professor}</b></td><td>${r.nAlunos}</td><td>${fmtDuration(r.retMed)}</td><td>${fmtDuration(r.convMedP)}</td><td>${fmtDuration(r.aeMedP)}</td><td>${r.nAE}</td><td>${r.taxaConversao!==null? r.taxaConversao.toFixed(0)+'%' : '—'}</td>
     <td>${r.conversasGanhos} / ${r.conversasPerdidos}</td><td>${r.aeGanhos} / ${r.aePerdidos}</td><td>${r.efetivosPerdidos}</td>
-    <td>${fmtDuration(r.tempoEfetivacao)}</td><td>${r.disciplinaPrincipal}</td><td>${r.aulasPorAluno!==null? r.aulasPorAluno.toFixed(1) : '—'}</td><td>${r.faturacaoReal>0? fmtEuro(r.faturacaoReal) : '—'}</td></tr>`;
+    <td>${fmtDuration(r.tempoEfetivacao)}</td><td>${r.disciplinaPrincipal}</td><td>${r.aulasDadas>0? r.aulasDadas : '—'}</td><td>${r.aulasPorAluno!==null? r.aulasPorAluno.toFixed(1) : '—'}</td><td>${r.lucroSemGastos>0? fmtEuro(r.lucroSemGastos) : '—'}</td></tr>`;
 
   const media = mediaProfRow(lastProfRows);
   tbody.innerHTML = (media ? `<tr class="row-media"><td><b>⭐ Média</b></td><td>${media.nAlunos.toFixed(1)}</td><td>${fmtDuration(media.retMed)}</td><td>${fmtDuration(media.convMedP)}</td><td>${fmtDuration(media.aeMedP)}</td><td>${media.nAE.toFixed(1)}</td><td>${media.taxaConversao!==null? media.taxaConversao.toFixed(0)+'%' : '—'}</td>
     <td>${media.conversasGanhos.toFixed(1)} / ${media.conversasPerdidos.toFixed(1)}</td><td>${media.aeGanhos.toFixed(1)} / ${media.aePerdidos.toFixed(1)}</td><td>${media.efetivosPerdidos.toFixed(1)}</td>
-    <td>${fmtDuration(media.tempoEfetivacao)}</td><td>—</td><td>${media.aulasPorAluno!==null? media.aulasPorAluno.toFixed(1) : '—'}</td><td>${media.faturacaoReal>0? fmtEuro(media.faturacaoReal) : '—'}</td></tr>` : '')
+    <td>${fmtDuration(media.tempoEfetivacao)}</td><td>—</td><td>${media.aulasDadas>0? media.aulasDadas.toFixed(1) : '—'}</td><td>${media.aulasPorAluno!==null? media.aulasPorAluno.toFixed(1) : '—'}</td><td>${media.lucroSemGastos>0? fmtEuro(media.lucroSemGastos) : '—'}</td></tr>` : '')
     + sorted.map(rowHtml).join('');
 
   document.querySelectorAll('#prof-table-headers th[data-key]').forEach(th=>{
@@ -2126,8 +2454,16 @@ function renderAlunos(){
   const convDur = aes.filter(a=>a.tiConv && a.tfConv).map(a=> a.tfConv - a.tiConv);
   const convMedGlobal = convDur.length ? convDur.reduce((x,y)=>x+y,0)/convDur.length : null;
 
+  // potencial de renovação: 10º ano ou menos, OU pelo menos 1 disciplina fora da lista "sem renovação"
+  const comPotencialRenovacao = unicosValidos.filter(a=>{
+    const discsDoAluno = efetivos.filter(e=>normKey(e.nome)===normKey(a.nome)).map(e=>e.disciplina);
+    return temPotencialRenovacao(a.ano, discsDoAluno);
+  });
+  const pctPotencialRenovacao = unicosValidos.length ? 100*comPotencialRenovacao.length/unicosValidos.length : null;
+
   document.getElementById('alunos-kpis').innerHTML = [
     kpiCard('Alunos efetivos', unicosValidos.length, unicosValidos.length+' sem data de fim e com pagamento confirmado · '+efetivos.length+' matrículas no total (histórico)', true, 'card-chart-ativos-mes', 'Alunos únicos sem Data Fim preenchida e com "Sim" na coluna Pagamento da folha "Clientes Efetivos" — o headcount real de alunos a pagar neste momento.'),
+    kpiCard('Potencial de renovação', comPotencialRenovacao.length, pctPotencialRenovacao!==null? pctPotencialRenovacao.toFixed(0)+'% dos alunos efetivos' : '—', false, 'card-chart-ano-ensino', 'Alunos efetivos no 10º ano ou menos, mais os que têm pelo menos 1 disciplina fora da lista "sem renovação" (Biologia, Físico-Química, Geometria Descritiva, Economia, Geografia, Filosofia, História, Cultura das Artes). % = este nº ÷ total de alunos efetivos.'),
     kpiCard('Taxa de conversão AE → Efetivo', taxaConversaoAE!==null? taxaConversaoAE.toFixed(0)+'%' : '— (sem AEs registadas)', aes.length+' aulas experimentais na aba "AEs"', false, 'card-table-professores', 'Percentagem de aulas experimentais (aba "AEs") cuja coluna "Estado" está marcada como "Efetivo".'),
     kpiCard('Reservam AE diretamente', aeDiretas.length, pctAeDiretas!==null? pctAeDiretas.toFixed(0)+'% do total de AEs — sem passar pela fase de conversações' : 'sem AEs registadas', false, 'card-table-professores', 'Alunos com T/i de Aula Experimental preenchido mas sem qualquer T/i ou T/f de conversações — avançaram diretamente para a AE.'),
     kpiCard('Retenção média', fmtDuration(retencaoMedia), duracoesFim.length? 'com base em '+duracoesFim.length+' aluno(s) já com Data Fim' : 'ainda sem "Data Fim" preenchida', false, 'card-table-professores', 'Tempo médio entre a Data de Início e a Data de Fim dos alunos que já saíram — quanto tempo, em média, um aluno fica connosco.'),
@@ -2191,8 +2527,17 @@ function renderAlunos(){
   const profNames = Array.from(new Set([
     ...efetivos.map(a=>a.professor),
     ...pendentes.map(p=>p.professor),
-    ...aes.map(a=>a.professor)
+    ...aes.map(a=>a.professor),
+    ...ameliaAulas.map(a=>a.professor)
   ])).filter(p=>p && p!=='Não especificado').sort();
+  popularSeletorPeriodoProf();
+  const ameliaPeriodo = getAmeliaAulasNoPeriodo();
+  const alunosAtivosNoMes = (professor, mesKey)=>{
+    const [y,m] = mesKey.split('-').map(Number);
+    const monthStart = new Date(y, m-1, 1);
+    const monthEnd = new Date(y, m, 0);
+    return new Set(efetivos.filter(a=> a.professor===professor && a.dataInicio && a.dataInicio<=monthEnd && (!a.dataFim || a.dataFim>=monthStart)).map(a=>normKey(a.nome))).size;
+  };
   lastProfRows = profNames.map(p=>{
     const nAlunos = new Set(efetivos.filter(a=>a.professor===p && isAlunoEfetivoValido(a)).map(a=>normKey(a.nome))).size;
     const dur = unicos.filter(a=> efetivos.some(e=>normKey(e.nome)===normKey(a.nome) && e.professor===p) && a.dataInicio && a.dataFim).map(a=>a.dataFim-a.dataInicio);
@@ -2233,20 +2578,153 @@ function renderAlunos(){
       disciplinaPrincipal = discEntriesProf.filter(e=>e[1]===topCount).map(e=>e[0]).slice(0,2).join(' / ');
     }
 
-    const nomesAlunosProf = new Set(efetivos.filter(a=>a.professor===p && isAlunoEfetivoValido(a)).map(a=>normKey(a.nome)));
-    const pagamentosProf = pagamentos.filter(pg=>nomesAlunosProf.has(normKey(pg.aluno)));
-    const faturacaoReal = pagamentosProf.reduce((s,pg)=>s+pg.valor, 0);
-    const aulasTotalProf = pagamentosProf.reduce((s,pg)=>s+pg.nAulas, 0);
-    const aulasPorAluno = nAlunos ? aulasTotalProf/nAlunos : null;
+    // aulas dadas, aulas/aluno e lucro (sem gastos) — a partir dos registos da Amélia, já filtrados pelo período escolhido
+    const ameliaProf = ameliaPeriodo.filter(a=>a.professor===p);
+    const aulasDadas = ameliaProf.reduce((s,a)=>s+(Number(a.nAulas)||0), 0);
+    const mesesAmeliaProf = Array.from(new Set(ameliaProf.map(a=>a.mes)));
+    const totalAlunoMeses = mesesAmeliaProf.reduce((s,mk)=>s+alunosAtivosNoMes(p, mk), 0);
+    const aulasPorAluno = totalAlunoMeses ? aulasDadas/totalAlunoMeses : null;
+    const lucroSemGastos = ameliaProf.reduce((s,a)=> s + lucroPorAula(a.anoEnsino, a.plano)*(Number(a.nAulas)||0), 0);
 
     return { professor:p, nAlunos, retMed, convMedP, aeMedP, nAE: aesProf.length, taxaConversao,
       conversasGanhos, conversasPerdidos, aeGanhos, aePerdidos, efetivosPerdidos,
-      tempoEfetivacao, tempoMarcarAE, disciplinaPrincipal, aulasPorAluno, faturacaoReal };
+      tempoEfetivacao, tempoMarcarAE, disciplinaPrincipal, aulasDadas, aulasPorAluno, lucroSemGastos };
   });
   renderProfTable();
   renderReceitaPorAluno(pagamentos);
+  renderAmeliaAulas();
+  renderProfHistory();
 
   renderGeoMap();
+}
+
+/* ============================================================
+   PERÍODO DA TABELA "DESEMPENHO POR PROFESSOR" (mensal / anual / intervalo)
+   ============================================================ */
+function popularSeletorPeriodoProf(){
+  const sel = document.getElementById('prof-periodo-mes');
+  if(!sel) return;
+  const current = sel.value;
+  const meses = Array.from(new Set(ameliaAulas.map(a=>a.mes))).filter(Boolean).sort();
+  const anos = Array.from(new Set(meses.map(m=>m.slice(0,4)))).sort();
+  let html = '<option value="total">Total (todo o histórico)</option>';
+  if(anos.length) html += '<optgroup label="Ano">' + anos.map(y=>`<option value="ano:${y}" ${current==='ano:'+y?'selected':''}>${y}</option>`).join('') + '</optgroup>';
+  if(meses.length) html += '<optgroup label="Mês">' + meses.map(mk=>`<option value="${mk}" ${mk===current?'selected':''}>${monthLabel(mk)}</option>`).join('') + '</optgroup>';
+  sel.innerHTML = html;
+  if(!current) sel.value = 'total';
+}
+function getAmeliaAulasNoPeriodo(){
+  const de = document.getElementById('prof-periodo-de')?.value;
+  const ate = document.getElementById('prof-periodo-ate')?.value;
+  if(de || ate) return ameliaAulas.filter(a=> (!de || a.mes>=de) && (!ate || a.mes<=ate));
+  const sel = document.getElementById('prof-periodo-mes')?.value;
+  if(sel && sel.startsWith('ano:')){ const y = sel.slice(4); return ameliaAulas.filter(a=>a.mes && a.mes.slice(0,4)===y); }
+  if(sel && sel!=='total') return ameliaAulas.filter(a=>a.mes===sel);
+  return ameliaAulas;
+}
+document.getElementById('prof-periodo-mes')?.addEventListener('change', ()=>{
+  document.getElementById('prof-periodo-de').value = '';
+  document.getElementById('prof-periodo-ate').value = '';
+  renderAlunos();
+});
+['prof-periodo-de','prof-periodo-ate'].forEach(id=>{
+  document.getElementById(id)?.addEventListener('change', ()=>{
+    document.getElementById('prof-periodo-mes').value = 'total';
+    renderAlunos();
+  });
+});
+document.getElementById('btn-limpar-periodo-prof')?.addEventListener('click', ()=>{
+  document.getElementById('prof-periodo-mes').value = 'total';
+  document.getElementById('prof-periodo-de').value = '';
+  document.getElementById('prof-periodo-ate').value = '';
+  renderAlunos();
+});
+
+/* ============================================================
+   AULAS POR PROFESSOR (AMÉLIA) — registo manual + importação em lote
+   ============================================================ */
+function renderAmeliaAulas(){
+  const tbody = document.querySelector('#table-amelia tbody');
+  if(!tbody) return;
+  const sorted = [...ameliaAulas].sort((a,b)=> (b.mes||'').localeCompare(a.mes||'') || a.professor.localeCompare(b.professor));
+  tbody.innerHTML = sorted.length ? sorted.map(a=>`<tr>
+      <td>${a.professor}</td><td>${a.mes? monthLabel(a.mes) : '—'}</td><td>${a.anoEnsino}</td><td>${a.plano}</td><td>${a.nAulas}</td>
+      <td><button class="btn danger" data-del-amelia="${a.id}" style="padding:4px 10px; font-size:11px;">Remover</button></td>
+    </tr>`).join('') : '<tr><td colspan="6" style="text-align:center; color:var(--muted);">Ainda sem registos.</td></tr>';
+  tbody.querySelectorAll('[data-del-amelia]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      ameliaAulas = ameliaAulas.filter(a=>a.id !== btn.dataset.delAmelia);
+      saveAmeliaAulas(); renderAmeliaAulas(); renderAlunos();
+    });
+  });
+  const dl = document.getElementById('am-professores-list');
+  if(dl){
+    const nomes = Array.from(new Set([...crm.efetivos.map(a=>a.professor), ...profs.map(p=>p.nome)])).filter(p=>p && p!=='Não especificado').sort();
+    dl.innerHTML = nomes.map(n=>`<option value="${n}"></option>`).join('');
+  }
+}
+document.getElementById('btn-add-amelia')?.addEventListener('click', ()=>{
+  const professor = normStr(document.getElementById('am-professor').value);
+  const mes = document.getElementById('am-mes').value;
+  const anoEnsino = document.getElementById('am-ano').value;
+  const plano = document.getElementById('am-plano').value;
+  const nAulas = Number(document.getElementById('am-naulas').value);
+  if(!professor || !mes || !nAulas){ alert('Preenche pelo menos o professor, o mês e o nº de aulas.'); return; }
+  ameliaAulas.push({ id: 'am_'+Date.now()+'_'+Math.random().toString(36).slice(2,7), professor, mes, anoEnsino, plano, nAulas });
+  saveAmeliaAulas();
+  document.getElementById('am-professor').value = '';
+  document.getElementById('am-naulas').value = '';
+  renderAmeliaAulas(); renderAlunos();
+});
+document.getElementById('btn-clear-amelia')?.addEventListener('click', ()=>{
+  if(confirm('Apagar todos os registos de aulas por professor (Amélia)?')){ ameliaAulas = []; saveAmeliaAulas(); renderAmeliaAulas(); renderAlunos(); }
+});
+document.getElementById('btn-template-amelia')?.addEventListener('click', ()=>{
+  const aoa = [['Professor','Mês (AAAA-MM)','Ano de Ensino','Plano','Nº de Aulas'], ['Ana Martins','2026-09','Secundário','Plano 13 aulas',13]];
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Aulas por Professor');
+  XLSX.writeFile(wb, 'modelo-aulas-professor-amelia.xlsx');
+});
+document.getElementById('btn-upload-amelia')?.addEventListener('click', ()=> document.getElementById('file-amelia').click());
+document.getElementById('file-amelia')?.addEventListener('change', (e)=>{
+  const file = e.target.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (evt)=>{
+    try{
+      const wb = XLSX.read(evt.target.result, {type:'array'});
+      const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {defval:''});
+      const novos = rows.map(r=>{
+        const professor = normStr(r['Professor']);
+        let mes = normStr(r['Mês (AAAA-MM)'] || r['Mês'] || r['Mes']);
+        if(mes instanceof Date) mes = monthKey(mes);
+        else if(/^\d{4}-\d{2}/.test(mes)) mes = mes.slice(0,7);
+        const anoEnsino = normStr(r['Ano de Ensino']);
+        const plano = normStr(r['Plano']);
+        const nAulas = Number(r['Nº de Aulas'] || r['Numero de Aulas'] || r['Nº Aulas']) || 0;
+        if(!professor || !mes || !nAulas) return null;
+        return { id: 'am_'+Date.now()+'_'+Math.random().toString(36).slice(2,7), professor, mes, anoEnsino: anoEnsino || 'Secundário', plano: plano || 'Singular', nAulas };
+      }).filter(Boolean);
+      ameliaAulas = ameliaAulas.concat(novos);
+      saveAmeliaAulas(); renderAmeliaAulas(); renderAlunos();
+      alert(novos.length+' registo(s) importado(s).');
+    }catch(err){ alert('Não foi possível ler o ficheiro. Confirma que segue o modelo. ('+err.message+')'); }
+  };
+  reader.readAsArrayBuffer(file);
+  e.target.value = '';
+});
+
+/* ============================================================
+   HISTÓRICO DE ALTERAÇÕES DE PROFESSOR
+   ============================================================ */
+function renderProfHistory(){
+  const tbody = document.querySelector('#table-prof-history tbody');
+  const count = document.getElementById('prof-history-count');
+  if(!tbody) return;
+  const sorted = [...profMatriculaHistory].sort((a,b)=> b.data - a.data);
+  if(count) count.textContent = sorted.length ? `(${sorted.length})` : '';
+  tbody.innerHTML = sorted.length ? sorted.map(h=>`<tr><td>${h.aluno}</td><td>${h.disciplina}</td><td>${h.de}</td><td>${h.para}</td><td>${h.data.toLocaleDateString('pt-PT')}</td></tr>`).join('')
+    : '<tr><td colspan="5" style="text-align:center; color:var(--muted);">Ainda sem alterações de professor registadas.</td></tr>';
 }
 
 /* ============================================================

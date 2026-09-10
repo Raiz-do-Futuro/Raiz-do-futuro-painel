@@ -607,9 +607,9 @@ table.data tr.row-media td:last-child{border-right:1.5px solid var(--accent); bo
       <div class="gloss-grid">
         <div class="gloss-item"><b>Pedidos / mês (média)</b><span>Total de pedidos registados dividido pelo número de meses diferentes em que há pelo menos um pedido.</span></div>
         <div class="gloss-item"><b>Pedidos online / mês (média)</b><span>O mesmo cálculo que "Pedidos / mês", mas contando só os pedidos com Modalidade = Online.</span></div>
-        <div class="gloss-item"><b>% abordados sobre legíveis</b><span>Entre os pedidos marcados como "Legível", a percentagem em que clicaste em "Marcar abordámos" (ou seja, o telemóvel do cliente já é conhecido).</span></div>
+        <div class="gloss-item"><b>% abordados sobre pedidos online</b><span>Entre os pedidos com Modalidade = Online, a percentagem em que clicaste em "Marcar abordámos" (ou seja, o telemóvel do cliente já é conhecido).</span></div>
         <div class="gloss-item"><b>% ficámos sobre abordados</b><span>Entre os pedidos que abordaste, a percentagem cujo telemóvel apareceu depois em "Clientes Efetivos" — ou seja, que se tornaram alunos.</span></div>
-        <div class="gloss-item"><b>% ficámos sobre legíveis</b><span>Percentagem de todos os pedidos legíveis que acabaram por se tornar alunos efetivos — o funil completo, do pedido ao aluno.</span></div>
+        <div class="gloss-item"><b>% ficámos sobre pedidos online</b><span>Percentagem de todos os pedidos online que acabaram por se tornar alunos efetivos — o funil completo, do pedido ao aluno.</span></div>
       </div>
     </div>
 
@@ -637,7 +637,7 @@ table.data tr.row-media td:last-child{border-right:1.5px solid var(--accent); bo
         <div class="gloss-row"><b>📅 Dia da semana</b><span>Pedidos do período agrupados pelo dia da semana da "Data do pedido".</span></div>
         <div class="gloss-row"><b>📖 Disciplinas mais requisitadas</b><span>Pedidos do período agrupados por "Disciplina".</span></div>
         <div class="gloss-row"><b>🎓 Anos de ensino mais requisitados</b><span>Pedidos do período agrupados por "Ano de ensino".</span></div>
-        <div class="gloss-row"><b>🗺️ Taxa de penetração por distrito</b><span>Por distrito (a partir da "Localidade"): nº de pedidos legíveis, quantos abordámos, quantos ficaram alunos, e % Penetração = Ficámos ÷ Legíveis — quanto do potencial de mercado dessa região já é nosso.</span></div>
+        <div class="gloss-row"><b>🗺️ Taxa de penetração por distrito</b><span>Por distrito (a partir da "Localidade"): nº de pedidos, quantos abordámos, quantos ficaram alunos, e % Penetração = Ficámos ÷ Pedidos — quanto do potencial de mercado dessa região já é nosso.</span></div>
         <div class="gloss-row"><b>📈 Evolução mensal</b><span>Pedidos por mês (barras) sobrepostos com as taxas de abordagem e conversão ao longo do tempo (linhas) — todo o histórico, sem filtro de período.</span></div>
         <div class="gloss-row"><b>🗂️ Registo de pedidos</b><span>Todos os pedidos registados. Contacto, Modalidade e Legível são editáveis diretamente na tabela; Abordámos tem "marcar"/"anular"; Ficámos é sempre automático.</span></div>
       </div>
@@ -1146,10 +1146,10 @@ table.data tr.row-media td:last-child{border-right:1.5px solid var(--accent); bo
 
         <div class="section">
           <h3>🗺️ Taxa de penetração por distrito</h3>
-          <p class="desc">Entre os pedidos legíveis de cada distrito, quantos abordámos e quantos ficaram alunos</p>
+          <p class="desc">Entre os pedidos de cada distrito, quantos abordámos e quantos ficaram alunos</p>
           <div class="chart-card" id="card-table-penetracao">
             <table class="data" id="table-penetracao">
-              <thead><tr><th>Distrito</th><th>Pedidos legíveis</th><th>Abordámos</th><th>Ficámos</th><th title="Ficámos ÷ Legíveis — o quanto do potencial de mercado dessa região já é nosso.">% Penetração</th></tr></thead>
+              <thead><tr><th>Distrito</th><th>Pedidos</th><th>Abordámos</th><th>Ficámos</th><th title="Ficámos ÷ Pedidos — o quanto do potencial de mercado dessa região já é nosso.">% Penetração</th></tr></thead>
               <tbody></tbody>
             </table>
           </div>
@@ -1176,9 +1176,6 @@ table.data tr.row-media td:last-child{border-right:1.5px solid var(--accent); bo
               <select id="filter-ano" style="font-family:'Bahnschrift','Poppins',sans-serif; font-size:13px; padding:8px 10px; border:1.5px solid var(--border); border-radius:8px; background:var(--bg); color:var(--ink);"><option value="">Todos os anos de ensino</option></select>
               <select id="filter-modalidade" style="font-family:'Bahnschrift','Poppins',sans-serif; font-size:13px; padding:8px 10px; border:1.5px solid var(--border); border-radius:8px; background:var(--bg); color:var(--ink);">
                 <option value="">Todas as modalidades</option><option value="Online">Online</option><option value="Presencial">Presencial</option>
-              </select>
-              <select id="filter-legivel" style="font-family:'Bahnschrift','Poppins',sans-serif; font-size:13px; padding:8px 10px; border:1.5px solid var(--border); border-radius:8px; background:var(--bg); color:var(--ink);">
-                <option value="">Legível: todos</option><option value="Sim">Legível: Sim</option><option value="Não">Legível: Não</option>
               </select>
               <select id="filter-abordamos" style="font-family:'Bahnschrift','Poppins',sans-serif; font-size:13px; padding:8px 10px; border:1.5px solid var(--border); border-radius:8px; background:var(--bg); color:var(--ink);">
                 <option value="">Abordámos: todos</option><option value="Sim">Abordámos: Sim</option><option value="Não">Abordámos: Não</option>
@@ -3252,19 +3249,19 @@ function renderFixando(){
   const mediaMes = (total/nMeses).toFixed(1);
   const mediaMesOnline = (online.length/nMeses).toFixed(1);
 
-  const legiveis = resolved.filter(x=>x.p.legivel);
+  const onlineResolved = resolved.filter(x=>x.p.modalidade==='Online');
   const abordadosArr = resolved.filter(x=>x.abordamos.value);
   const ficadosCount = resolved.filter(x=>x.ficamos.value).length;
-  const pctAbordAmosLegiveis = legiveis.length? 100*legiveis.filter(x=>x.abordamos.value).length/legiveis.length : null;
+  const pctAbordAmosOnline = onlineResolved.length? 100*onlineResolved.filter(x=>x.abordamos.value).length/onlineResolved.length : null;
   const pctFicamosAbordados = abordadosArr.length? 100*abordadosArr.filter(x=>x.ficamos.value).length/abordadosArr.length : null;
-  const pctFicamosLegiveis = legiveis.length? 100*legiveis.filter(x=>x.ficamos.value).length/legiveis.length : null;
+  const pctFicamosOnline = onlineResolved.length? 100*onlineResolved.filter(x=>x.ficamos.value).length/onlineResolved.length : null;
 
   document.getElementById('fixando-kpis').innerHTML = [
     kpiCard('Pedidos / mês (média)', mediaMes, total+' pedidos registados no total', true, 'card-chart-evolucao-mensal', 'Total de pedidos registados dividido pelo número de meses diferentes em que há pelo menos um pedido.'),
     kpiCard('Pedidos online / mês (média)', mediaMesOnline, online.length+' pedidos online no total', false, 'card-chart-loc-online', 'O mesmo cálculo que "Pedidos / mês", mas contando só os pedidos com Modalidade = Online.'),
-    kpiCard('% abordados sobre legíveis', pctAbordAmosLegiveis!==null? pctAbordAmosLegiveis.toFixed(0)+'%':'—', abordadosArr.length+' abordados (associação automática por telemóvel)', false, 'card-chart-evolucao-mensal', 'Entre os pedidos marcados como "Legível", a percentagem em que clicaste em "Marcar abordámos" (ou seja, o telemóvel do cliente já é conhecido).'),
+    kpiCard('% abordados sobre pedidos online', pctAbordAmosOnline!==null? pctAbordAmosOnline.toFixed(0)+'%':'—', abordadosArr.length+' abordados (associação automática por telemóvel)', false, 'card-chart-evolucao-mensal', 'Entre os pedidos com Modalidade = Online, a percentagem em que clicaste em "Marcar abordámos" (ou seja, o telemóvel do cliente já é conhecido).'),
     kpiCard('% ficámos sobre abordados', pctFicamosAbordados!==null? pctFicamosAbordados.toFixed(0)+'%':'—', ficadosCount+' ficámos no total', false, 'card-chart-evolucao-mensal', 'Entre os pedidos que abordaste, a percentagem cujo telemóvel apareceu depois em "Clientes Efetivos" — ou seja, que se tornaram alunos.'),
-    kpiCard('% ficámos sobre legíveis', pctFicamosLegiveis!==null? pctFicamosLegiveis.toFixed(0)+'%':'—', null, false, 'card-chart-evolucao-mensal', 'Percentagem de todos os pedidos legíveis que acabaram por se tornar alunos efetivos — o funil completo, do pedido ao aluno.')
+    kpiCard('% ficámos sobre pedidos online', pctFicamosOnline!==null? pctFicamosOnline.toFixed(0)+'%':'—', null, false, 'card-chart-evolucao-mensal', 'Percentagem de todos os pedidos online que acabaram por se tornar alunos efetivos — o funil completo, do pedido ao aluno.')
   ].join('');
 
   renderMercadoCharts();
@@ -3283,21 +3280,19 @@ function renderPenetracaoTable(resolved){
   resolved.forEach(({p, ficamos})=>{
     const {distrito} = classifyLocalidade(p.localidade);
     const key = distrito || 'Não classificado';
-    porDistrito[key] = porDistrito[key] || {legiveis:0, abordados:0, ficamos:0};
-    if(p.legivel){
-      porDistrito[key].legiveis++;
-      if(isAbordado(p)) porDistrito[key].abordados++;
-      if(ficamos.value) porDistrito[key].ficamos++;
-    }
+    porDistrito[key] = porDistrito[key] || {total:0, abordados:0, ficamos:0};
+    porDistrito[key].total++;
+    if(isAbordado(p)) porDistrito[key].abordados++;
+    if(ficamos.value) porDistrito[key].ficamos++;
   });
-  const rows = Object.entries(porDistrito).filter(([,d])=>d.legiveis>0).sort((a,b)=>b[1].legiveis-a[1].legiveis);
+  const rows = Object.entries(porDistrito).filter(([,d])=>d.total>0).sort((a,b)=>b[1].total-a[1].total);
   tbody.innerHTML = rows.length ? rows.map(([nome,d])=>{
-    const pct = (100*d.ficamos/d.legiveis).toFixed(0);
+    const pct = (100*d.ficamos/d.total).toFixed(0);
     const nomeCell = nome==='Não classificado'
       ? `⚠️ ${nome} <span class="linha-classificar-mercado" style="cursor:pointer; text-decoration:underline; color:var(--green); font-size:11px;">(classificar)</span>`
       : nome;
-    return `<tr><td>${nomeCell}</td><td>${d.legiveis}</td><td>${d.abordados}</td><td>${d.ficamos}</td><td>${pct}%</td></tr>`;
-  }).join('') : '<tr><td colspan="5" style="text-align:center; color:var(--muted);">Sem pedidos legíveis classificados por distrito ainda.</td></tr>';
+    return `<tr><td>${nomeCell}</td><td>${d.total}</td><td>${d.abordados}</td><td>${d.ficamos}</td><td>${pct}%</td></tr>`;
+  }).join('') : '<tr><td colspan="5" style="text-align:center; color:var(--muted);">Sem pedidos classificados por distrito ainda.</td></tr>';
   const linkClassificar = tbody.querySelector('.linha-classificar-mercado');
   if(linkClassificar){
     linkClassificar.addEventListener('click', ()=>{
@@ -3374,10 +3369,10 @@ function renderEvolucaoMensal(resolved){
   const totais = [], pctAbord = [], pctFica = [];
   months.forEach(mk=>{
     const rows = resolved.filter(x=>monthKey(x.p.data)===mk);
-    const legiv = rows.filter(x=>x.p.legivel);
+    const onlineRows = rows.filter(x=>x.p.modalidade==='Online');
     const abord = rows.filter(x=>x.abordamos.value);
     totais.push(rows.length);
-    pctAbord.push(legiv.length ? +(100*legiv.filter(x=>x.abordamos.value).length/legiv.length).toFixed(1) : null);
+    pctAbord.push(onlineRows.length ? +(100*onlineRows.filter(x=>x.abordamos.value).length/onlineRows.length).toFixed(1) : null);
     pctFica.push(abord.length ? +(100*abord.filter(x=>x.ficamos.value).length/abord.length).toFixed(1) : null);
   });
   destroyChart('chart-evolucao-mensal');
@@ -3388,7 +3383,7 @@ function renderEvolucaoMensal(resolved){
       labels: months.map(monthLabel),
       datasets:[
         {type:'bar', label:'Pedidos (total)', data: totais, backgroundColor:'#9FC7AA', order:3, yAxisID:'yCount', borderRadius:6},
-        {type:'line', label:'% Abordados / Legíveis', data: pctAbord, borderColor:'#258730', backgroundColor:'#258730', tension:.3, yAxisID:'yPct', order:1, spanGaps:true},
+        {type:'line', label:'% Abordados / Online', data: pctAbord, borderColor:'#258730', backgroundColor:'#258730', tension:.3, yAxisID:'yPct', order:1, spanGaps:true},
         {type:'line', label:'% Ficámos / Abordados', data: pctFica, borderColor:'#8B4A3D', backgroundColor:'#8B4A3D', tension:.3, yAxisID:'yPct', order:2, spanGaps:true}
       ]
     },
@@ -3425,7 +3420,6 @@ function renderFixandoTable(){
   const fDisc = document.getElementById('filter-disciplina')?.value || '';
   const fAno = document.getElementById('filter-ano')?.value || '';
   const fModalidade = document.getElementById('filter-modalidade')?.value || '';
-  const fLegivel = document.getElementById('filter-legivel')?.value || '';
   const fAbordamos = document.getElementById('filter-abordamos')?.value || '';
   const fFicamos = document.getElementById('filter-ficamos')?.value || '';
   const fDe = document.getElementById('filter-data-de')?.value || '';
@@ -3437,7 +3431,6 @@ function renderFixandoTable(){
   if(fDisc) rows = rows.filter(({p})=>splitMulti(p.disciplina).includes(fDisc));
   if(fAno) rows = rows.filter(({p})=>p.ano===fAno);
   if(fModalidade) rows = rows.filter(({p})=>p.modalidade===fModalidade);
-  if(fLegivel) rows = rows.filter(({p})=> (fLegivel==='Sim') === !!p.legivel);
   if(fAbordamos) rows = rows.filter(({abordamos})=> (fAbordamos==='Sim') === abordamos.value);
   if(fFicamos) rows = rows.filter(({ficamos})=> (fFicamos==='Sim') === ficamos.value);
   if(fDe){ const d=new Date(fDe+'T00:00:00'); rows = rows.filter(({p})=>p.data>=d); }
@@ -3505,13 +3498,13 @@ function renderFixandoTable(){
 }
 
 function wireFilterListeners(){
-  ['filter-search','filter-disciplina','filter-ano','filter-modalidade','filter-legivel','filter-abordamos','filter-ficamos','filter-data-de','filter-data-ate'].forEach(id=>{
+  ['filter-search','filter-disciplina','filter-ano','filter-modalidade','filter-abordamos','filter-ficamos','filter-data-de','filter-data-ate'].forEach(id=>{
     const el = document.getElementById(id);
     if(el) el.addEventListener('input', renderFixandoTable);
   });
   const clearBtn = document.getElementById('btn-clear-filters');
   if(clearBtn) clearBtn.addEventListener('click', ()=>{
-    ['filter-search','filter-disciplina','filter-ano','filter-modalidade','filter-legivel','filter-abordamos','filter-ficamos','filter-data-de','filter-data-ate'].forEach(id=>{
+    ['filter-search','filter-disciplina','filter-ano','filter-modalidade','filter-abordamos','filter-ficamos','filter-data-de','filter-data-ate'].forEach(id=>{
       const el = document.getElementById(id); if(el) el.value='';
     });
     renderFixandoTable();

@@ -550,7 +550,7 @@ table.data tr.row-media td:last-child{border-right:1.5px solid var(--accent); bo
       <h2>As 8 estatísticas principais</h2>
       <div class="gloss-grid">
         <div class="gloss-item"><b>Alunos efetivos</b><span>Alunos únicos da aba "Clientes Efetivos" <b>sem "Data Fim"</b> e com <b>"Pagamento" = "Sim"</b>. Cada aluno conta uma só vez, mesmo com 2 disciplinas.</span></div>
-        <div class="gloss-item"><b>Taxa de conversão AE → Efetivo</b><span>Linhas da aba "AEs" com <code>Estado = Efetivo</code> ÷ total de linhas da aba "AEs", em %.</span></div>
+        <div class="gloss-item"><b>Taxa de conversão AE → Efetivo</b><span>Entre as linhas da aba "AEs" com <b>data e hora preenchidas em "T/i AE"</b> (aula experimental efetivamente marcada), as que têm <code>Estado = Efetivo</code> ÷ total dessas linhas, em %.</span></div>
         <div class="gloss-item"><b>Reservam AE diretamente</b><span>Linhas da aba "AEs" com <code>T/i AE</code> preenchido mas <b>sem</b> T/i nem T/f de Conversações — foram direto à aula experimental.</span></div>
         <div class="gloss-item"><b>Retenção média</b><span>Para alunos únicos com "Data Fim" preenchida: média de <code>Data Fim − Data Início</code>.</span></div>
         <div class="gloss-item"><b>Desistência antes do fim do ano</b><span>Entre quem já saiu, % cuja "Data Fim" foi antes de 30 de junho do ano letivo da respetiva "Data Início".</span></div>
@@ -1043,7 +1043,7 @@ table.data tr.row-media td:last-child{border-right:1.5px solid var(--accent); bo
 
       <div class="section">
         <h3>✍️ Registar novo pedido</h3>
-        <p class="desc">Modalidade nasce "Online" e Legível nasce "Sim" — muda se for diferente. Contacto não se preenche aqui: abordas o pedido diretamente na tabela abaixo.</p>
+        <p class="desc">Modalidade nasce "Online" — muda se for diferente. Contacto não se preenche aqui: abordas o pedido diretamente na tabela abaixo.</p>
         <div class="entry-form" id="fixando-form">
           <div class="field" id="field-data"><label>Data do pedido</label><input type="date" id="f-data"></div>
           <div class="field" id="field-hora"><label>Hora (0–23)</label><input type="number" id="f-hora" min="0" max="23" placeholder="ex: 18"></div>
@@ -1052,9 +1052,6 @@ table.data tr.row-media td:last-child{border-right:1.5px solid var(--accent); bo
           <div class="field" id="field-localidade"><label>Localidade</label><input type="text" id="f-localidade" placeholder="ex: Porto"></div>
           <div class="field needs-input" id="field-modalidade"><label>Modalidade</label>
             <select id="f-modalidade"><option>Online</option><option>Presencial</option></select>
-          </div>
-          <div class="field needs-input" id="field-legivel"><label>Pedido legível?</label>
-            <select id="f-legivel"><option>Sim</option><option>Não</option></select>
           </div>
           <div class="full" style="grid-column:span 2; align-self:end;"></div>
           <div class="field" style="align-self:end;"><button class="btn" id="btn-add-fixando" style="width:100%;">+ Adicionar pedido</button></div>
@@ -2424,9 +2421,10 @@ function renderAlunos(){
   const unicosValidos = unicos.filter(isAlunoEfetivoValido);
   lastUnicosAlunos = unicos; // cache para o mapa interativo
 
-  // conversão AE -> Efetivo, a partir da coluna "Estado" da própria aba AEs
-  const aeEfetivosCount = aes.filter(isAEEstadoEfetivo).length;
-  const taxaConversaoAE = aes.length ? 100*aeEfetivosCount/aes.length : null;
+  // conversão AE -> Efetivo: só linhas com T/i AE preenchido (aula experimental marcada), a partir da coluna "Estado" da própria aba AEs
+  const aesComTiAE = aes.filter(a=>a.tiAE);
+  const aeEfetivosCount = aesComTiAE.filter(isAEEstadoEfetivo).length;
+  const taxaConversaoAE = aesComTiAE.length ? 100*aeEfetivosCount/aesComTiAE.length : null;
 
   // alunos que reservam logo a aula experimental, sem passar pela fase de conversações
   const aeDiretas = aes.filter(a=> a.tiAE && !a.tiConv && !a.tfConv);
@@ -2461,7 +2459,7 @@ function renderAlunos(){
   document.getElementById('alunos-kpis').innerHTML = [
     kpiCard('Alunos efetivos', unicosValidos.length, unicosValidos.length+' sem data de fim e com pagamento confirmado · '+efetivos.length+' matrículas no total (histórico)', true, 'card-chart-ativos-mes', 'Alunos únicos sem Data Fim preenchida e com "Sim" na coluna Pagamento da folha "Clientes Efetivos" — o headcount real de alunos a pagar neste momento.'),
     kpiCard('Potencial de renovação', comPotencialRenovacao.length, pctPotencialRenovacao!==null? pctPotencialRenovacao.toFixed(0)+'% dos alunos efetivos' : '—', false, 'card-chart-ano-ensino', 'Alunos efetivos no 10º ano ou menos, mais os que têm pelo menos 1 disciplina fora da lista "sem renovação" (Biologia, Físico-Química, Geometria Descritiva, Economia, Geografia, Filosofia, História, Cultura das Artes). % = este nº ÷ total de alunos efetivos.'),
-    kpiCard('Taxa de conversão AE → Efetivo', taxaConversaoAE!==null? taxaConversaoAE.toFixed(0)+'%' : '— (sem AEs registadas)', aes.length+' aulas experimentais na aba "AEs"', false, 'card-table-professores', 'Percentagem de aulas experimentais (aba "AEs") cuja coluna "Estado" está marcada como "Efetivo".'),
+    kpiCard('Taxa de conversão AE → Efetivo', taxaConversaoAE!==null? taxaConversaoAE.toFixed(0)+'%' : '— (sem AEs marcadas)', aesComTiAE.length+' aulas experimentais com data/hora marcada em "T/i AE"', false, 'card-table-professores', 'Linhas da aba "AEs" com data e hora preenchidas em "T/i AE" (aula experimental efetivamente marcada) cuja coluna "Estado" está marcada como "Efetivo", a dividir pelo total de linhas com "T/i AE" preenchido, em %.'),
     kpiCard('Reservam AE diretamente', aeDiretas.length, pctAeDiretas!==null? pctAeDiretas.toFixed(0)+'% do total de AEs — sem passar pela fase de conversações' : 'sem AEs registadas', false, 'card-table-professores', 'Alunos com T/i de Aula Experimental preenchido mas sem qualquer T/i ou T/f de conversações — avançaram diretamente para a AE.'),
     kpiCard('Retenção média', fmtDuration(retencaoMedia), duracoesFim.length? 'com base em '+duracoesFim.length+' aluno(s) já com Data Fim' : 'ainda sem "Data Fim" preenchida', false, 'card-table-professores', 'Tempo médio entre a Data de Início e a Data de Fim dos alunos que já saíram — quanto tempo, em média, um aluno fica connosco.'),
     kpiCard('Desistência antes do fim do ano', taxaDesistAntes!==null? taxaDesistAntes.toFixed(0)+'%' : '— (sem "Data Fim" suficiente)', saidos.length+' aluno(s) já com data de saída registada', false, 'card-chart-inicio-fim', 'Entre os alunos que já saíram, a percentagem cuja Data de Fim foi antes de 30 de junho do respetivo ano letivo — ou seja, que desistiram a meio do ano em vez de terminarem naturalmente.'),
@@ -3140,7 +3138,7 @@ document.getElementById('btn-sync-now').addEventListener('click', async ()=>{
 document.getElementById('btn-add-fixando').addEventListener('click', ()=>{
   const dataVal = document.getElementById('f-data').value;
   if(!dataVal){ alert('Indica a data do pedido.'); return; }
-  const camposManuais = [['f-modalidade','Modalidade'],['f-legivel','Pedido legível']];
+  const camposManuais = [['f-modalidade','Modalidade']];
   const emFalta = camposManuais.filter(([id])=> !document.getElementById(id).value);
   if(emFalta.length){ alert('Falta preencher: '+emFalta.map(f=>f[1]).join(', ')+'.'); return; }
   const [y,m,d] = dataVal.split('-').map(Number);
@@ -3152,7 +3150,7 @@ document.getElementById('btn-add-fixando').addEventListener('click', ()=>{
     localidade: normStr(document.getElementById('f-localidade').value) || 'Não especificado',
     contacto: '',
     modalidade: document.getElementById('f-modalidade').value,
-    legivel: document.getElementById('f-legivel').value === 'Sim',
+    legivel: true,
     source: 'manual'
   };
   p.sourceKey = pedidoKey(p);

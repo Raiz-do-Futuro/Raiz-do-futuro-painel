@@ -2589,11 +2589,9 @@ function renderCompareAnosLista(){
   atualizarBotaoManual();
 }
 function atualizarBotaoManual(){
-  const btn = document.getElementById('btn-compare-manual-abrir');
-  if(!compareAtual || compareAtual.domain!=='alunos'){ btn.style.display = 'none'; return; }
-  const entry = getManualEntry24_25();
-  const jaTem = entry && entry.manual && entry.manual[compareAtual.metricKey];
-  btn.style.display = jaTem ? 'none' : 'inline-block';
+  // Botão de inserção manual desativado por agora — ainda não há dados de 24/25 para inserir.
+  // Os anos já guardados (ex: 24/25 com dados parciais) continuam a aparecer normalmente na comparação.
+  document.getElementById('btn-compare-manual-abrir').style.display = 'none';
 }
 function abrirComparacao(domain, metricKey){
   compareAtual = { domain, metricKey };

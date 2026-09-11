@@ -2487,14 +2487,19 @@ const MANUAL_CAMPOS = {
   efetivosPerdidos: [{id:'total', label:'Efetivos perdidos (total)'}],
   aulasPorAluno: [{id:'total', label:'Nº de aulas / aluno (média)', step:'0.1'}]
 };
-function manualValoresParaMetrica(metricKey, v){
+const MANUAL_MENSAL_SUPORTADO = {
+  alunosEfetivos:true, retencaoMedia:false, desistenciasMeioAno:true, origemAlunos:true,
+  aulasPorMes:true, aulasPorProfessor:true, efetivosPerdidos:true, aulasPorAluno:true
+};
+function manualValoresParaMetrica(metricKey, v, mensal){
+  const m = mensal || {};
   switch(metricKey){
-    case 'alunosEfetivos': return { mensal:{}, total: v.total };
+    case 'alunosEfetivos': return { mensal:m, total: v.total };
     case 'retencaoMedia': return { total: v.dias!=null ? v.dias*86400000 : null };
-    case 'desistenciasMeioAno': return { mensal:{}, total: { count: v.count, pct: v.saidos ? 100*v.count/v.saidos : null } };
-    case 'origemAlunos': return { mensal:{}, total: { 'Fixando': v.fixando||0, 'Website': v.website||0, 'Redes Sociais': v.redes||0, 'Outras': v.outras||0 } };
-    case 'aulasPorMes': return { mensal:{}, total: { 'Abaixo (<4)': v.abaixo||0, 'Dentro (4-9)': v.dentro||0, 'Acima (>9)': v.acima||0 } };
-    case 'aulasPorProfessor': case 'efetivosPerdidos': case 'aulasPorAluno': return { mensal:{}, total: v.total };
+    case 'desistenciasMeioAno': return { mensal:m, total: { count: v.count, pct: v.saidos ? 100*v.count/v.saidos : null } };
+    case 'origemAlunos': return { mensal:m, total: { 'Fixando': v.fixando||0, 'Website': v.website||0, 'Redes Sociais': v.redes||0, 'Outras': v.outras||0 } };
+    case 'aulasPorMes': return { mensal:m, total: { 'Abaixo (<4)': v.abaixo||0, 'Dentro (4-9)': v.dentro||0, 'Acima (>9)': v.acima||0 } };
+    case 'aulasPorProfessor': case 'efetivosPerdidos': case 'aulasPorAluno': return { mensal:m, total: v.total };
   }
 }
 function getManualEntry24_25(){ return historicoAlunos.find(y=>y.source==='manual' && y.label===MANUAL_ANO_LABEL) || null; }
@@ -2624,7 +2629,7 @@ function renderCompareCorpoAlunos(def, anos){
   } else {
     totaisHtml = `<table class="data"><thead><tr><th>Ano</th><th>Total</th></tr></thead><tbody>${anos.map(a=>`<tr><td>${a.label}</td><td>${a.val && a.val.total!=null ? a.val.total : '—'}</td></tr>`).join('')}</tbody></table>`;
   }
-  const chartHtml = def.tipo!=='duracao' ? `<div class="chart-card" style="height:280px; margin-bottom:14px; padding:10px;"><canvas id="compare-chart"></canvas></div><div style="font-size:11px; color:var(--muted); margin:-8px 0 12px 0;">Linha por mês do ano letivo (Setembro → Agosto) — os anos manuais só têm total, sem quebra mensal.</div>` : '';
+  const chartHtml = def.tipo!=='duracao' ? `<div class="chart-card" style="height:280px; margin-bottom:14px; padding:10px;"><canvas id="compare-chart"></canvas></div><div style="font-size:11px; color:var(--muted); margin:-8px 0 12px 0;">Linha por mês do ano letivo (Setembro → Agosto) — nos anos manuais só aparecem os meses que preencheste.</div>` : '';
   return chartHtml + totaisHtml;
 }
 function desenharCompareChartAlunos(def, anos){
@@ -2698,9 +2703,13 @@ document.getElementById('btn-compare-manual-abrir').addEventListener('click', ()
   const def = HIST_ALUNOS_METRICAS[metricKey];
   const campos = MANUAL_CAMPOS[metricKey];
   document.getElementById('compare-manual-titulo').textContent = 'Inserir "'+def.label+'" de '+MANUAL_ANO_LABEL+' (sem Excel)';
-  document.getElementById('compare-manual-campos').innerHTML = campos.map(c=>
-    `<div class="field"><label>${c.label}</label><input type="number" min="0" ${c.step?`step="${c.step}"`:''} data-manual-campo="${c.id}"></div>`
-  ).join('');
+  let html = `<div style="grid-column:1/-1; font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.04em;">Totais</div>` +
+    campos.map(c=>`<div class="field"><label>${c.label}</label><input type="number" min="0" ${c.step?`step="${c.step}"`:''} data-manual-campo="${c.id}"></div>`).join('');
+  if(MANUAL_MENSAL_SUPORTADO[metricKey]){
+    html += `<div style="grid-column:1/-1; font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; margin-top:8px;">Mensal (opcional — deixa em branco o que não souberes)</div>` +
+      MESES_LETIVOS.map(mes=>`<div class="field"><label>${mes}</label><input type="number" min="0" ${metricKey==='aulasPorAluno'?'step="0.1"':''} data-manual-mes="${mes}"></div>`).join('');
+  }
+  document.getElementById('compare-manual-campos').innerHTML = html;
   document.getElementById('compare-manual-form').style.display = 'block';
 });
 document.getElementById('btn-compare-manual-cancelar').addEventListener('click', ()=>{
@@ -2716,7 +2725,11 @@ document.getElementById('btn-compare-manual-guardar').addEventListener('click', 
     const n = el.value===''? null : Number(el.value);
     v[el.dataset.manualCampo] = n;
   });
-  const valor = manualValoresParaMetrica(metricKey, v);
+  const mensal = {};
+  document.querySelectorAll('#compare-manual-campos [data-manual-mes]').forEach(el=>{
+    if(el.value!=='') mensal[el.dataset.manualMes] = Number(el.value);
+  });
+  const valor = manualValoresParaMetrica(metricKey, v, mensal);
   if(!entry){ entry = { id:'hist_'+Date.now(), label:MANUAL_ANO_LABEL, source:'manual', manual:{} }; historicoAlunos.push(entry); }
   entry.manual[metricKey] = valor;
   saveHistoricoAlunos();

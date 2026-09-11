@@ -839,6 +839,7 @@ table.data tr.row-media td:last-child{border-right:1.5px solid var(--accent); bo
           <div class="section">
             <h3>🔗 Origem dos alunos</h3>
             <p class="desc">Percentagem por plataforma de origem (inclui alunos transitados de anos anteriores)</p>
+            <button class="btn secondary" onclick="abrirComparacao('alunos','origemAlunos')" style="padding:6px 12px; font-size:11px; margin-bottom:8px;">📊 Comparar com anos letivos anteriores</button>
             <div class="chart-card" id="card-chart-plataforma"><div class="chart-wrap"><canvas id="chart-plataforma"></canvas></div></div>
           </div>
           <div class="section">
@@ -870,6 +871,7 @@ table.data tr.row-media td:last-child{border-right:1.5px solid var(--accent); bo
           <div class="section">
             <h3>📚 Alunos por nº de aulas/mês</h3>
             <p class="desc">Abaixo do esperado (&lt;4), dentro (4-9) e acima (&gt;9), no mês mais recente com dados</p>
+            <button class="btn secondary" onclick="abrirComparacao('alunos','aulasPorMes')" style="padding:6px 12px; font-size:11px; margin-bottom:8px;">📊 Comparar com anos letivos anteriores</button>
             <div class="chart-card" id="card-chart-faixa-aulas"><div class="chart-wrap"><canvas id="chart-faixa-aulas"></canvas></div></div>
           </div>
         </div>
@@ -936,6 +938,12 @@ table.data tr.row-media td:last-child{border-right:1.5px solid var(--accent); bo
         <div class="section">
           <h3>🏆 Desempenho por professor</h3>
           <p class="desc">Retenção, tempo médio em conversações e entre aula experimental (AE) e efetivação, com base na aba "AEs" — as colunas "Nº de aulas dadas", "Nº de aulas / aluno" e "Lucro (sem gastos)" respeitam o período escolhido abaixo</p>
+          <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:8px;">
+            <span style="font-size:11px; color:var(--muted); align-self:center;">Comparar com anos letivos anteriores (totais da empresa, não por professor):</span>
+            <button class="btn secondary" onclick="abrirComparacao('alunos','aulasPorProfessor')" style="padding:6px 12px; font-size:11px;">📊 Nº de aulas dadas</button>
+            <button class="btn secondary" onclick="abrirComparacao('alunos','efetivosPerdidos')" style="padding:6px 12px; font-size:11px;">📊 Efetivos perdidos</button>
+            <button class="btn secondary" onclick="abrirComparacao('alunos','aulasPorAluno')" style="padding:6px 12px; font-size:11px;">📊 Nº de aulas / aluno</button>
+          </div>
 
           <div class="chart-card" style="padding:14px; margin-bottom:14px;">
             <div style="display:flex; flex-wrap:wrap; gap:12px; align-items:center;">
@@ -1461,6 +1469,54 @@ table.data tr.row-media td:last-child{border-right:1.5px solid var(--accent); bo
   </div>
 </div>
 
+<div id="compare-modal" style="display:none; position:fixed; inset:0; background:rgba(30,40,20,0.45); z-index:2600; align-items:center; justify-content:center; padding:20px;">
+  <div style="background:var(--card); border-radius:16px; max-width:780px; width:100%; max-height:88vh; overflow-y:auto; padding:24px; box-shadow:0 20px 50px rgba(0,0,0,0.3);">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+      <h3 id="compare-titulo" style="font-family:'Stardos Stencil','Bahnschrift',sans-serif; color:var(--ink); margin:0; font-size:19px;">📊 Comparar com anos letivos anteriores</h3>
+      <button id="btn-fechar-compare" style="background:none; border:none; font-size:20px; cursor:pointer; color:var(--muted);">✕</button>
+    </div>
+    <p style="font-size:12px; color:var(--muted); margin:0 0 16px 0;">Compara este ano letivo com anos anteriores importados ou inseridos manualmente.</p>
+
+    <div style="border:1.5px solid var(--border); border-radius:10px; padding:12px; margin-bottom:18px; background:var(--sage-soft);">
+      <div style="font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; margin-bottom:8px;">Anos disponíveis para comparar</div>
+      <div id="compare-anos-lista" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px;"></div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <button class="btn secondary" id="btn-compare-importar" style="padding:8px 14px; font-size:12px;">↑ Importar Excel de um ano anterior</button>
+        <input type="file" id="file-compare-import" accept=".xlsx,.xls" style="display:none;">
+        <button class="btn secondary" id="btn-compare-manual-abrir" style="padding:8px 14px; font-size:12px;">+ Adicionar dados manualmente (uma só vez)</button>
+      </div>
+      <div style="font-size:11px; color:var(--muted); margin-top:8px;">O Excel deve ter a mesma estrutura do registo de alunos habitual — abas "Clientes Efetivos", "Ex-Clientes", "Pagamentos Alunos" e, para números financeiros, "Finanças".</div>
+    </div>
+
+    <div id="compare-manual-form" style="display:none; border:1.5px solid var(--green); border-radius:10px; padding:14px; margin-bottom:18px;">
+      <div style="font-weight:700; color:var(--ink); margin-bottom:10px;">Inserir dados de um ano anterior (só totais anuais, sem Excel)</div>
+      <div class="entry-form" style="grid-template-columns:1fr 1fr 1fr;">
+        <div class="field"><label>Rótulo do ano</label><input type="text" id="cm-label" placeholder="ex: 24/25"></div>
+        <div class="field"><label>Alunos efetivos (total)</label><input type="number" id="cm-alunos-efetivos" min="0"></div>
+        <div class="field"><label>Retenção média (dias)</label><input type="number" id="cm-retencao-dias" min="0"></div>
+        <div class="field"><label>Desistências a meio do ano (nº)</label><input type="number" id="cm-desistencias" min="0"></div>
+        <div class="field"><label>Total de alunos que saíram nesse ano</label><input type="number" id="cm-saidos-total" min="0"></div>
+        <div class="field"><label>Origem — Fixando</label><input type="number" id="cm-origem-fixando" min="0"></div>
+        <div class="field"><label>Origem — Website</label><input type="number" id="cm-origem-website" min="0"></div>
+        <div class="field"><label>Origem — Redes Sociais</label><input type="number" id="cm-origem-redes" min="0"></div>
+        <div class="field"><label>Origem — Outras plataformas</label><input type="number" id="cm-origem-outras" min="0"></div>
+        <div class="field"><label>Aulas/mês — Abaixo (&lt;4)</label><input type="number" id="cm-aulas-abaixo" min="0"></div>
+        <div class="field"><label>Aulas/mês — Dentro (4-9)</label><input type="number" id="cm-aulas-dentro" min="0"></div>
+        <div class="field"><label>Aulas/mês — Acima (&gt;9)</label><input type="number" id="cm-aulas-acima" min="0"></div>
+        <div class="field"><label>Nº de aulas dadas (total empresa)</label><input type="number" id="cm-aulas-professor" min="0"></div>
+        <div class="field"><label>Efetivos perdidos (total)</label><input type="number" id="cm-efetivos-perdidos" min="0"></div>
+        <div class="field"><label>Nº de aulas / aluno (média)</label><input type="number" id="cm-aulas-aluno" min="0" step="0.1"></div>
+      </div>
+      <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:10px;">
+        <button class="btn secondary" id="btn-compare-manual-cancelar" style="padding:8px 14px; font-size:12px;">Cancelar</button>
+        <button class="btn" id="btn-compare-manual-guardar" style="padding:8px 14px; font-size:12px;">Guardar</button>
+      </div>
+    </div>
+
+    <div id="compare-corpo"></div>
+  </div>
+</div>
+
 <script>
 /* Fallback de armazenamento: fora do ambiente Claude (ex: GitHub Pages, ficheiro local),
    window.storage não existe — este shim usa localStorage do próprio browser em vez disso,
@@ -1574,6 +1630,14 @@ async function loadState(){
   renderProfExp();
   renderAmeliaAulas();
   renderProfHistory();
+
+  try{
+    const rHistAlunos = await window.storage.get('historico-alunos', false);
+    if(rHistAlunos && rHistAlunos.value) historicoAlunos = JSON.parse(rHistAlunos.value).map(y=>{
+      if(y.dados){ y.dados.efetivos = (y.dados.efetivos||[]).map(reviveDates); y.dados.exClientes = (y.dados.exClientes||[]).map(reviveDates); }
+      return y;
+    });
+  }catch(e){ /* ainda sem anos históricos */ }
 }
 async function saveAlunos(){
   try{ await window.storage.set('alunos-data', JSON.stringify(crm), false); }catch(e){ console.error('storage error', e); }
@@ -2057,13 +2121,17 @@ function doughnutChart(id, labels, data){
   });
 }
 
-function kpiCard(label, value, sub, circled, targetId, definicao){
+function kpiCard(label, value, sub, circled, targetId, definicao, compareKey){
   const clickable = targetId ? ` onclick="scrollToSection('${targetId}')"` : '';
-  const tag = targetId ? 'button' : 'div';
   const goLabel = targetId && targetId.includes('table') ? 'Ver tabela →' : 'Ver gráfico →';
   const labelAttr = definicao ? ` title="${definicao.replace(/"/g,'&quot;')}"` : '';
   const helpIcon = definicao ? ' <span style="opacity:.5; font-size:11px;" title="'+definicao.replace(/"/g,'&quot;')+'">ⓘ</span>' : '';
-  return `<${tag} class="kpi"${clickable}><div class="label"${labelAttr}>${label}${helpIcon}</div><div class="value${circled?' circled':''}">${value}</div>${sub?`<div class="sub">${sub}</div>`:''}${targetId?`<div class="go">${goLabel}</div>`:''}</${tag}>`;
+  let compareBtn = '';
+  if(compareKey){
+    const [dom, key] = compareKey.split(':');
+    compareBtn = ` <span class="kpi-compare" onclick="event.stopPropagation(); abrirComparacao('${dom}','${key}')" style="display:inline-block; color:var(--green); font-size:11px; cursor:pointer; text-decoration:underline; margin-left:4px;" title="Comparar com anos letivos anteriores">📊 Comparar</span>`;
+  }
+  return `<div class="kpi"${clickable}><div class="label"${labelAttr}>${label}${helpIcon}${compareBtn}</div><div class="value${circled?' circled':''}">${value}</div>${sub?`<div class="sub">${sub}</div>`:''}${targetId?`<div class="go">${goLabel}</div>`:''}</div>`;
 }
 function scrollToSection(id){
   const el = document.getElementById(id);
@@ -2163,6 +2231,453 @@ function detetarAlteracoesProfessor(efetivosAntigos, efetivosNovos){
   });
   return alteracoes;
 }
+
+/* ============================================================
+   COMPARAÇÃO COM ANOS LETIVOS ANTERIORES
+   Fonte: um Excel "Registo Clientes AA-AA.xlsx" de um ano anterior (schema mais simples
+   que o atual — "Clientes Efetivos" sem Data Fim/Disciplina, "Ex-Clientes" com Data Fim,
+   "Pagamentos Alunos" igual ao atual, e a aba "Finanças" para os números financeiros
+   DESSE ano — só usada para anos ANTERIORES; o ano corrente continua a usar o Excel
+   financeiro "DR"/"CF" já importado no separador Financeiro). Ou inserção manual
+   (só totais anuais, sem quebra mensal), limitada a 1 ano, para anos sem Excel.
+   ============================================================ */
+let historicoAlunos = []; // [{id, label:'25/26', source:'excel'|'manual', dados:{efetivos,exClientes,pagamentos}|manual:{...}, financas: objParsed|null}]
+async function saveHistoricoAlunos(){
+  try{ await window.storage.set('historico-alunos', JSON.stringify(historicoAlunos), false); }catch(e){ console.error('storage error', e); }
+}
+const MESES_LETIVOS = ['Setembro','Outubro','Novembro','Dezembro','Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto'];
+function anoInicioFromLabel(label){
+  const m = String(label||'').match(/(\d{2})\s*\/\s*(\d{2})/);
+  return m ? 2000+Number(m[1]) : null;
+}
+function anoLetivoMeses(anoInicio){
+  return MESES_LETIVOS.map((nome,i)=>{
+    const ano = anoInicio + (i<4 ? 0 : 1);
+    const mes = ((i+8)%12)+1;
+    return { nome, key: ano+'-'+String(mes).padStart(2,'0'), monthStart:new Date(ano,mes-1,1), monthEnd:new Date(ano,mes,0) };
+  });
+}
+
+// --- Parser do Excel histórico (Clientes Efetivos + Ex-Clientes + Pagamentos Alunos) ---
+function parseHistoricoAlunosWorkbook(wb){
+  const efetivosRaw = readSheetFrom(findSheet(wb,'efetivo'), 'Clientes');
+  const efetivos = efetivosRaw.map(o=>({
+    nome: normStr(o['Clientes']), professor: normStr(o['Professor']) || 'Não especificado',
+    plataforma: normStr(o['Plataforma']) || 'Não especificado',
+    dataInicio: parseDate(o['Data Início']), pagamento: normStr(o['Pagamento'])
+  })).filter(a=>a.nome);
+  const exSheet = findSheet(wb,'ex-cliente') || findSheet(wb,'ex cliente');
+  const exRaw = readSheetFrom(exSheet, 'Clientes');
+  const exClientes = exRaw.map(o=>({
+    nome: normStr(o['Clientes']), professor: normStr(o['Professor']) || 'Não especificado',
+    plataforma: normStr(o['Plataforma']) || 'Não especificado',
+    dataInicio: parseDate(o['Data Início']), dataFim: parseDate(o['Data Fim']), pagamento: normStr(o['Pagamento'])
+  })).filter(a=>a.nome);
+  const pagamentos = readPagamentosAlunosSheet(findSheet(wb,'pagamentos alunos'));
+  return { efetivos, exClientes, pagamentos };
+}
+function historicoAlunosSnapshot(dados){
+  const ativos = [
+    ...dados.efetivos.map(a=>({...a, dataFim:null})),
+    ...dados.exClientes.map(a=>({...a}))
+  ];
+  return { ativos, pagamentos: dados.pagamentos };
+}
+function liveAlunosSnapshot(){
+  const seen = new Set(); const ativos = [];
+  crm.efetivos.forEach(a=>{
+    const k = normKey(a.nome); if(seen.has(k)) return; seen.add(k);
+    ativos.push({nome:a.nome, professor:a.professor, plataforma:a.plataforma, dataInicio:a.dataInicio, dataFim:a.dataFim, pagamento:a.pagamento});
+  });
+  return { ativos, pagamentos: crm.pagamentos || [] };
+}
+
+// --- Parser da aba "Finanças" (só para anos históricos) ---
+function parseHistoricoFinancasSheet(sheet){
+  if(!sheet) return null;
+  const aoa = XLSX.utils.sheet_to_json(sheet, {header:1, defval:''});
+  const headerRowIdx = aoa.findIndex(row => row.some(c=>MESES_PT_ALL.includes(String(c).trim())));
+  if(headerRowIdx===-1) return null;
+  const headerRow = aoa[headerRowIdx];
+  const monthCols = [];
+  for(let c=0; c<headerRow.length; c++){
+    const v = headerRow[c];
+    if(v && MESES_PT_ALL.includes(String(v).trim())) monthCols.push({mes:String(v).trim(), col:c});
+    else if(monthCols.length) break;
+  }
+  if(!monthCols.length) return null;
+  const months = monthCols.map(m=>m.mes);
+  const labelCol = monthCols[0].col - 1; // coluna do rótulo = imediatamente antes do 1º mês (independente de haver ou não coluna A vazia)
+  const rowByLabel = (label, fromRow, toRow)=>{
+    for(let r=fromRow; r<=toRow && r<aoa.length; r++){
+      if(String(aoa[r][labelCol]||'').trim()===label) return monthCols.map(mc=>Number(aoa[r][mc.col])||0);
+    }
+    return null;
+  };
+  const receita = rowByLabel('Receitas', headerRowIdx+1, headerRowIdx+6);
+  if(!receita) return null;
+  const custosVariaveis = (rowByLabel('Custos Variáveis', headerRowIdx+1, headerRowIdx+6) || months.map(()=>0)).map(v=>Math.abs(v));
+  const custosFixos = (rowByLabel('Custos Fixos*', headerRowIdx+1, headerRowIdx+6) || months.map(()=>0)).map(v=>Math.abs(v));
+  const total = rowByLabel('Total', headerRowIdx+1, headerRowIdx+6) || months.map(()=>0);
+  const MARKETING_LABELS_HIST = {'Google Ads':'Google Ads', 'Meta Ads':'Redes Sociais Ads', 'Lendarius':'Lendarius', 'Fixando':'Fixando'};
+  const marketingItens = {};
+  Object.entries(MARKETING_LABELS_HIST).forEach(([liveLabel, histLabel])=>{
+    const vals = rowByLabel(histLabel, headerRowIdx+8, headerRowIdx+30);
+    if(vals) marketingItens[liveLabel] = vals.map(v=>Math.abs(v));
+  });
+  return { months, receita, custosVariaveis, custosFixos, total, marketingItens };
+}
+
+// --- Estado combinado: alunos + financeiro para 1 ano histórico ---
+function historicoAnoIdxAtual(financas){
+  let idx = financas.receita.map((v,i)=>({v,i})).filter(x=>x.v>0).map(x=>x.i).pop();
+  return idx===undefined ? 0 : idx;
+}
+function computeFinHistorico(financas, snapAlunos, anoInicio){
+  if(!financas) return null;
+  const idx = historicoAnoIdxAtual(financas);
+  const out = { mes: financas.months[idx] };
+  out.receitaMes = financas.receita[idx];
+  out.pontoEquilibrioMes = financas.custosFixos[idx] + financas.custosVariaveis[idx];
+  const chaveMes = anoLetivoMeses(anoInicio)[MESES_LETIVOS.indexOf(financas.months[idx])]?.key;
+  if(snapAlunos && chaveMes){
+    const [y,m] = chaveMes.split('-').map(Number);
+    const monthStart = new Date(y,m-1,1), monthEnd = new Date(y,m,0);
+    const ativosMes = snapAlunos.ativos.filter(a=>a.dataInicio && a.dataInicio<=monthEnd && (!a.dataFim||a.dataFim>=monthStart)).length;
+    if(ativosMes){
+      out.arpu = out.receitaMes/ativosMes;
+      out.pontoEquilibrioAlunos = out.arpu>0 ? Math.ceil(out.pontoEquilibrioMes/out.arpu) : null;
+    }
+    const marketingMes = Object.values(financas.marketingItens).reduce((s,arr)=>s+(arr[idx]||0), 0);
+    const alunosMkt = snapAlunos.ativos.filter(a=>{
+      const plat = normStr(a.plataforma).toLowerCase();
+      return a.dataInicio && a.dataInicio>=monthStart && a.dataInicio<=monthEnd && ORIGENS_MARKETING.some(o=>plat.includes(o));
+    }).length;
+    if(alunosMkt>0 && marketingMes>0){
+      out.cac = marketingMes/alunosMkt;
+      if(out.arpu){
+        const dur = calcRetencaoMedia(snapAlunos).total;
+        if(dur){ const retMeses = dur/(30.44*86400000); const ltv = out.arpu*retMeses; out.ltvCac = ltv/out.cac; }
+        out.payback = out.cac/out.arpu;
+      }
+    }
+    if(out.arpu && marketingMes>0){
+      const alunosMktAtivos = snapAlunos.ativos.filter(a=>{
+        const plat = normStr(a.plataforma).toLowerCase();
+        return !a.dataFim && ORIGENS_MARKETING.some(o=>plat.includes(o));
+      }).length;
+      if(alunosMktAtivos>0) out.raos = (alunosMktAtivos*out.arpu)/marketingMes;
+    }
+  }
+  out.rendimentoAcumulado = financas.total.reduce((a,b)=>a+b,0);
+  if(out.receitaMes>0) out.arr = out.receitaMes*12;
+  const fixosTotal = financas.custosFixos.reduce((a,b)=>a+b,0), varTotal = financas.custosVariaveis.reduce((a,b)=>a+b,0);
+  if(fixosTotal>0 || varTotal>0) out.fixosPct = { fixos: Math.round(100*fixosTotal/(fixosTotal+varTotal)), variaveis: Math.round(100*varTotal/(fixosTotal+varTotal)) };
+  let acumulado=0; const caixaSerie = financas.total.map(v=>{ acumulado+=v; return acumulado; });
+  out.caixaAtual = caixaSerie[caixaSerie.length-1];
+  const burnMonths = financas.total.filter(v=>v<0);
+  if(burnMonths.length){ const burnMedio = burnMonths.reduce((a,b)=>a+b,0)/burnMonths.length; out.runway = out.caixaAtual>0 ? Math.max(0, out.caixaAtual/Math.abs(burnMedio)) : 0; }
+  return out;
+}
+
+// --- 8 métricas comparáveis de Alunos/Professores — mesma forma {mensal:{mês:valor}, total} para qualquer ano ---
+function calcAlunosEfetivos(snap, anoInicio){
+  const mensal = {};
+  anoLetivoMeses(anoInicio).forEach(m=>{
+    mensal[m.nome] = snap.ativos.filter(a=>a.dataInicio && a.dataInicio<=m.monthEnd && (!a.dataFim||a.dataFim>=m.monthStart) && normStr(a.pagamento).toLowerCase()==='sim').length;
+  });
+  return { mensal, total: snap.ativos.filter(a=>!a.dataFim && normStr(a.pagamento).toLowerCase()==='sim').length };
+}
+function calcRetencaoMedia(snap){
+  const durs = snap.ativos.filter(a=>a.dataInicio && a.dataFim).map(a=>a.dataFim-a.dataInicio);
+  return { total: durs.length ? durs.reduce((a,b)=>a+b,0)/durs.length : null };
+}
+function calcDesistencias(snap, anoInicio){
+  const saidos = snap.ativos.filter(a=>a.dataFim);
+  const fimAnoLetivo = new Date(anoInicio+1, 5, 30);
+  const saidosAntes = saidos.filter(a=>a.dataFim < fimAnoLetivo);
+  const mensal = {};
+  anoLetivoMeses(anoInicio).forEach(m=>{ mensal[m.nome] = saidosAntes.filter(a=>a.dataFim>=m.monthStart && a.dataFim<=m.monthEnd).length; });
+  return { mensal, total: { count: saidosAntes.length, pct: saidos.length ? 100*saidosAntes.length/saidos.length : null } };
+}
+function calcOrigem(snap, anoInicio){
+  const mensal = {};
+  anoLetivoMeses(anoInicio).forEach(m=>{
+    mensal[m.nome] = snap.ativos.filter(a=>a.dataInicio && a.dataInicio>=m.monthStart && a.dataInicio<=m.monthEnd).length;
+  });
+  return { mensal, total: groupCount(snap.ativos, a=>a.plataforma||'Não especificado') };
+}
+function calcAulasPorMes(snap, anoInicio){
+  const faixaDe = n => n<4?'Abaixo (<4)': n<=9?'Dentro (4-9)':'Acima (>9)';
+  const totalFaixas = {'Abaixo (<4)':0,'Dentro (4-9)':0,'Acima (>9)':0};
+  const mensal = {};
+  anoLetivoMeses(anoInicio).forEach(m=>{
+    const doMes = snap.pagamentos.filter(pg=>pg.mes===m.nome);
+    mensal[m.nome] = doMes.length;
+    doMes.forEach(pg=>{ totalFaixas[faixaDe(pg.nAulas)]++; });
+  });
+  return { mensal, total: totalFaixas };
+}
+function calcAulasPorProfessor(snap, anoInicio){
+  const mensal = {};
+  anoLetivoMeses(anoInicio).forEach(m=>{ mensal[m.nome] = snap.pagamentos.filter(pg=>pg.mes===m.nome).reduce((s,pg)=>s+(pg.nAulas||0),0); });
+  return { mensal, total: snap.pagamentos.reduce((s,pg)=>s+(pg.nAulas||0),0) };
+}
+function calcEfetivosPerdidos(snap, anoInicio){
+  const saidos = snap.ativos.filter(a=>a.dataFim);
+  const mensal = {};
+  anoLetivoMeses(anoInicio).forEach(m=>{ mensal[m.nome] = saidos.filter(a=>a.dataFim>=m.monthStart && a.dataFim<=m.monthEnd).length; });
+  return { mensal, total: saidos.length };
+}
+function calcAulasPorAluno(snap, anoInicio){
+  const mensal = {}; let somaAulas=0, somaAlunoMeses=0;
+  anoLetivoMeses(anoInicio).forEach(m=>{
+    const aulasMes = snap.pagamentos.filter(pg=>pg.mes===m.nome).reduce((s,pg)=>s+(pg.nAulas||0),0);
+    const ativosMes = snap.ativos.filter(a=>a.dataInicio && a.dataInicio<=m.monthEnd && (!a.dataFim||a.dataFim>=m.monthStart)).length;
+    mensal[m.nome] = ativosMes ? +(aulasMes/ativosMes).toFixed(2) : null;
+    somaAulas += aulasMes; somaAlunoMeses += ativosMes;
+  });
+  return { mensal, total: somaAlunoMeses ? +(somaAulas/somaAlunoMeses).toFixed(2) : null };
+}
+const HIST_ALUNOS_METRICAS = {
+  alunosEfetivos: { label:'Alunos efetivos', calc:calcAlunosEfetivos, tipo:'numero' },
+  retencaoMedia: { label:'Retenção média', calc:calcRetencaoMedia, tipo:'duracao' },
+  desistenciasMeioAno: { label:'Desistências a meio do ano', calc:calcDesistencias, tipo:'contagem-pct' },
+  origemAlunos: { label:'Origem dos alunos', calc:calcOrigem, tipo:'categorias' },
+  aulasPorMes: { label:'Alunos por nº de aulas/mês', calc:calcAulasPorMes, tipo:'categorias' },
+  aulasPorProfessor: { label:'Nº de aulas dadas (total empresa)', calc:calcAulasPorProfessor, tipo:'numero' },
+  efetivosPerdidos: { label:'Efetivos perdidos (total empresa)', calc:calcEfetivosPerdidos, tipo:'numero' },
+  aulasPorAluno: { label:'Nº de aulas / aluno (média empresa)', calc:calcAulasPorAluno, tipo:'numero' }
+};
+
+// --- Inserção manual (só totais anuais, limitada a 1 ano) ---
+function manualAlunosToSnapshotLike(manual){
+  return {
+    alunosEfetivos: { mensal:{}, total: manual.alunosEfetivos },
+    retencaoMedia: { total: manual.retencaoMediaDias!=null ? manual.retencaoMediaDias*86400000 : null },
+    desistenciasMeioAno: { mensal:{}, total: { count: manual.desistenciasCount, pct: manual.desistenciasSaidosTotal ? 100*manual.desistenciasCount/manual.desistenciasSaidosTotal : null } },
+    origemAlunos: { mensal:{}, total: Object.fromEntries((manual.origem||[]).map(o=>[o.plataforma, o.total])) },
+    aulasPorMes: { mensal:{}, total: { 'Abaixo (<4)': manual.aulasAbaixo||0, 'Dentro (4-9)': manual.aulasDentro||0, 'Acima (>9)': manual.aulasAcima||0 } },
+    aulasPorProfessor: { mensal:{}, total: manual.aulasPorProfessorTotal },
+    efetivosPerdidos: { mensal:{}, total: manual.efetivosPerdidosTotal },
+    aulasPorAluno: { mensal:{}, total: manual.aulasPorAlunoMedia }
+  };
+}
+
+// --- Equivalente ao vivo (ano corrente) das métricas financeiras comparáveis, na mesma forma que computeFinHistorico ---
+function computeFinKpisLiveCurrent(){
+  const real = fin.dr && fin.dr.real;
+  if(!real || !real.receita) return null;
+  let idx = real.receita.monthly.map((v,i)=>({v,i})).filter(x=>x.v>0).map(x=>x.i).pop();
+  if(idx===undefined) idx = 0;
+  const out = { mes: real.months[idx] };
+  out.receitaMes = real.receita.monthly[idx];
+  out.pontoEquilibrioMes = real.gastosFixosTotal.monthly[idx] + real.gastosVariaveisTotal.monthly[idx];
+  const chaveMes = drMonthToKey(real.months[idx], idx);
+  const ativosMes = lastAtivosPorMesMap[chaveMes] || null;
+  if(ativosMes){
+    out.arpu = out.receitaMes/ativosMes;
+    out.pontoEquilibrioAlunos = out.arpu>0 ? Math.ceil(out.pontoEquilibrioMes/out.arpu) : null;
+  }
+  const marketingMes = MARKETING_LABELS.reduce((soma,lbl)=>{
+    const item = real.gastosFixosItems.find(x=>x.label===lbl) || real.gastosVariaveisItems.find(x=>x.label===lbl);
+    return soma + (item ? item.monthly[idx] : 0);
+  }, 0);
+  const alunosMktMes = alunosMarketingPorMes()[chaveMes] || 0;
+  if(alunosMktMes>0 && marketingMes>0){
+    out.cac = marketingMes/alunosMktMes;
+    if(out.arpu && lastRetencaoMediaMs){ const retMeses = lastRetencaoMediaMs/(30.44*86400000); out.ltvCac = (out.arpu*retMeses)/out.cac; }
+    if(out.arpu) out.payback = out.cac/out.arpu;
+  }
+  if(out.arpu && marketingMes>0){
+    const alunosMktAtivos = crm.efetivos.filter(a=>!a.dataFim && ORIGENS_MARKETING.some(o=>normStr(a.plataforma).toLowerCase().includes(o))).length;
+    if(alunosMktAtivos>0) out.raos = (alunosMktAtivos*out.arpu)/marketingMes;
+  }
+  if(real.rendimento) out.rendimentoAcumulado = real.rendimento.total;
+  if(fin.dr.objetivo && fin.dr.objetivo.receita){
+    out.desvioAcumulado = real.receita.monthly.slice(0, idx+1).reduce((a,v,i)=>a+(v-fin.dr.objetivo.receita.monthly[i]),0);
+  }
+  if(out.receitaMes>0) out.arr = out.receitaMes*12;
+  const fixosTotal = real.gastosFixosTotal.total, varTotal = real.gastosVariaveisTotal.total;
+  if(fixosTotal>0 || varTotal>0) out.fixosPct = { fixos: Math.round(100*fixosTotal/(fixosTotal+varTotal)), variaveis: Math.round(100*varTotal/(fixosTotal+varTotal)) };
+  if(fin.cf && fin.cf.Real && fin.cf.Real.caixa && fin.cf.Real.caixa.length){
+    out.caixaAtual = fin.cf.Real.caixa[fin.cf.Real.caixa.length-1];
+    const burnMonths = fin.cf.Real.cf.filter(v=>v<0);
+    if(burnMonths.length){ const burnMedio = burnMonths.reduce((a,b)=>a+b,0)/burnMonths.length; out.runway = out.caixaAtual>0 ? Math.max(0, out.caixaAtual/Math.abs(burnMedio)) : 0; }
+  }
+  return out;
+}
+const HIST_FIN_METRICAS = {
+  finReceitaMes: { label:'Receita do mês', field:'receitaMes', fmt:v=>fmtEuro(v) },
+  finPontoEquilibrioMes: { label:'Ponto de equilíbrio (mês)', field:'pontoEquilibrioMes', fmt:v=>fmtEuro(v) },
+  finArpu: { label:'Receita média por aluno (ARPU)', field:'arpu', fmt:v=>fmtEuro(v) },
+  finPontoEquilibrioAlunos: { label:'Ponto de equilíbrio (nº alunos)', field:'pontoEquilibrioAlunos', fmt:v=>v+' alunos' },
+  finCac: { label:'CAC — Custo de Aquisição de Cliente', field:'cac', fmt:v=>fmtEuro(v) },
+  finLtvCac: { label:'LTV : CAC', field:'ltvCac', fmt:v=>v.toFixed(1)+' : 1' },
+  finPayback: { label:'Período de recuperação do CAC', field:'payback', fmt:v=>v.toFixed(1)+' meses' },
+  finRaos: { label:'RAOS (retorno de marketing)', field:'raos', fmt:v=>v.toFixed(1)+'x' },
+  finRendimentoAcumulado: { label:'Rendimento acumulado (Real)', field:'rendimentoAcumulado', fmt:v=>fmtEuro(v) },
+  finDesvioAcumulado: { label:'Desvio acumulado vs Objetivo', field:'desvioAcumulado', fmt:v=>fmtEuro(v), soLive:true },
+  finArr: { label:'ARR estimado', field:'arr', fmt:v=>fmtEuro(v) },
+  finFixosVariaveis: { label:'Fixos : Variáveis', field:'fixosPct', fmt:v=>v.fixos+'% : '+v.variaveis+'%' },
+  finCaixaAtual: { label:'Caixa atual (Real)', field:'caixaAtual', fmt:v=>fmtEuro(v) },
+  finRunway: { label:'Runway estimado', field:'runway', fmt:v=>v.toFixed(1)+' meses' }
+};
+
+// --- UI: modal de comparação (partilhado entre Alunos e Financeiro) ---
+function anoLetivoLabelAtual(){
+  const ini = anoLetivoInicioAtual();
+  return String(ini).slice(2)+'/'+String(ini+1).slice(2);
+}
+let compareChartInstance = null;
+let compareAtual = null;
+function renderCompareAnosLista(){
+  const wrap = document.getElementById('compare-anos-lista');
+  if(!wrap) return;
+  const chips = [`<span style="background:var(--accent); color:#fff; padding:5px 11px; border-radius:999px; font-size:12px; font-weight:600;">${anoLetivoLabelAtual()} (atual)</span>`]
+    .concat(historicoAlunos.map(y=>`<span style="background:var(--card); border:1.5px solid var(--border); padding:5px 11px; border-radius:999px; font-size:12px;">${y.label} ${y.source==='manual'?'✍️':'📄'} <button data-del-hist="${y.id}" style="background:none; border:none; color:var(--rust); cursor:pointer; font-size:12px; margin-left:4px;" title="Remover">✕</button></span>`));
+  wrap.innerHTML = chips.join('');
+  wrap.querySelectorAll('[data-del-hist]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      if(!confirm('Remover este ano da comparação?')) return;
+      historicoAlunos = historicoAlunos.filter(y=>y.id!==btn.dataset.delHist);
+      saveHistoricoAlunos();
+      renderCompareAnosLista();
+      if(compareAtual) abrirComparacao(compareAtual.domain, compareAtual.metricKey);
+    });
+  });
+  document.getElementById('btn-compare-manual-abrir').style.display = historicoAlunos.some(y=>y.source==='manual') ? 'none' : 'inline-block';
+}
+function abrirComparacao(domain, metricKey){
+  compareAtual = { domain, metricKey };
+  document.getElementById('compare-modal').style.display = 'flex';
+  document.getElementById('compare-manual-form').style.display = 'none';
+  renderCompareAnosLista();
+  if(domain==='alunos') abrirComparacaoAlunos(metricKey);
+  else abrirComparacaoFinanceiro(metricKey);
+}
+function abrirComparacaoAlunos(metricKey){
+  const def = HIST_ALUNOS_METRICAS[metricKey];
+  document.getElementById('compare-titulo').textContent = '📊 '+def.label+' — comparação';
+  const anoAtualIni = anoLetivoInicioAtual();
+  const anos = [{ label: anoLetivoLabelAtual(), val: def.calc(liveAlunosSnapshot(), anoAtualIni) }];
+  historicoAlunos.forEach(y=>{
+    let val;
+    if(y.source==='excel') val = def.calc(historicoAlunosSnapshot(y.dados), anoInicioFromLabel(y.label));
+    else val = manualAlunosToSnapshotLike(y.manual)[metricKey];
+    anos.push({ label:y.label, val });
+  });
+  document.getElementById('compare-corpo').innerHTML = renderCompareCorpoAlunos(def, anos);
+  desenharCompareChartAlunos(def, anos);
+}
+function renderCompareCorpoAlunos(def, anos){
+  let totaisHtml;
+  if(def.tipo==='duracao'){
+    totaisHtml = `<table class="data"><thead><tr><th>Ano</th><th>Retenção média</th></tr></thead><tbody>${anos.map(a=>`<tr><td>${a.label}</td><td>${fmtDuration(a.val.total)}</td></tr>`).join('')}</tbody></table>`;
+  } else if(def.tipo==='contagem-pct'){
+    totaisHtml = `<table class="data"><thead><tr><th>Ano</th><th>Nº desistências</th><th>%</th></tr></thead><tbody>${anos.map(a=>`<tr><td>${a.label}</td><td>${a.val.total.count ?? '—'}</td><td>${a.val.total.pct!=null? a.val.total.pct.toFixed(0)+'%':'—'}</td></tr>`).join('')}</tbody></table>`;
+  } else if(def.tipo==='categorias'){
+    const cats = Array.from(new Set(anos.flatMap(a=>Object.keys(a.val.total||{}))));
+    totaisHtml = `<table class="data"><thead><tr><th>Ano</th>${cats.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>${anos.map(a=>`<tr><td>${a.label}</td>${cats.map(c=>`<td>${(a.val.total||{})[c] ?? 0}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+  } else {
+    totaisHtml = `<table class="data"><thead><tr><th>Ano</th><th>Total</th></tr></thead><tbody>${anos.map(a=>`<tr><td>${a.label}</td><td>${a.val.total ?? '—'}</td></tr>`).join('')}</tbody></table>`;
+  }
+  const chartHtml = def.tipo!=='duracao' ? `<div class="chart-card" style="height:280px; margin-bottom:14px; padding:10px;"><canvas id="compare-chart"></canvas></div><div style="font-size:11px; color:var(--muted); margin:-8px 0 12px 0;">Linha por mês do ano letivo (Setembro → Agosto) — os anos manuais só têm total, sem quebra mensal.</div>` : '';
+  return chartHtml + totaisHtml;
+}
+function desenharCompareChartAlunos(def, anos){
+  if(compareChartInstance){ compareChartInstance.destroy(); compareChartInstance=null; }
+  if(def.tipo==='duracao') return;
+  const ctx = document.getElementById('compare-chart');
+  if(!ctx) return;
+  const cores = ['#33587F','#258730','#8B4A3D','#CBE170','#9FC7AA'];
+  compareChartInstance = new Chart(ctx, {
+    type:'line',
+    data:{ labels: MESES_LETIVOS.map(m=>m.slice(0,3)), datasets: anos.map((a,i)=>({
+      label:a.label, data: MESES_LETIVOS.map(m=> (a.val.mensal && a.val.mensal[m]!==undefined) ? a.val.mensal[m] : null),
+      borderColor:cores[i%cores.length], backgroundColor:cores[i%cores.length], tension:.25, spanGaps:true
+    })) },
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:true, position:'top', labels:{boxWidth:10, font:{family:'Bahnschrift', size:11}}}},
+      scales:{x:{grid:{color:'rgba(37,135,48,0.06)'}}, y:{grid:{color:'rgba(37,135,48,0.06)'}, beginAtZero:true}} }
+  });
+}
+function abrirComparacaoFinanceiro(metricKey){
+  const def = HIST_FIN_METRICAS[metricKey];
+  document.getElementById('compare-titulo').textContent = '📊 '+def.label+' — comparação';
+  const liveVal = computeFinKpisLiveCurrent();
+  const anos = [{ label: anoLetivoLabelAtual(), val: liveVal }];
+  if(!def.soLive){
+    historicoAlunos.forEach(y=>{
+      if(y.source==='excel' && y.financas){
+        const snap = historicoAlunosSnapshot(y.dados);
+        anos.push({ label:y.label, val: computeFinHistorico(y.financas, snap, anoInicioFromLabel(y.label)) });
+      }
+    });
+  }
+  let aviso = '';
+  if(def.soLive) aviso = '<p style="font-size:12.5px; color:var(--muted); margin:0 0 10px 0;">Esta métrica depende do cenário "Objetivo" do Excel financeiro, que os anos anteriores (aba "Finanças" do registo de alunos) não têm — só é possível ver o ano corrente.</p>';
+  const semDados = anos.filter(a=>a.label!==anoLetivoLabelAtual() && (!a.val || a.val[def.field]==null));
+  if(!def.soLive && semDados.length) aviso += `<p style="font-size:12px; color:var(--muted); margin:0 0 10px 0;">Sem dados suficientes para: ${semDados.map(a=>a.label).join(', ')}.</p>`;
+  const tabela = `<table class="data"><thead><tr><th>Ano</th><th>${def.label}</th></tr></thead><tbody>${
+    anos.map(a=>`<tr><td>${a.label}</td><td>${(a.val && a.val[def.field]!=null) ? def.fmt(a.val[def.field]) : '—'}</td></tr>`).join('')
+  }</tbody></table>`;
+  document.getElementById('compare-corpo').innerHTML = aviso + tabela;
+}
+document.getElementById('btn-fechar-compare').addEventListener('click', ()=>{
+  document.getElementById('compare-modal').style.display = 'none';
+  if(compareChartInstance){ compareChartInstance.destroy(); compareChartInstance=null; }
+});
+document.getElementById('btn-compare-importar').addEventListener('click', ()=> document.getElementById('file-compare-import').click());
+document.getElementById('file-compare-import').addEventListener('change', (e)=>{
+  const file = e.target.files[0]; if(!file) return;
+  const label = prompt('Rótulo deste ano letivo (ex: 25/26):');
+  if(!label){ e.target.value=''; return; }
+  const reader = new FileReader();
+  reader.onload = (evt)=>{
+    try{
+      const wb = XLSX.read(evt.target.result, {type:'array', cellDates:true});
+      const dados = parseHistoricoAlunosWorkbook(wb);
+      const financas = parseHistoricoFinancasSheet(findSheet(wb,'finan'));
+      historicoAlunos = historicoAlunos.filter(y=>normStr(y.label)!==normStr(label));
+      historicoAlunos.push({ id:'hist_'+Date.now(), label:normStr(label), source:'excel', dados, financas });
+      saveHistoricoAlunos();
+      renderCompareAnosLista();
+      if(compareAtual) abrirComparacao(compareAtual.domain, compareAtual.metricKey);
+      alert('Ano '+label+' importado com sucesso'+(financas?' (incluindo dados financeiros da aba "Finanças").':'.'));
+    }catch(err){ alert('Não foi possível ler o ficheiro. Confirma que tem as abas "Clientes Efetivos", "Ex-Clientes" e "Pagamentos Alunos". ('+err.message+')'); }
+  };
+  reader.readAsArrayBuffer(file);
+  e.target.value = '';
+});
+document.getElementById('btn-compare-manual-abrir').addEventListener('click', ()=>{
+  document.getElementById('compare-manual-form').style.display = 'block';
+});
+document.getElementById('btn-compare-manual-cancelar').addEventListener('click', ()=>{
+  document.getElementById('compare-manual-form').style.display = 'none';
+});
+document.getElementById('btn-compare-manual-guardar').addEventListener('click', ()=>{
+  const label = normStr(document.getElementById('cm-label').value);
+  if(!label){ alert('Indica o rótulo do ano (ex: 24/25).'); return; }
+  if(historicoAlunos.some(y=>y.source==='manual')){ alert('Já existe um ano inserido manualmente.'); return; }
+  const num = id => { const v = document.getElementById(id).value; return v===''? null : Number(v); };
+  const manual = {
+    alunosEfetivos: num('cm-alunos-efetivos'), retencaoMediaDias: num('cm-retencao-dias'),
+    desistenciasCount: num('cm-desistencias'), desistenciasSaidosTotal: num('cm-saidos-total'),
+    origem: [
+      {plataforma:'Fixando', total:num('cm-origem-fixando')||0}, {plataforma:'Website', total:num('cm-origem-website')||0},
+      {plataforma:'Redes Sociais', total:num('cm-origem-redes')||0}, {plataforma:'Outras', total:num('cm-origem-outras')||0}
+    ],
+    aulasAbaixo: num('cm-aulas-abaixo')||0, aulasDentro: num('cm-aulas-dentro')||0, aulasAcima: num('cm-aulas-acima')||0,
+    aulasPorProfessorTotal: num('cm-aulas-professor'), efetivosPerdidosTotal: num('cm-efetivos-perdidos'), aulasPorAlunoMedia: num('cm-aulas-aluno')
+  };
+  historicoAlunos.push({ id:'hist_'+Date.now(), label, source:'manual', manual });
+  saveHistoricoAlunos();
+  document.getElementById('compare-manual-form').style.display = 'none';
+  renderCompareAnosLista();
+  if(compareAtual) abrirComparacao(compareAtual.domain, compareAtual.metricKey);
+  alert('Dados de '+label+' guardados.');
+});
 
 document.getElementById('btn-upload-alunos').addEventListener('click', ()=> document.getElementById('file-alunos').click());
 function parseCrmWorkbook(wb){
@@ -2457,12 +2972,12 @@ function renderAlunos(){
   const pctPotencialRenovacao = unicosValidos.length ? 100*comPotencialRenovacao.length/unicosValidos.length : null;
 
   document.getElementById('alunos-kpis').innerHTML = [
-    kpiCard('Alunos efetivos', unicosValidos.length, unicosValidos.length+' sem data de fim e com pagamento confirmado · '+efetivos.length+' matrículas no total (histórico)', true, 'card-chart-ativos-mes', 'Alunos únicos sem Data Fim preenchida e com "Sim" na coluna Pagamento da folha "Clientes Efetivos" — o headcount real de alunos a pagar neste momento.'),
+    kpiCard('Alunos efetivos', unicosValidos.length, unicosValidos.length+' sem data de fim e com pagamento confirmado · '+efetivos.length+' matrículas no total (histórico)', true, 'card-chart-ativos-mes', 'Alunos únicos sem Data Fim preenchida e com "Sim" na coluna Pagamento da folha "Clientes Efetivos" — o headcount real de alunos a pagar neste momento.', 'alunos:alunosEfetivos'),
     kpiCard('Potencial de renovação', comPotencialRenovacao.length, pctPotencialRenovacao!==null? pctPotencialRenovacao.toFixed(0)+'% dos alunos efetivos' : '—', false, 'card-chart-ano-ensino', 'Alunos efetivos no 10º ano ou menos, mais os que têm pelo menos 1 disciplina fora da lista "sem renovação" (Biologia, Físico-Química, Geometria Descritiva, Economia, Geografia, Filosofia, História, Cultura das Artes). % = este nº ÷ total de alunos efetivos.'),
     kpiCard('Taxa de conversão AE → Efetivo', taxaConversaoAE!==null? taxaConversaoAE.toFixed(0)+'%' : '— (sem AEs marcadas)', aesComTiAE.length+' aulas experimentais com data/hora marcada em "T/i AE"', false, 'card-table-professores', 'Linhas da aba "AEs" com data e hora preenchidas em "T/i AE" (aula experimental efetivamente marcada) cuja coluna "Estado" está marcada como "Efetivo", a dividir pelo total de linhas com "T/i AE" preenchido, em %.'),
     kpiCard('Reservam AE diretamente', aeDiretas.length, pctAeDiretas!==null? pctAeDiretas.toFixed(0)+'% do total de AEs — sem passar pela fase de conversações' : 'sem AEs registadas', false, 'card-table-professores', 'Alunos com T/i de Aula Experimental preenchido mas sem qualquer T/i ou T/f de conversações — avançaram diretamente para a AE.'),
-    kpiCard('Retenção média', fmtDuration(retencaoMedia), duracoesFim.length? 'com base em '+duracoesFim.length+' aluno(s) já com Data Fim' : 'ainda sem "Data Fim" preenchida', false, 'card-table-professores', 'Tempo médio entre a Data de Início e a Data de Fim dos alunos que já saíram — quanto tempo, em média, um aluno fica connosco.'),
-    kpiCard('Desistência antes do fim do ano', taxaDesistAntes!==null? taxaDesistAntes.toFixed(0)+'%' : '— (sem "Data Fim" suficiente)', saidos.length+' aluno(s) já com data de saída registada', false, 'card-chart-inicio-fim', 'Entre os alunos que já saíram, a percentagem cuja Data de Fim foi antes de 30 de junho do respetivo ano letivo — ou seja, que desistiram a meio do ano em vez de terminarem naturalmente.'),
+    kpiCard('Retenção média', fmtDuration(retencaoMedia), duracoesFim.length? 'com base em '+duracoesFim.length+' aluno(s) já com Data Fim' : 'ainda sem "Data Fim" preenchida', false, 'card-table-professores', 'Tempo médio entre a Data de Início e a Data de Fim dos alunos que já saíram — quanto tempo, em média, um aluno fica connosco.', 'alunos:retencaoMedia'),
+    kpiCard('Desistência antes do fim do ano', taxaDesistAntes!==null? taxaDesistAntes.toFixed(0)+'%' : '— (sem "Data Fim" suficiente)', saidos.length+' aluno(s) já com data de saída registada', false, 'card-chart-inicio-fim', 'Entre os alunos que já saíram, a percentagem cuja Data de Fim foi antes de 30 de junho do respetivo ano letivo — ou seja, que desistiram a meio do ano em vez de terminarem naturalmente.', 'alunos:desistenciasMeioAno'),
     kpiCard('Tempo médio em conversações', fmtDuration(convMedGlobal), 'do 1º contacto do professor até marcar AE', false, 'card-table-professores', 'Tempo médio entre o início e o fim das conversações (aba "AEs") — do primeiro contacto do professor com o aluno até se marcar a aula experimental.'),
     kpiCard('Média de disciplinas por aluno', unicos.length? (efetivos.length/unicos.length).toFixed(1) : '—', efetivos.length+' matrículas / '+unicos.length+' alunos', false, 'card-chart-disciplina', 'Nº total de matrículas (aluno + disciplina) a dividir pelo nº de alunos únicos — mostra quantas disciplinas, em média, cada aluno tem connosco.')
   ].join('');
@@ -3898,14 +4413,14 @@ function renderFinKPIs(){
     idxAtual = idx;
     const receitaReal = real.receita.monthly[idx];
     const receitaObj = objetivo ? objetivo.receita.monthly[idx] : null;
-    kpis.push(kpiCard('Receita do mês ('+real.months[idx]+')', fmtEuro(receitaReal), receitaObj!==null? 'objetivo: '+fmtEuro(receitaObj) : null, true, 'card-table-dr', 'Receita real do mês mais recente com dados, comparada com o objetivo para esse mesmo mês.'));
+    kpis.push(kpiCard('Receita do mês ('+real.months[idx]+')', fmtEuro(receitaReal), receitaObj!==null? 'objetivo: '+fmtEuro(receitaObj) : null, true, 'card-table-dr', 'Receita real do mês mais recente com dados, comparada com o objetivo para esse mesmo mês.', 'financeiro:finReceitaMes'));
 
     // Ponto de equilíbrio do mês atual
     const custoFixoMes = real.gastosFixosTotal.monthly[idx];
     const custoVarMes = real.gastosVariaveisTotal.monthly[idx];
     const breakEven = custoFixoMes + custoVarMes;
     const acimaBreakEven = receitaReal >= breakEven;
-    kpis.push(kpiCard('Ponto de equilíbrio ('+real.months[idx]+')', fmtEuro(breakEven), acimaBreakEven? '✅ receita acima do ponto de equilíbrio' : '⚠️ receita ainda abaixo do ponto de equilíbrio', false, 'card-table-dr', 'Receita necessária nesse mês para cobrir todos os gastos (fixos + variáveis reais desse mês) e ficar com Rendimento = 0.'));
+    kpis.push(kpiCard('Ponto de equilíbrio ('+real.months[idx]+')', fmtEuro(breakEven), acimaBreakEven? '✅ receita acima do ponto de equilíbrio' : '⚠️ receita ainda abaixo do ponto de equilíbrio', false, 'card-table-dr', 'Receita necessária nesse mês para cobrir todos os gastos (fixos + variáveis reais desse mês) e ficar com Rendimento = 0.', 'financeiro:finPontoEquilibrioMes'));
 
     // ARPU (cruza com Alunos: nº ativos nesse mês)
     const chaveMes = drMonthToKey(real.months[idx], idx);
@@ -3913,12 +4428,12 @@ function renderFinKPIs(){
     let arpu = null;
     if(alunosAtivosMes){
       arpu = receitaReal / alunosAtivosMes;
-      kpis.push(kpiCard('Receita média por aluno (ARPU)', fmtEuro(arpu), alunosAtivosMes+' aluno(s) ativo(s) em '+real.months[idx], false, 'card-chart-ativos-mes', 'Receita Real do mês a dividir pelo nº de alunos ativos nesse mês (calculado no separador Alunos). Mostra se a receita cresce por mais alunos ou por preços mais altos.'));
+      kpis.push(kpiCard('Receita média por aluno (ARPU)', fmtEuro(arpu), alunosAtivosMes+' aluno(s) ativo(s) em '+real.months[idx], false, 'card-chart-ativos-mes', 'Receita Real do mês a dividir pelo nº de alunos ativos nesse mês (calculado no separador Alunos). Mostra se a receita cresce por mais alunos ou por preços mais altos.', 'financeiro:finArpu'));
 
       // Ponto de equilíbrio em nº de alunos
       const breakEvenAlunos = arpu>0 ? Math.ceil(breakEven/arpu) : null;
       if(breakEvenAlunos!==null){
-        kpis.push(kpiCard('Ponto de equilíbrio (nº alunos)', breakEvenAlunos+' alunos', 'tens atualmente '+alunosAtivosMes, false, 'card-chart-ativos-mes', 'O ponto de equilíbrio em euros, traduzido para nº de alunos usando o ARPU deste mês.'));
+        kpis.push(kpiCard('Ponto de equilíbrio (nº alunos)', breakEvenAlunos+' alunos', 'tens atualmente '+alunosAtivosMes, false, 'card-chart-ativos-mes', 'O ponto de equilíbrio em euros, traduzido para nº de alunos usando o ARPU deste mês.', 'financeiro:finPontoEquilibrioAlunos'));
       }
     }
 
@@ -3931,7 +4446,7 @@ function renderFinKPIs(){
     let cacMes = null;
     if(alunosMktMes>0){
       cacMes = marketingMes/alunosMktMes;
-      kpis.push(kpiCard('CAC ('+real.months[idx]+')', fmtEuro(cacMes), alunosMktMes+' aluno(s) de Fixando/Website/Redes Sociais esse mês', false, 'card-chart-cac', 'Gasto em marketing (Google Ads, Meta Ads, Lendarius, Fixando) nesse mês, a dividir pelo nº de alunos efetivos cuja Plataforma é Fixando, Website ou Redes Sociais e cuja Data de Início foi nesse mês.'));
+      kpis.push(kpiCard('CAC ('+real.months[idx]+')', fmtEuro(cacMes), alunosMktMes+' aluno(s) de Fixando/Website/Redes Sociais esse mês', false, 'card-chart-cac', 'Gasto em marketing (Google Ads, Meta Ads, Lendarius, Fixando) nesse mês, a dividir pelo nº de alunos efetivos cuja Plataforma é Fixando, Website ou Redes Sociais e cuja Data de Início foi nesse mês.', 'financeiro:finCac'));
     }
 
     // LTV : CAC
@@ -3940,12 +4455,12 @@ function renderFinKPIs(){
       const ltv = arpu * retencaoMeses;
       if(cacMes>0){
         const racio = ltv/cacMes;
-        kpis.push(kpiCard('LTV : CAC', racio.toFixed(1)+' : 1', 'LTV ≈ '+fmtEuro(ltv)+' · CAC ≈ '+fmtEuro(cacMes), false, 'card-chart-cac', 'Valor de vida do aluno (ARPU × retenção média em meses) a dividir pelo CAC. Acima de 3 costuma ser saudável; abaixo de 1 é sinal de alerta — estás a pagar mais para conseguir um aluno do que ele vale.'));
+        kpis.push(kpiCard('LTV : CAC', racio.toFixed(1)+' : 1', 'LTV ≈ '+fmtEuro(ltv)+' · CAC ≈ '+fmtEuro(cacMes), false, 'card-chart-cac', 'Valor de vida do aluno (ARPU × retenção média em meses) a dividir pelo CAC. Acima de 3 costuma ser saudável; abaixo de 1 é sinal de alerta — estás a pagar mais para conseguir um aluno do que ele vale.', 'financeiro:finLtvCac'));
       }
       // Período de recuperação do CAC (payback, em meses)
       if(cacMes>0 && arpu>0){
         const payback = cacMes/arpu;
-        kpis.push(kpiCard('Período de recuperação do CAC', payback.toFixed(1)+' meses', 'tempo até o aluno "pagar" o custo de aquisição', false, 'card-chart-cac', 'CAC a dividir pelo ARPU — quantos meses de mensalidade de um aluno são precisos para recuperar o que custou angariá-lo.'));
+        kpis.push(kpiCard('Período de recuperação do CAC', payback.toFixed(1)+' meses', 'tempo até o aluno "pagar" o custo de aquisição', false, 'card-chart-cac', 'CAC a dividir pelo ARPU — quantos meses de mensalidade de um aluno são precisos para recuperar o que custou angariá-lo.', 'financeiro:finPayback'));
       }
     }
     // RAOS — retorno de marketing (aproximado): receita estimada dos alunos ativos vindos de Fixando/Website/Redes Sociais ÷ gasto em marketing do mês
@@ -3954,41 +4469,41 @@ function renderFinKPIs(){
       if(alunosMktAtivos>0){
         const receitaEstimadaMkt = alunosMktAtivos * arpu;
         const raos = receitaEstimadaMkt / marketingMes;
-        kpis.push(kpiCard('RAOS (retorno de marketing)', raos.toFixed(1)+'x', 'aprox.: '+alunosMktAtivos+' aluno(s) ativo(s) via Fixando/Website/Redes Sociais × ARPU', false, 'card-chart-cac', 'Estimativa: receita mensal gerada pelos alunos atualmente ativos vindos de Fixando, Website ou Redes Sociais, a dividir pelo gasto em marketing desse mês (inclui Fixando). Quanto retorna, em receita, cada euro investido em publicidade — é uma aproximação, já que não temos o valor de mensalidade exato por aluno.'));
+        kpis.push(kpiCard('RAOS (retorno de marketing)', raos.toFixed(1)+'x', 'aprox.: '+alunosMktAtivos+' aluno(s) ativo(s) via Fixando/Website/Redes Sociais × ARPU', false, 'card-chart-cac', 'Estimativa: receita mensal gerada pelos alunos atualmente ativos vindos de Fixando, Website ou Redes Sociais, a dividir pelo gasto em marketing desse mês (inclui Fixando). Quanto retorna, em receita, cada euro investido em publicidade — é uma aproximação, já que não temos o valor de mensalidade exato por aluno.', 'financeiro:finRaos'));
       }
     }
   }
   if(real && real.rendimento){
-    kpis.push(kpiCard('Rendimento acumulado (Real)', fmtEuro(real.rendimento.total), null, false, 'card-table-dr', 'Soma do Rendimento (Receita menos Gastos Fixos e Variáveis) em todos os meses reais até agora.'));
+    kpis.push(kpiCard('Rendimento acumulado (Real)', fmtEuro(real.rendimento.total), null, false, 'card-table-dr', 'Soma do Rendimento (Receita menos Gastos Fixos e Variáveis) em todos os meses reais até agora.', 'financeiro:finRendimentoAcumulado'));
   }
   // Desvio acumulado Real vs Objetivo (Receita), até ao mês atual
   if(real && objetivo && idxAtual!==null){
     const desvio = real.receita.monthly.slice(0, idxAtual+1).reduce((a,v,i)=>a + (v - objetivo.receita.monthly[i]), 0);
     const cor = desvio>=0 ? '✅' : '⚠️';
-    kpis.push(kpiCard('Desvio acumulado vs Objetivo', fmtEuro(desvio), cor+' desde o início do ano letivo até '+real.months[idxAtual], false, 'card-chart-desvio', 'Soma, mês a mês desde o início do ano, da diferença entre a Receita Real e a Receita Objetivo. Positivo = estás à frente do objetivo; negativo = atrás.'));
+    kpis.push(kpiCard('Desvio acumulado vs Objetivo', fmtEuro(desvio), cor+' desde o início do ano letivo até '+real.months[idxAtual], false, 'card-chart-desvio', 'Soma, mês a mês desde o início do ano, da diferença entre a Receita Real e a Receita Objetivo. Positivo = estás à frente do objetivo; negativo = atrás.', 'financeiro:finDesvioAcumulado'));
   }
   // ARR estimado e rácio Gastos Fixos : Variáveis
   if(real && real.receita && idxAtual!==null){
     const mrr = real.receita.monthly[idxAtual];
     if(mrr>0){
-      kpis.push(kpiCard('ARR estimado', fmtEuro(mrr*12), 'com base na receita de '+real.months[idxAtual]+' × 12', false, 'card-chart-receita-fin', 'Receita Anual Recorrente estimada, assumindo que a receita do mês mais recente se mantém constante durante 12 meses (MRR × 12).'));
+      kpis.push(kpiCard('ARR estimado', fmtEuro(mrr*12), 'com base na receita de '+real.months[idxAtual]+' × 12', false, 'card-chart-receita-fin', 'Receita Anual Recorrente estimada, assumindo que a receita do mês mais recente se mantém constante durante 12 meses (MRR × 12).', 'financeiro:finArr'));
     }
     const fixosTotal = real.gastosFixosTotal.total, varTotal = real.gastosVariaveisTotal.total;
     if(fixosTotal>0 || varTotal>0){
       const totalGastos = fixosTotal+varTotal;
-      kpis.push(kpiCard('Fixos : Variáveis', Math.round(100*fixosTotal/totalGastos)+'% : '+Math.round(100*varTotal/totalGastos)+'%', 'do total de gastos reais até agora', false, 'card-chart-peso-gastos', 'Proporção dos gastos reais que são fixos (não escalam com o negócio) versus variáveis (escalam com o nº de alunos/pedidos).'));
+      kpis.push(kpiCard('Fixos : Variáveis', Math.round(100*fixosTotal/totalGastos)+'% : '+Math.round(100*varTotal/totalGastos)+'%', 'do total de gastos reais até agora', false, 'card-chart-peso-gastos', 'Proporção dos gastos reais que são fixos (não escalam com o negócio) versus variáveis (escalam com o nº de alunos/pedidos).', 'financeiro:finFixosVariaveis'));
     }
   }
   if(cf && cf.Real && cf.Real.caixa.length){
     const caixaAtual = cf.Real.caixa[cf.Real.caixa.length-1];
-    kpis.push(kpiCard('Caixa atual (Real)', fmtEuro(caixaAtual), null, false, 'card-chart-caixa', 'Saldo de caixa acumulado real, no último mês com dados.'));
+    kpis.push(kpiCard('Caixa atual (Real)', fmtEuro(caixaAtual), null, false, 'card-chart-caixa', 'Saldo de caixa acumulado real, no último mês com dados.', 'financeiro:finCaixaAtual'));
     // burn rate médio (meses com CF negativo)
     const burnMonths = cf.Real.cf.filter(v=>v<0);
     const burnMedio = burnMonths.length ? burnMonths.reduce((a,b)=>a+b,0)/burnMonths.length : null;
     let runway = null;
     if(burnMedio){
       runway = caixaAtual>0 ? Math.max(0, caixaAtual/Math.abs(burnMedio)) : 0;
-      kpis.push(kpiCard('Runway estimado', runway.toFixed(1)+' meses', 'com base no burn rate médio real', false, 'card-chart-caixa', 'Quantos meses a caixa atual aguenta, ao ritmo médio de consumo (burn rate) dos meses reais em que o CF foi negativo.'));
+      kpis.push(kpiCard('Runway estimado', runway.toFixed(1)+' meses', 'com base no burn rate médio real', false, 'card-chart-caixa', 'Quantos meses a caixa atual aguenta, ao ritmo médio de consumo (burn rate) dos meses reais em que o CF foi negativo.', 'financeiro:finRunway'));
     }
     // Alerta de segurança: caixa vs gastos fixos médios
     const gastosFixosMedios = real && real.gastosFixosItems.length ? real.gastosFixosTotal.monthly.filter(v=>v>0).reduce((a,b)=>a+b,0)/Math.max(1,real.gastosFixosTotal.monthly.filter(v=>v>0).length) : null;

@@ -2417,12 +2417,13 @@ function calcRetencaoMedia(snap, anoInicio){
   return { total: durs.length ? durs.reduce((a,b)=>a+b,0)/durs.length : null };
 }
 function calcDesistencias(snap, anoInicio){
-  const saidos = snap.ativos.filter(a=>a.dataFim);
-  const fimAnoLetivo = new Date(anoInicio+1, 5, 30);
-  const saidosAntes = saidos.filter(a=>a.dataFim < fimAnoLetivo);
+  // % = alunos com Data de Saída antes de 15 de maio do ano letivo ÷ TODOS os alunos (com ou sem data de saída)
+  const corte = new Date(anoInicio+1, 4, 15);
+  const saidosAntes = snap.ativos.filter(a=>a.dataFim && a.dataFim < corte);
   const mensal = {};
   anoLetivoMeses(anoInicio).forEach(m=>{ mensal[m.nome] = saidosAntes.filter(a=>a.dataFim>=m.monthStart && a.dataFim<=m.monthEnd).length; });
-  return { mensal, total: { count: saidosAntes.length, pct: saidos.length ? 100*saidosAntes.length/saidos.length : null } };
+  const totalAlunos = snap.ativos.length;
+  return { mensal, total: { count: saidosAntes.length, pct: totalAlunos ? 100*saidosAntes.length/totalAlunos : null } };
 }
 function calcOrigem(snap, anoInicio){
   const mensal = {};

@@ -2407,8 +2407,13 @@ function calcAlunosEfetivos(snap, anoInicio){
   });
   return { mensal, total: snap.ativos.filter(a=>!a.dataFim && normStr(a.pagamento).toLowerCase()==='sim').length };
 }
-function calcRetencaoMedia(snap){
-  const durs = snap.ativos.filter(a=>a.dataInicio && a.dataFim).map(a=>a.dataFim-a.dataInicio);
+function calcRetencaoMedia(snap, anoInicio){
+  // quem já saiu (Data Fim): duração real. Quem ainda está em "Clientes Efetivos" (sem Data Fim): conta desde
+  // que entrou até ao fim do ano letivo (30/06) — ou até hoje, se o ano letivo ainda estiver a decorrer.
+  const fimAnoLetivo = new Date(anoInicio+1, 5, 30);
+  const hoje = new Date();
+  const fimEfetivo = fimAnoLetivo < hoje ? fimAnoLetivo : hoje;
+  const durs = snap.ativos.filter(a=>a.dataInicio).map(a=> (a.dataFim || fimEfetivo) - a.dataInicio).filter(d=>d>=0);
   return { total: durs.length ? durs.reduce((a,b)=>a+b,0)/durs.length : null };
 }
 function calcDesistencias(snap, anoInicio){

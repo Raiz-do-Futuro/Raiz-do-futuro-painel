@@ -1483,30 +1483,14 @@ table.data tr.row-media td:last-child{border-right:1.5px solid var(--accent); bo
       <div style="display:flex; gap:8px; flex-wrap:wrap;">
         <button class="btn secondary" id="btn-compare-importar" style="padding:8px 14px; font-size:12px;">↑ Importar Excel de um ano anterior</button>
         <input type="file" id="file-compare-import" accept=".xlsx,.xls" style="display:none;">
-        <button class="btn secondary" id="btn-compare-manual-abrir" style="padding:8px 14px; font-size:12px;">+ Adicionar dados manualmente (uma só vez)</button>
+        <button class="btn secondary" id="btn-compare-manual-abrir" style="padding:8px 14px; font-size:12px;">+ Adicionar dados de 24/25 (uma só vez por estatística)</button>
       </div>
       <div style="font-size:11px; color:var(--muted); margin-top:8px;">O Excel deve ter a mesma estrutura do registo de alunos habitual — abas "Clientes Efetivos", "Ex-Clientes", "Pagamentos Alunos" e, para números financeiros, "Finanças".</div>
     </div>
 
     <div id="compare-manual-form" style="display:none; border:1.5px solid var(--green); border-radius:10px; padding:14px; margin-bottom:18px;">
-      <div style="font-weight:700; color:var(--ink); margin-bottom:10px;">Inserir dados de um ano anterior (só totais anuais, sem Excel)</div>
-      <div class="entry-form" style="grid-template-columns:1fr 1fr 1fr;">
-        <div class="field"><label>Rótulo do ano</label><input type="text" id="cm-label" placeholder="ex: 24/25"></div>
-        <div class="field"><label>Alunos efetivos (total)</label><input type="number" id="cm-alunos-efetivos" min="0"></div>
-        <div class="field"><label>Retenção média (dias)</label><input type="number" id="cm-retencao-dias" min="0"></div>
-        <div class="field"><label>Desistências a meio do ano (nº)</label><input type="number" id="cm-desistencias" min="0"></div>
-        <div class="field"><label>Total de alunos que saíram nesse ano</label><input type="number" id="cm-saidos-total" min="0"></div>
-        <div class="field"><label>Origem — Fixando</label><input type="number" id="cm-origem-fixando" min="0"></div>
-        <div class="field"><label>Origem — Website</label><input type="number" id="cm-origem-website" min="0"></div>
-        <div class="field"><label>Origem — Redes Sociais</label><input type="number" id="cm-origem-redes" min="0"></div>
-        <div class="field"><label>Origem — Outras plataformas</label><input type="number" id="cm-origem-outras" min="0"></div>
-        <div class="field"><label>Aulas/mês — Abaixo (&lt;4)</label><input type="number" id="cm-aulas-abaixo" min="0"></div>
-        <div class="field"><label>Aulas/mês — Dentro (4-9)</label><input type="number" id="cm-aulas-dentro" min="0"></div>
-        <div class="field"><label>Aulas/mês — Acima (&gt;9)</label><input type="number" id="cm-aulas-acima" min="0"></div>
-        <div class="field"><label>Nº de aulas dadas (total empresa)</label><input type="number" id="cm-aulas-professor" min="0"></div>
-        <div class="field"><label>Efetivos perdidos (total)</label><input type="number" id="cm-efetivos-perdidos" min="0"></div>
-        <div class="field"><label>Nº de aulas / aluno (média)</label><input type="number" id="cm-aulas-aluno" min="0" step="0.1"></div>
-      </div>
+      <div id="compare-manual-titulo" style="font-weight:700; color:var(--ink); margin-bottom:10px;">Inserir dados de 24/25 (sem Excel)</div>
+      <div class="entry-form" id="compare-manual-campos" style="grid-template-columns:1fr 1fr 1fr;"></div>
       <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:10px;">
         <button class="btn secondary" id="btn-compare-manual-cancelar" style="padding:8px 14px; font-size:12px;">Cancelar</button>
         <button class="btn" id="btn-compare-manual-guardar" style="padding:8px 14px; font-size:12px;">Guardar</button>
@@ -2274,14 +2258,44 @@ function parseHistoricoAlunosWorkbook(wb){
     dataInicio: parseDate(o['Data Início']), dataFim: parseDate(o['Data Fim']), pagamento: normStr(o['Pagamento'])
   })).filter(a=>a.nome);
   const pagamentos = readPagamentosAlunosSheet(findSheet(wb,'pagamentos alunos'));
-  return { efetivos, exClientes, pagamentos };
+  const mesAlEfetivos = parseEstatisticasAlunosEfetivos(findSheet(wb,'estat'));
+  return { efetivos, exClientes, pagamentos, mesAlEfetivos };
+}
+// Lê a tabela "Mês/Al. Efetivos" (mensal) + o total "Alunos"/"Efetivos" da aba "Estatísticas", quando existe —
+// é a fonte oficial já usada no Excel, mais fiável do que recalcular a partir de Data Início/Data Fim.
+function parseEstatisticasAlunosEfetivos(sheet){
+  if(!sheet) return null;
+  const aoa = XLSX.utils.sheet_to_json(sheet, {header:1, defval:''});
+  let total = null;
+  const headerAlunosRow = aoa.findIndex(row=>row.some(c=>String(c).trim()==='Alunos'));
+  if(headerAlunosRow>=0){
+    const colLabel = aoa[headerAlunosRow].findIndex(c=>String(c).trim()==='Alunos');
+    for(let r=headerAlunosRow+1; r<aoa.length; r++){
+      const rotulo = String(aoa[r][colLabel]||'').trim();
+      if(rotulo==='Efetivos'){ const v = Number(aoa[r][colLabel+2]); if(!isNaN(v)) total = v; break; }
+      if(rotulo==='') break;
+    }
+  }
+  const mensal = {};
+  const headerMesRow = aoa.findIndex(row=>row.some(c=>String(c).trim()==='Mês/Al. Efetivos'));
+  if(headerMesRow>=0){
+    const col = aoa[headerMesRow].findIndex(c=>String(c).trim()==='Mês/Al. Efetivos');
+    for(let r=headerMesRow+1; r<aoa.length; r++){
+      const mes = String(aoa[r][col]||'').trim();
+      if(!MESES_LETIVOS.includes(mes)) break;
+      const v = Number(aoa[r][col+1]);
+      if(!isNaN(v)) mensal[mes] = v;
+    }
+  }
+  if(total===null && !Object.keys(mensal).length) return null;
+  return { mensal, total };
 }
 function historicoAlunosSnapshot(dados){
   const ativos = [
     ...dados.efetivos.map(a=>({...a, dataFim:null})),
     ...dados.exClientes.map(a=>({...a}))
   ];
-  return { ativos, pagamentos: dados.pagamentos };
+  return { ativos, pagamentos: dados.pagamentos, mesAlEfetivos: dados.mesAlEfetivos || null };
 }
 function liveAlunosSnapshot(){
   const seen = new Set(); const ativos = [];
@@ -2382,6 +2396,11 @@ function computeFinHistorico(financas, snapAlunos, anoInicio){
 
 // --- 8 métricas comparáveis de Alunos/Professores — mesma forma {mensal:{mês:valor}, total} para qualquer ano ---
 function calcAlunosEfetivos(snap, anoInicio){
+  // quando existe a tabela "Mês/Al. Efetivos" da aba "Estatísticas" (Excel de anos anteriores), usa-a diretamente —
+  // é a fonte oficial já usada nesse ano, mais fiável do que recalcular a partir de Data Início/Data Fim.
+  if(snap.mesAlEfetivos){
+    return { mensal: snap.mesAlEfetivos.mensal || {}, total: snap.mesAlEfetivos.total };
+  }
   const mensal = {};
   anoLetivoMeses(anoInicio).forEach(m=>{
     mensal[m.nome] = snap.ativos.filter(a=>a.dataInicio && a.dataInicio<=m.monthEnd && (!a.dataFim||a.dataFim>=m.monthStart) && normStr(a.pagamento).toLowerCase()==='sim').length;
@@ -2451,18 +2470,29 @@ const HIST_ALUNOS_METRICAS = {
 };
 
 // --- Inserção manual (só totais anuais, limitada a 1 ano) ---
-function manualAlunosToSnapshotLike(manual){
-  return {
-    alunosEfetivos: { mensal:{}, total: manual.alunosEfetivos },
-    retencaoMedia: { total: manual.retencaoMediaDias!=null ? manual.retencaoMediaDias*86400000 : null },
-    desistenciasMeioAno: { mensal:{}, total: { count: manual.desistenciasCount, pct: manual.desistenciasSaidosTotal ? 100*manual.desistenciasCount/manual.desistenciasSaidosTotal : null } },
-    origemAlunos: { mensal:{}, total: Object.fromEntries((manual.origem||[]).map(o=>[o.plataforma, o.total])) },
-    aulasPorMes: { mensal:{}, total: { 'Abaixo (<4)': manual.aulasAbaixo||0, 'Dentro (4-9)': manual.aulasDentro||0, 'Acima (>9)': manual.aulasAcima||0 } },
-    aulasPorProfessor: { mensal:{}, total: manual.aulasPorProfessorTotal },
-    efetivosPerdidos: { mensal:{}, total: manual.efetivosPerdidosTotal },
-    aulasPorAluno: { mensal:{}, total: manual.aulasPorAlunoMedia }
-  };
+// --- Inserção manual: 1 estatística de cada vez, sempre para o ano 24/25, 1 só vez por estatística ---
+const MANUAL_ANO_LABEL = '24/25';
+const MANUAL_CAMPOS = {
+  alunosEfetivos: [{id:'total', label:'Alunos efetivos (total)'}],
+  retencaoMedia: [{id:'dias', label:'Retenção média (dias)'}],
+  desistenciasMeioAno: [{id:'count', label:'Nº de desistências a meio do ano'}, {id:'saidos', label:'Total de alunos que saíram nesse ano'}],
+  origemAlunos: [{id:'fixando', label:'Fixando'}, {id:'website', label:'Website'}, {id:'redes', label:'Redes Sociais'}, {id:'outras', label:'Outras plataformas'}],
+  aulasPorMes: [{id:'abaixo', label:'Abaixo (<4)'}, {id:'dentro', label:'Dentro (4-9)'}, {id:'acima', label:'Acima (>9)'}],
+  aulasPorProfessor: [{id:'total', label:'Nº de aulas dadas (total empresa)'}],
+  efetivosPerdidos: [{id:'total', label:'Efetivos perdidos (total)'}],
+  aulasPorAluno: [{id:'total', label:'Nº de aulas / aluno (média)', step:'0.1'}]
+};
+function manualValoresParaMetrica(metricKey, v){
+  switch(metricKey){
+    case 'alunosEfetivos': return { mensal:{}, total: v.total };
+    case 'retencaoMedia': return { total: v.dias!=null ? v.dias*86400000 : null };
+    case 'desistenciasMeioAno': return { mensal:{}, total: { count: v.count, pct: v.saidos ? 100*v.count/v.saidos : null } };
+    case 'origemAlunos': return { mensal:{}, total: { 'Fixando': v.fixando||0, 'Website': v.website||0, 'Redes Sociais': v.redes||0, 'Outras': v.outras||0 } };
+    case 'aulasPorMes': return { mensal:{}, total: { 'Abaixo (<4)': v.abaixo||0, 'Dentro (4-9)': v.dentro||0, 'Acima (>9)': v.acima||0 } };
+    case 'aulasPorProfessor': case 'efetivosPerdidos': case 'aulasPorAluno': return { mensal:{}, total: v.total };
+  }
 }
+function getManualEntry24_25(){ return historicoAlunos.find(y=>y.source==='manual' && y.label===MANUAL_ANO_LABEL) || null; }
 
 // --- Equivalente ao vivo (ano corrente) das métricas financeiras comparáveis, na mesma forma que computeFinHistorico ---
 function computeFinKpisLiveCurrent(){
@@ -2546,7 +2576,14 @@ function renderCompareAnosLista(){
       if(compareAtual) abrirComparacao(compareAtual.domain, compareAtual.metricKey);
     });
   });
-  document.getElementById('btn-compare-manual-abrir').style.display = historicoAlunos.some(y=>y.source==='manual') ? 'none' : 'inline-block';
+  atualizarBotaoManual();
+}
+function atualizarBotaoManual(){
+  const btn = document.getElementById('btn-compare-manual-abrir');
+  if(!compareAtual || compareAtual.domain!=='alunos'){ btn.style.display = 'none'; return; }
+  const entry = getManualEntry24_25();
+  const jaTem = entry && entry.manual && entry.manual[compareAtual.metricKey];
+  btn.style.display = jaTem ? 'none' : 'inline-block';
 }
 function abrirComparacao(domain, metricKey){
   compareAtual = { domain, metricKey };
@@ -2562,9 +2599,9 @@ function abrirComparacaoAlunos(metricKey){
   const anoAtualIni = anoLetivoInicioAtual();
   const anos = [{ label: anoLetivoLabelAtual(), val: def.calc(liveAlunosSnapshot(), anoAtualIni) }];
   historicoAlunos.forEach(y=>{
-    let val;
+    let val = null;
     if(y.source==='excel') val = def.calc(historicoAlunosSnapshot(y.dados), anoInicioFromLabel(y.label));
-    else val = manualAlunosToSnapshotLike(y.manual)[metricKey];
+    else if(y.manual && y.manual[metricKey]) val = y.manual[metricKey];
     anos.push({ label:y.label, val });
   });
   document.getElementById('compare-corpo').innerHTML = renderCompareCorpoAlunos(def, anos);
@@ -2573,14 +2610,14 @@ function abrirComparacaoAlunos(metricKey){
 function renderCompareCorpoAlunos(def, anos){
   let totaisHtml;
   if(def.tipo==='duracao'){
-    totaisHtml = `<table class="data"><thead><tr><th>Ano</th><th>Retenção média</th></tr></thead><tbody>${anos.map(a=>`<tr><td>${a.label}</td><td>${fmtDuration(a.val.total)}</td></tr>`).join('')}</tbody></table>`;
+    totaisHtml = `<table class="data"><thead><tr><th>Ano</th><th>Retenção média</th></tr></thead><tbody>${anos.map(a=>`<tr><td>${a.label}</td><td>${a.val? fmtDuration(a.val.total) : '—'}</td></tr>`).join('')}</tbody></table>`;
   } else if(def.tipo==='contagem-pct'){
-    totaisHtml = `<table class="data"><thead><tr><th>Ano</th><th>Nº desistências</th><th>%</th></tr></thead><tbody>${anos.map(a=>`<tr><td>${a.label}</td><td>${a.val.total.count ?? '—'}</td><td>${a.val.total.pct!=null? a.val.total.pct.toFixed(0)+'%':'—'}</td></tr>`).join('')}</tbody></table>`;
+    totaisHtml = `<table class="data"><thead><tr><th>Ano</th><th>Nº desistências</th><th>%</th></tr></thead><tbody>${anos.map(a=>`<tr><td>${a.label}</td><td>${a.val? (a.val.total.count ?? '—') : '—'}</td><td>${a.val && a.val.total.pct!=null? a.val.total.pct.toFixed(0)+'%':'—'}</td></tr>`).join('')}</tbody></table>`;
   } else if(def.tipo==='categorias'){
-    const cats = Array.from(new Set(anos.flatMap(a=>Object.keys(a.val.total||{}))));
-    totaisHtml = `<table class="data"><thead><tr><th>Ano</th>${cats.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>${anos.map(a=>`<tr><td>${a.label}</td>${cats.map(c=>`<td>${(a.val.total||{})[c] ?? 0}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+    const cats = Array.from(new Set(anos.filter(a=>a.val).flatMap(a=>Object.keys(a.val.total||{}))));
+    totaisHtml = `<table class="data"><thead><tr><th>Ano</th>${cats.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>${anos.map(a=>`<tr><td>${a.label}</td>${cats.map(c=>`<td>${a.val? ((a.val.total||{})[c] ?? 0) : '—'}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
   } else {
-    totaisHtml = `<table class="data"><thead><tr><th>Ano</th><th>Total</th></tr></thead><tbody>${anos.map(a=>`<tr><td>${a.label}</td><td>${a.val.total ?? '—'}</td></tr>`).join('')}</tbody></table>`;
+    totaisHtml = `<table class="data"><thead><tr><th>Ano</th><th>Total</th></tr></thead><tbody>${anos.map(a=>`<tr><td>${a.label}</td><td>${a.val && a.val.total!=null ? a.val.total : '—'}</td></tr>`).join('')}</tbody></table>`;
   }
   const chartHtml = def.tipo!=='duracao' ? `<div class="chart-card" style="height:280px; margin-bottom:14px; padding:10px;"><canvas id="compare-chart"></canvas></div><div style="font-size:11px; color:var(--muted); margin:-8px 0 12px 0;">Linha por mês do ano letivo (Setembro → Agosto) — os anos manuais só têm total, sem quebra mensal.</div>` : '';
   return chartHtml + totaisHtml;
@@ -2594,7 +2631,7 @@ function desenharCompareChartAlunos(def, anos){
   compareChartInstance = new Chart(ctx, {
     type:'line',
     data:{ labels: MESES_LETIVOS.map(m=>m.slice(0,3)), datasets: anos.map((a,i)=>({
-      label:a.label, data: MESES_LETIVOS.map(m=> (a.val.mensal && a.val.mensal[m]!==undefined) ? a.val.mensal[m] : null),
+      label:a.label, data: MESES_LETIVOS.map(m=> (a.val && a.val.mensal && a.val.mensal[m]!==undefined) ? a.val.mensal[m] : null),
       borderColor:cores[i%cores.length], backgroundColor:cores[i%cores.length], tension:.25, spanGaps:true
     })) },
     options:{ responsive:true, maintainAspectRatio:false,
@@ -2651,32 +2688,37 @@ document.getElementById('file-compare-import').addEventListener('change', (e)=>{
   e.target.value = '';
 });
 document.getElementById('btn-compare-manual-abrir').addEventListener('click', ()=>{
+  if(!compareAtual || compareAtual.domain!=='alunos') return;
+  const metricKey = compareAtual.metricKey;
+  const def = HIST_ALUNOS_METRICAS[metricKey];
+  const campos = MANUAL_CAMPOS[metricKey];
+  document.getElementById('compare-manual-titulo').textContent = 'Inserir "'+def.label+'" de '+MANUAL_ANO_LABEL+' (sem Excel)';
+  document.getElementById('compare-manual-campos').innerHTML = campos.map(c=>
+    `<div class="field"><label>${c.label}</label><input type="number" min="0" ${c.step?`step="${c.step}"`:''} data-manual-campo="${c.id}"></div>`
+  ).join('');
   document.getElementById('compare-manual-form').style.display = 'block';
 });
 document.getElementById('btn-compare-manual-cancelar').addEventListener('click', ()=>{
   document.getElementById('compare-manual-form').style.display = 'none';
 });
 document.getElementById('btn-compare-manual-guardar').addEventListener('click', ()=>{
-  const label = normStr(document.getElementById('cm-label').value);
-  if(!label){ alert('Indica o rótulo do ano (ex: 24/25).'); return; }
-  if(historicoAlunos.some(y=>y.source==='manual')){ alert('Já existe um ano inserido manualmente.'); return; }
-  const num = id => { const v = document.getElementById(id).value; return v===''? null : Number(v); };
-  const manual = {
-    alunosEfetivos: num('cm-alunos-efetivos'), retencaoMediaDias: num('cm-retencao-dias'),
-    desistenciasCount: num('cm-desistencias'), desistenciasSaidosTotal: num('cm-saidos-total'),
-    origem: [
-      {plataforma:'Fixando', total:num('cm-origem-fixando')||0}, {plataforma:'Website', total:num('cm-origem-website')||0},
-      {plataforma:'Redes Sociais', total:num('cm-origem-redes')||0}, {plataforma:'Outras', total:num('cm-origem-outras')||0}
-    ],
-    aulasAbaixo: num('cm-aulas-abaixo')||0, aulasDentro: num('cm-aulas-dentro')||0, aulasAcima: num('cm-aulas-acima')||0,
-    aulasPorProfessorTotal: num('cm-aulas-professor'), efetivosPerdidosTotal: num('cm-efetivos-perdidos'), aulasPorAlunoMedia: num('cm-aulas-aluno')
-  };
-  historicoAlunos.push({ id:'hist_'+Date.now(), label, source:'manual', manual });
+  if(!compareAtual || compareAtual.domain!=='alunos') return;
+  const metricKey = compareAtual.metricKey;
+  let entry = getManualEntry24_25();
+  if(entry && entry.manual && entry.manual[metricKey]){ alert('Já existem dados de 24/25 para esta estatística.'); return; }
+  const v = {};
+  document.querySelectorAll('#compare-manual-campos [data-manual-campo]').forEach(el=>{
+    const n = el.value===''? null : Number(el.value);
+    v[el.dataset.manualCampo] = n;
+  });
+  const valor = manualValoresParaMetrica(metricKey, v);
+  if(!entry){ entry = { id:'hist_'+Date.now(), label:MANUAL_ANO_LABEL, source:'manual', manual:{} }; historicoAlunos.push(entry); }
+  entry.manual[metricKey] = valor;
   saveHistoricoAlunos();
   document.getElementById('compare-manual-form').style.display = 'none';
   renderCompareAnosLista();
-  if(compareAtual) abrirComparacao(compareAtual.domain, compareAtual.metricKey);
-  alert('Dados de '+label+' guardados.');
+  abrirComparacao(compareAtual.domain, compareAtual.metricKey);
+  alert('Dados de '+MANUAL_ANO_LABEL+' guardados para esta estatística.');
 });
 
 document.getElementById('btn-upload-alunos').addEventListener('click', ()=> document.getElementById('file-alunos').click());

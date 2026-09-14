@@ -2444,12 +2444,14 @@ function calcAulasPorMes(snap, anoInicio){
   const faixaDe = n => n<4?'Abaixo (<4)': n<=9?'Dentro (4-9)':'Acima (>9)';
   const totalFaixas = {'Abaixo (<4)':0,'Dentro (4-9)':0,'Acima (>9)':0};
   const mensal = {};
+  const porMesCategoria = {};
   anoLetivoMeses(anoInicio).forEach(m=>{
     const doMes = snap.pagamentos.filter(pg=>pg.mes===m.nome);
     mensal[m.nome] = doMes.length;
+    porMesCategoria[m.nome] = groupCount(doMes, pg=>faixaDe(pg.nAulas));
     doMes.forEach(pg=>{ totalFaixas[faixaDe(pg.nAulas)]++; });
   });
-  return { mensal, total: totalFaixas };
+  return { mensal, porMesCategoria, total: totalFaixas };
 }
 function calcAulasPorProfessor(snap, anoInicio){
   const mensal = {};
@@ -2579,6 +2581,7 @@ function anoLetivoLabelAtual(){
   return String(ini).slice(2)+'/'+String(ini+1).slice(2);
 }
 let compareChartInstance = null;
+let compareChartCatsInstance = null;
 let compareAtual = null;
 function renderCompareAnosLista(){
   const wrap = document.getElementById('compare-anos-lista');
@@ -2633,6 +2636,7 @@ function renderCompareCorpoAlunos(def, anos){
   } else if(def.tipo==='categorias'){
     const cats = Array.from(new Set(anos.filter(a=>a.val).flatMap(a=>Object.keys(a.val.total||{}))));
     totaisHtml = `<table class="data"><thead><tr><th>Ano</th>${cats.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>${anos.map(a=>`<tr><td>${a.label}</td>${cats.map(c=>`<td>${a.val? ((a.val.total||{})[c] ?? 0) : '—'}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+    totaisHtml += `<div class="chart-card" style="height:240px; margin:14px 0; padding:10px;"><canvas id="compare-chart-cats"></canvas></div>`;
     const anosComMensal = anos.filter(a=>a.val && a.val.porMesCategoria);
     if(anosComMensal.length){
       const catsMensal = Array.from(new Set(anosComMensal.flatMap(a=>Object.values(a.val.porMesCategoria).flatMap(o=>Object.keys(o)))));
@@ -2655,20 +2659,38 @@ function renderCompareCorpoAlunos(def, anos){
 }
 function desenharCompareChartAlunos(def, anos){
   if(compareChartInstance){ compareChartInstance.destroy(); compareChartInstance=null; }
+  if(compareChartCatsInstance){ compareChartCatsInstance.destroy(); compareChartCatsInstance=null; }
   if(def.tipo==='duracao') return;
-  const ctx = document.getElementById('compare-chart');
-  if(!ctx) return;
   const cores = ['#33587F','#258730','#8B4A3D','#CBE170','#9FC7AA'];
-  compareChartInstance = new Chart(ctx, {
-    type:'line',
-    data:{ labels: MESES_LETIVOS.map(m=>m.slice(0,3)), datasets: anos.map((a,i)=>({
-      label:a.label, data: MESES_LETIVOS.map(m=> (a.val && a.val.mensal && a.val.mensal[m]!==undefined) ? a.val.mensal[m] : null),
-      borderColor:cores[i%cores.length], backgroundColor:cores[i%cores.length], tension:.25, spanGaps:true
-    })) },
-    options:{ responsive:true, maintainAspectRatio:false,
-      plugins:{legend:{display:true, position:'top', labels:{boxWidth:10, font:{family:'Bahnschrift', size:11}}}},
-      scales:{x:{grid:{color:'rgba(37,135,48,0.06)'}}, y:{grid:{color:'rgba(37,135,48,0.06)'}, beginAtZero:true}} }
-  });
+  const ctx = document.getElementById('compare-chart');
+  if(ctx){
+    compareChartInstance = new Chart(ctx, {
+      type:'line',
+      data:{ labels: MESES_LETIVOS.map(m=>m.slice(0,3)), datasets: anos.map((a,i)=>({
+        label:a.label, data: MESES_LETIVOS.map(m=> (a.val && a.val.mensal && a.val.mensal[m]!==undefined) ? a.val.mensal[m] : null),
+        borderColor:cores[i%cores.length], backgroundColor:cores[i%cores.length], tension:.25, spanGaps:true
+      })) },
+      options:{ responsive:true, maintainAspectRatio:false,
+        plugins:{legend:{display:true, position:'top', labels:{boxWidth:10, font:{family:'Bahnschrift', size:11}}}},
+        scales:{x:{grid:{color:'rgba(37,135,48,0.06)'}}, y:{grid:{color:'rgba(37,135,48,0.06)'}, beginAtZero:true}} }
+    });
+  }
+  if(def.tipo==='categorias'){
+    const ctxCats = document.getElementById('compare-chart-cats');
+    if(ctxCats){
+      const cats = Array.from(new Set(anos.filter(a=>a.val).flatMap(a=>Object.keys(a.val.total||{}))));
+      compareChartCatsInstance = new Chart(ctxCats, {
+        type:'bar',
+        data:{ labels: cats, datasets: anos.map((a,i)=>({
+          label:a.label, data: cats.map(c=> a.val ? ((a.val.total||{})[c] ?? 0) : null),
+          backgroundColor:cores[i%cores.length]
+        })) },
+        options:{ responsive:true, maintainAspectRatio:false,
+          plugins:{legend:{display:true, position:'top', labels:{boxWidth:10, font:{family:'Bahnschrift', size:11}}}, title:{display:true, text:'Distribuição por categoria (total do ano)', font:{size:11.5}}},
+          scales:{x:{grid:{display:false}}, y:{grid:{color:'rgba(37,135,48,0.06)'}, beginAtZero:true}} }
+      });
+    }
+  }
 }
 function abrirComparacaoFinanceiro(metricKey){
   const def = HIST_FIN_METRICAS[metricKey];
@@ -2695,6 +2717,7 @@ function abrirComparacaoFinanceiro(metricKey){
 document.getElementById('btn-fechar-compare').addEventListener('click', ()=>{
   document.getElementById('compare-modal').style.display = 'none';
   if(compareChartInstance){ compareChartInstance.destroy(); compareChartInstance=null; }
+  if(compareChartCatsInstance){ compareChartCatsInstance.destroy(); compareChartCatsInstance=null; }
 });
 document.getElementById('btn-compare-importar').addEventListener('click', ()=> document.getElementById('file-compare-import').click());
 document.getElementById('file-compare-import').addEventListener('change', (e)=>{

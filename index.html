@@ -945,13 +945,7 @@ table.data tr.row-media td:last-child{border-right:1.5px solid var(--accent); bo
 
         <div class="section">
           <h3>🏆 Desempenho por professor</h3>
-          <p class="desc">Retenção, tempo médio em conversações e entre aula experimental (AE) e efetivação, com base na aba "AEs" — as colunas "Nº de aulas dadas", "Nº de aulas / aluno" e "Lucro (sem gastos)" respeitam o período escolhido abaixo</p>
-          <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:8px;">
-            <span style="font-size:11px; color:var(--muted); align-self:center;">Comparar com anos letivos anteriores (totais da empresa, não por professor):</span>
-            <button class="btn secondary" onclick="abrirComparacao('alunos','aulasPorProfessor')" style="padding:6px 12px; font-size:11px;">📊 Nº de aulas dadas</button>
-            <button class="btn secondary" onclick="abrirComparacao('alunos','efetivosPerdidos')" style="padding:6px 12px; font-size:11px;">📊 Efetivos perdidos</button>
-            <button class="btn secondary" onclick="abrirComparacao('alunos','aulasPorAluno')" style="padding:6px 12px; font-size:11px;">📊 Nº de aulas / aluno</button>
-          </div>
+          <p class="desc">Retenção, tempo médio em conversações e entre aula experimental (AE) e efetivação, com base na aba "AEs" — as colunas "Nº de aulas dadas", "Nº de aulas / aluno" e "Lucro (sem gastos)" respeitam o período escolhido abaixo. Os totais da empresa (todos os professores) estão nos cartões "Nº de aulas dadas", "Efetivos perdidos" e "Nº de aulas / aluno" no topo da página.</p>
 
           <div class="chart-card" style="padding:14px; margin-bottom:14px;">
             <div style="display:flex; flex-wrap:wrap; gap:12px; align-items:center;">
@@ -3137,6 +3131,13 @@ function renderAlunos(){
   });
   const pctPotencialRenovacao = unicosValidos.length ? 100*comPotencialRenovacao.length/unicosValidos.length : null;
 
+  // agregados da empresa (todos os professores) — mesma metodologia usada na comparação com anos letivos anteriores
+  const anoAtualIni = anoLetivoInicioAtual();
+  const liveSnap = liveAlunosSnapshot();
+  const aulasProfCalc = calcAulasPorProfessor(liveSnap, anoAtualIni);
+  const efetivosPerdidosCalc = calcEfetivosPerdidos(liveSnap, anoAtualIni);
+  const aulasPorAlunoCalc = calcAulasPorAluno(liveSnap, anoAtualIni);
+
   document.getElementById('alunos-kpis').innerHTML = [
     kpiCard('Alunos efetivos', unicosValidos.length, unicosValidos.length+' sem data de fim e com pagamento confirmado · '+efetivos.length+' matrículas no total (histórico)', true, 'card-chart-ativos-mes', 'Alunos únicos sem Data Fim preenchida e com "Sim" na coluna Pagamento da folha "Clientes Efetivos" — o headcount real de alunos a pagar neste momento.', 'alunos:alunosEfetivos'),
     kpiCard('Potencial de renovação', comPotencialRenovacao.length, pctPotencialRenovacao!==null? pctPotencialRenovacao.toFixed(0)+'% dos alunos efetivos' : '—', false, 'card-chart-ano-ensino', 'Alunos efetivos no 10º ano ou menos, mais os que têm pelo menos 1 disciplina fora da lista "sem renovação" (Biologia, Físico-Química, Geometria Descritiva, Economia, Geografia, Filosofia, História, Cultura das Artes). % = este nº ÷ total de alunos efetivos.'),
@@ -3145,7 +3146,10 @@ function renderAlunos(){
     kpiCard('Retenção média', fmtDuration(retencaoMedia), duracoesFim.length? 'com base em '+duracoesFim.length+' aluno(s) já com Data Fim' : 'ainda sem "Data Fim" preenchida', false, 'card-table-professores', 'Tempo médio entre a Data de Início e a Data de Fim dos alunos que já saíram — quanto tempo, em média, um aluno fica connosco.', 'alunos:retencaoMedia'),
     kpiCard('Desistência antes do fim do ano', taxaDesistAntes!==null? taxaDesistAntes.toFixed(0)+'%' : '— (sem "Data Fim" suficiente)', saidos.length+' aluno(s) já com data de saída registada', false, 'card-chart-inicio-fim', 'Entre os alunos que já saíram, a percentagem cuja Data de Fim foi antes de 30 de junho do respetivo ano letivo — ou seja, que desistiram a meio do ano em vez de terminarem naturalmente.', 'alunos:desistenciasMeioAno'),
     kpiCard('Tempo médio em conversações', fmtDuration(convMedGlobal), 'do 1º contacto do professor até marcar AE', false, 'card-table-professores', 'Tempo médio entre o início e o fim das conversações (aba "AEs") — do primeiro contacto do professor com o aluno até se marcar a aula experimental.'),
-    kpiCard('Média de disciplinas por aluno', unicos.length? (efetivos.length/unicos.length).toFixed(1) : '—', efetivos.length+' matrículas / '+unicos.length+' alunos', false, 'card-chart-disciplina', 'Nº total de matrículas (aluno + disciplina) a dividir pelo nº de alunos únicos — mostra quantas disciplinas, em média, cada aluno tem connosco.')
+    kpiCard('Média de disciplinas por aluno', unicos.length? (efetivos.length/unicos.length).toFixed(1) : '—', efetivos.length+' matrículas / '+unicos.length+' alunos', false, 'card-chart-disciplina', 'Nº total de matrículas (aluno + disciplina) a dividir pelo nº de alunos únicos — mostra quantas disciplinas, em média, cada aluno tem connosco.'),
+    kpiCard('Nº de aulas dadas', aulasProfCalc.total, 'total da empresa, todos os professores, este ano letivo', false, 'card-table-professores', 'Soma do "Nº de aulas" de todos os registos da tabela "Aulas por professor (Amélia)", de todos os professores, no ano letivo corrente.', 'alunos:aulasPorProfessor'),
+    kpiCard('Efetivos perdidos', efetivosPerdidosCalc.total, 'total da empresa, todos os professores, este ano letivo', false, 'card-table-professores', 'Alunos efetivos (todos os professores) que já têm "Data Fim" preenchida, neste ano letivo.', 'alunos:efetivosPerdidos'),
+    kpiCard('Nº de aulas / aluno', aulasPorAlunoCalc.total!=null? aulasPorAlunoCalc.total.toFixed(1) : '—', 'média da empresa, todos os professores, este ano letivo', false, 'card-table-professores', 'Nº de aulas dadas (todos os professores) a dividir pelo nº de alunos ativos em cada mês, somado ao longo do ano letivo corrente.', 'alunos:aulasPorAluno')
   ].join('');
 
   // geo (localização — normalmente ainda por preencher)

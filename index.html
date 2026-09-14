@@ -2425,15 +2425,20 @@ function calcDesistencias(snap, anoInicio){
   const totalAlunos = snap.ativos.length;
   return { mensal, total: { count: saidosAntes.length, pct: totalAlunos ? 100*saidosAntes.length/totalAlunos : null } };
 }
+function origemPlataformaLabel(plataforma){
+  const p = normStr(plataforma);
+  if(/^\d{2}\s*\/\s*\d{2}$/.test(p)) return 'Renovações'; // aluno transitado do ano letivo anterior (plataforma tem o rótulo do ano, ex: "25/26")
+  return p || 'Não especificado';
+}
 function calcOrigem(snap, anoInicio){
   const mensal = {};
   const porMesCategoria = {};
   anoLetivoMeses(anoInicio).forEach(m=>{
     const doMes = snap.ativos.filter(a=>a.dataInicio && a.dataInicio>=m.monthStart && a.dataInicio<=m.monthEnd);
     mensal[m.nome] = doMes.length;
-    porMesCategoria[m.nome] = groupCount(doMes, a=>a.plataforma||'Não especificado');
+    porMesCategoria[m.nome] = groupCount(doMes, a=>origemPlataformaLabel(a.plataforma));
   });
-  return { mensal, porMesCategoria, total: groupCount(snap.ativos, a=>a.plataforma||'Não especificado') };
+  return { mensal, porMesCategoria, total: groupCount(snap.ativos, a=>origemPlataformaLabel(a.plataforma)) };
 }
 function calcAulasPorMes(snap, anoInicio){
   const faixaDe = n => n<4?'Abaixo (<4)': n<=9?'Dentro (4-9)':'Acima (>9)';
@@ -2634,10 +2639,10 @@ function renderCompareCorpoAlunos(def, anos){
       const mesesComDados = MESES_LETIVOS.filter(m=>anosComMensal.some(a=>Object.values(a.val.porMesCategoria[m]||{}).some(v=>v>0)));
       totaisHtml += `<h4 style="margin:16px 0 6px 0; font-size:12.5px; color:var(--muted);">Entradas por mês e por plataforma</h4>`;
       totaisHtml += `<div style="overflow-x:auto;"><table class="data"><thead>
-<tr><th rowspan="2">Mês</th>${anosComMensal.map(a=>`<th colspan="${catsMensal.length}" style="text-align:center; border-left:2px solid var(--border);">${a.label}</th>`).join('')}</tr>
-<tr>${anosComMensal.map(()=>catsMensal.map((c,i)=>`<th style="${i===0?'border-left:2px solid var(--border);':''}">${c}</th>`).join('')).join('')}</tr>
+<tr><th rowspan="2">Mês</th>${catsMensal.map(c=>`<th colspan="${anosComMensal.length}" style="text-align:center; border-left:2px solid var(--border);">${c}</th>`).join('')}</tr>
+<tr>${catsMensal.map(()=>anosComMensal.map((a,i)=>`<th style="${i===0?'border-left:2px solid var(--border);':''}">${a.label}</th>`).join('')).join('')}</tr>
 </thead><tbody>${
-  mesesComDados.map(m=>`<tr><td>${m}</td>${anosComMensal.map(a=>catsMensal.map((c,i)=>`<td style="${i===0?'border-left:2px solid var(--border);':''}">${(a.val.porMesCategoria[m]||{})[c] ?? 0}</td>`).join('')).join('')}</tr>`).join('')
+  mesesComDados.map(m=>`<tr><td>${m}</td>${catsMensal.map(c=>anosComMensal.map((a,i)=>`<td style="${i===0?'border-left:2px solid var(--border);':''}">${(a.val.porMesCategoria[m]||{})[c] ?? 0}</td>`).join('')).join('')}</tr>`).join('')
 }</tbody></table></div>`;
       const anosSemMensal = anos.filter(a=>a.val && !a.val.porMesCategoria);
       if(anosSemMensal.length) totaisHtml += `<p style="font-size:11px; color:var(--muted); margin:8px 0 0 0;">Sem detalhe mensal por plataforma para: ${anosSemMensal.map(a=>a.label).join(', ')} (dados inseridos manualmente, só têm total anual).</p>`;
@@ -3095,8 +3100,8 @@ function renderAlunos(){
     months.forEach((mk,i)=>{ lastAtivosPorMesMap[mk] = activeCounts[i]; });
   }
 
-  // plataforma (nível aluno único — inclui tags de transição tipo "25/26")
-  const platE = sortedEntries(groupCount(unicos, a=>a.plataforma));
+  // plataforma (nível aluno único — alunos transitados do ano letivo anterior aparecem como "Renovações")
+  const platE = sortedEntries(groupCount(unicos, a=>origemPlataformaLabel(a.plataforma)));
   doughnutChart('chart-plataforma', platE.map(e=>e[0]), platE.map(e=>e[1]));
 
   // professor (nível matrícula)

@@ -274,6 +274,14 @@ body{
 .btn.secondary{background:transparent; color:var(--accent); border:1.5px solid var(--sage); transition:color .3s ease;}
 .btn.danger{background:transparent; color:var(--rust); border:1.5px solid var(--rust-soft);}
 .btn:hover{transform:translateY(-1px); opacity:.92;}
+.kpi-compare{
+  display:inline-flex; align-items:center; gap:4px; vertical-align:middle;
+  background:var(--sage-soft); color:var(--green); border:1.5px solid var(--sage);
+  border-radius:999px; padding:3px 10px 3px 8px; font-size:10.5px; font-weight:700;
+  cursor:pointer; margin-left:6px; text-decoration:none;
+  transition:background .2s ease, color .2s ease, border-color .2s ease, transform .1s ease, box-shadow .2s ease;
+}
+.kpi-compare:hover{background:var(--green); color:#fff; border-color:var(--green); transform:translateY(-1px); box-shadow:0 3px 8px rgba(37,135,48,0.25);}
 input[type=file]{display:none;}
 
 .notice{
@@ -2112,7 +2120,7 @@ function kpiCard(label, value, sub, circled, targetId, definicao, compareKey){
   let compareBtn = '';
   if(compareKey){
     const [dom, key] = compareKey.split(':');
-    compareBtn = ` <span class="kpi-compare" onclick="event.stopPropagation(); abrirComparacao('${dom}','${key}')" style="display:inline-block; color:var(--green); font-size:11px; cursor:pointer; text-decoration:underline; margin-left:4px;" title="Comparar com anos letivos anteriores">📊 Comparar</span>`;
+    compareBtn = ` <span class="kpi-compare" onclick="event.stopPropagation(); abrirComparacao('${dom}','${key}')" title="Comparar com anos letivos anteriores">📊 Comparar</span>`;
   }
   return `<div class="kpi"${clickable}><div class="label"${labelAttr}>${label}${helpIcon}${compareBtn}</div><div class="value${circled?' circled':''}">${value}</div>${sub?`<div class="sub">${sub}</div>`:''}${targetId?`<div class="go">${goLabel}</div>`:''}</div>`;
 }

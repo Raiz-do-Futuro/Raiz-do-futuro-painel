@@ -2609,8 +2609,9 @@ let compareChartInstance = null;
 let compareChartCatsInstance = null;
 let compareAtual = null;
 function renderCompareAnosLista(){
+  const historicoOrdenado = [...historicoAlunos].sort((a,b)=>(anoInicioFromLabel(b.label)||0)-(anoInicioFromLabel(a.label)||0));
   const chips = [`<span style="background:var(--accent); color:#fff; padding:5px 11px; border-radius:999px; font-size:12px; font-weight:600;">${anoLetivoLabelAtual()} (atual)</span>`]
-    .concat(historicoAlunos.map(y=>`<span style="background:var(--card); border:1.5px solid var(--border); padding:5px 11px; border-radius:999px; font-size:12px;">${
+    .concat(historicoOrdenado.map(y=>`<span style="background:var(--card); border:1.5px solid var(--border); padding:5px 11px; border-radius:999px; font-size:12px;">${
       y.source==='manual' ? `${y.label} ✍️` : `<span data-reimportar-hist="${y.id}" title="Clica para importar/atualizar o Excel deste ano" style="cursor:pointer; text-decoration:underline dotted;">${y.label} 📄</span>`
     } <button data-del-hist="${y.id}" style="background:none; border:none; color:var(--rust); cursor:pointer; font-size:12px; margin-left:4px;" title="Remover">✕</button></span>`));
   [document.getElementById('compare-anos-lista'), document.getElementById('anos-letivos-lista-topo')].forEach(wrap=>{
@@ -2704,6 +2705,7 @@ function abrirComparacaoAlunos(metricKey){
     else if(y.manual && y.manual[metricKey]) val = y.manual[metricKey];
     anos.push({ label:y.label, val });
   });
+  anos.sort((a,b)=>(anoInicioFromLabel(b.label)||0)-(anoInicioFromLabel(a.label)||0));
   document.getElementById('compare-corpo').innerHTML = renderCompareCorpoAlunos(def, anos);
   desenharCompareChartAlunos(def, anos);
 }
@@ -2785,6 +2787,7 @@ function abrirComparacaoFinanceiro(metricKey){
       }
     });
   }
+  anos.sort((a,b)=>(anoInicioFromLabel(b.label)||0)-(anoInicioFromLabel(a.label)||0));
   let aviso = '';
   if(def.soLive) aviso = '<p style="font-size:12.5px; color:var(--muted); margin:0 0 10px 0;">Esta métrica depende do cenário "Objetivo" do Excel financeiro, que os anos anteriores (aba "Finanças" do registo de alunos) não têm — só é possível ver o ano corrente.</p>';
   const semDados = anos.filter(a=>a.label!==anoLetivoLabelAtual() && (!a.val || a.val[def.field]==null));

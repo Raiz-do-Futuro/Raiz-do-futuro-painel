@@ -2287,8 +2287,23 @@ function parseEstatisticasAlunosEfetivos(sheet){
       if(!isNaN(v)) mensal[mes] = v;
     }
   }
-  if(total===null && !Object.keys(mensal).length) return null;
-  return { mensal, total };
+  // Tabela "Aulas" / "Quant." — nº de aulas dadas por mês, fonte oficial (evita recalcular a partir dos registos de "Pagamentos Alunos")
+  const aulasMensal = {};
+  const headerAulasRow = aoa.findIndex(row=>{
+    const idx = row.findIndex(c=>String(c).trim()==='Aulas');
+    return idx>=0 && String(row[idx+1]||'').trim()==='Quant.';
+  });
+  if(headerAulasRow>=0){
+    const col = aoa[headerAulasRow].findIndex(c=>String(c).trim()==='Aulas');
+    for(let r=headerAulasRow+1; r<aoa.length; r++){
+      const mes = String(aoa[r][col]||'').trim();
+      if(!MESES_LETIVOS.includes(mes)) break;
+      const v = Number(aoa[r][col+1]);
+      if(!isNaN(v)) aulasMensal[mes] = v;
+    }
+  }
+  if(total===null && !Object.keys(mensal).length && !Object.keys(aulasMensal).length) return null;
+  return { mensal, total, aulasMensal: Object.keys(aulasMensal).length ? aulasMensal : null };
 }
 function historicoAlunosSnapshot(dados){
   const ativos = [
@@ -2454,6 +2469,10 @@ function calcAulasPorMes(snap, anoInicio){
   return { mensal, porMesCategoria, total: totalFaixas };
 }
 function calcAulasPorProfessor(snap, anoInicio){
+  if(snap.mesAlEfetivos && snap.mesAlEfetivos.aulasMensal){
+    const mensal = snap.mesAlEfetivos.aulasMensal;
+    return { mensal, total: Object.values(mensal).reduce((a,b)=>a+b,0) };
+  }
   const mensal = {};
   anoLetivoMeses(anoInicio).forEach(m=>{ mensal[m.nome] = snap.pagamentos.filter(pg=>pg.mes===m.nome).reduce((s,pg)=>s+(pg.nAulas||0),0); });
   return { mensal, total: snap.pagamentos.reduce((s,pg)=>s+(pg.nAulas||0),0) };
@@ -2601,9 +2620,11 @@ function renderCompareAnosLista(){
   atualizarBotaoManual();
 }
 function atualizarBotaoManual(){
-  // Botão de inserção manual desativado por agora — ainda não há dados de 24/25 para inserir.
-  // Os anos já guardados (ex: 24/25 com dados parciais) continuam a aparecer normalmente na comparação.
-  document.getElementById('btn-compare-manual-abrir').style.display = 'none';
+  const btn = document.getElementById('btn-compare-manual-abrir');
+  if(!compareAtual || compareAtual.domain!=='alunos'){ btn.style.display = 'none'; return; }
+  const entry = getManualEntry24_25();
+  const jaTem = entry && entry.manual && entry.manual[compareAtual.metricKey];
+  btn.style.display = jaTem ? 'none' : 'inline-block';
 }
 function abrirComparacao(domain, metricKey){
   compareAtual = { domain, metricKey };

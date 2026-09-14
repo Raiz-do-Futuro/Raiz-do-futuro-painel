@@ -555,7 +555,7 @@ table.data tr.row-media td:last-child{border-right:1.5px solid var(--accent); bo
 
     <div class="gloss-tab-content" data-glosstab="alunos">
     <div class="gloss-section">
-      <h2>As 8 estatísticas principais</h2>
+      <h2>As estatísticas principais</h2>
       <div class="gloss-grid">
         <div class="gloss-item"><b>Alunos efetivos</b><span>Alunos únicos da aba "Clientes Efetivos" <b>sem "Data Fim"</b> e com <b>"Pagamento" = "Sim"</b>. Cada aluno conta uma só vez, mesmo com 2 disciplinas.</span></div>
         <div class="gloss-item"><b>Taxa de conversão AE → Efetivo</b><span>Entre as linhas da aba "AEs" com <b>data e hora preenchidas em "T/i AE"</b> (aula experimental efetivamente marcada), as que têm <code>Estado = Efetivo</code> ÷ total dessas linhas, em %.</span></div>
@@ -565,6 +565,18 @@ table.data tr.row-media td:last-child{border-right:1.5px solid var(--accent); bo
         <div class="gloss-item"><b>Tempo médio em conversações</b><span>Linhas da aba "AEs" com T/i e T/f de Conversações: média de <code>T/f − T/i</code>.</span></div>
         <div class="gloss-item"><b>Média de disciplinas por aluno</b><span>Total de matrículas (aluno + disciplina) ÷ nº de alunos únicos.</span></div>
         <div class="gloss-item"><b>Potencial de renovação</b><span>Alunos efetivos no <b>10º ano ou menos</b>, mais os que estão em anos além do 10º mas têm <b>pelo menos uma disciplina fora</b> da lista "sem renovação" (Biologia, Físico-Química, Geometria Descritiva, Economia, Geografia, Filosofia, História, Cultura das Artes). Um aluno com uma dessas disciplinas + outra fora da lista ainda conta. Mostra nº absoluto e % sobre o total de alunos efetivos.</span></div>
+        <div class="gloss-item"><b>Nº de aulas dadas</b><span>Soma do "Nº de aulas" de todos os professores (tabela "Aulas por professor - Amélia"), no ano letivo corrente — o total da empresa, não por professor.</span></div>
+        <div class="gloss-item"><b>Efetivos perdidos</b><span>Alunos efetivos de todos os professores que já têm "Data Fim" preenchida, no ano letivo corrente.</span></div>
+        <div class="gloss-item"><b>Nº de aulas / aluno</b><span>Nº de aulas dadas (todos os professores) a dividir pelo nº de alunos ativos em cada mês, ao longo do ano letivo corrente.</span></div>
+      </div>
+    </div>
+
+    <div class="gloss-section">
+      <h2>📊 Comparar com anos letivos anteriores</h2>
+      <div class="gloss-list">
+        <div class="gloss-row"><b>Importar Excel de um ano anterior</b><span>Botão no topo da página. O ano letivo é identificado automaticamente a partir do Excel (não é preciso escrever); atualiza logo todas as estatísticas de comparação em Alunos, Professores e Financeiro. Clicar no rótulo de um ano já importado (ex: "25/26 📄") volta a abrir o seletor de ficheiro para atualizar esse mesmo ano.</span></div>
+        <div class="gloss-row"><b>Inserção manual (24/25)</b><span>Só para o ano 24/25, quando não há Excel. É feita estatística a estatística (não um formulário único) e só pode ser preenchida uma vez por estatística — depois de guardada, o botão desaparece nessa estatística.</span></div>
+        <div class="gloss-row"><b>📊 Comparar</b><span>Ícone junto ao nome de cada estatística suportada. Abre um popup com uma tabela por mês (Setembro → Agosto) e um gráfico de linhas, um por ano.</span></div>
       </div>
     </div>
 
@@ -577,7 +589,7 @@ table.data tr.row-media td:last-child{border-right:1.5px solid var(--accent); bo
         <div class="gloss-row"><b>🌍 Mapa interativo</b><span>Reconhece distrito/concelho a partir do texto da "Localização"; o que não reconhece cai em "Não classificado".</span></div>
         <div class="gloss-row"><b>📈 Início vs. desistência por mês</b><span>Por mês, nº de alunos únicos com "Data Início" nesse mês vs. com "Data Fim" nesse mês.</span></div>
         <div class="gloss-row"><b>👥 Alunos ativos por mês</b><span>Por mês, desde o 1º "Data Início" registado até hoje: alunos já começados e ainda não terminados nesse mês.</span></div>
-        <div class="gloss-row"><b>🔗 Origem dos alunos</b><span>Alunos únicos agrupados pela coluna "Plataforma".</span></div>
+        <div class="gloss-row"><b>🔗 Origem dos alunos</b><span>Alunos únicos agrupados pela coluna "Plataforma". Quando essa coluna tem o rótulo de um ano letivo (ex: "25/26") em vez de uma plataforma, é porque o aluno transitou do ano anterior — aparece como "Renovações".</span></div>
         <div class="gloss-row"><b>🍎 Alunos por professor</b><span>Contagem por matrícula (não por aluno único), agrupada por "Professor" — top 12.</span></div>
         <div class="gloss-row"><b>🔻 Funil de pendentes → efetivação</b><span>Linhas de "Clientes pendentes" agrupadas pela coluna "Estado".</span></div>
         <div class="gloss-row"><b>💶 Receita por aluno (Total)</b><span>Soma, por aluno, de todas as linhas da aba "Pagamentos Alunos" (todos os meses) — top 10 por valor pago.</span></div>
@@ -657,20 +669,29 @@ table.data tr.row-media td:last-child{border-right:1.5px solid var(--accent); bo
       <h2>Estatísticas principais</h2>
       <p style="font-size:12.5px; color:var(--muted); margin:-6px 0 14px 0;">Nem todas aparecem sempre — algumas só surgem quando há dados suficientes no mês (ex: gasto em marketing &gt; 0 para calcular CAC).</p>
       <div class="gloss-grid">
-        <div class="gloss-item"><b>Receita do mês</b><span>Receita real do mês mais recente com dados, comparada com o objetivo para esse mesmo mês (aba DR).</span></div>
-        <div class="gloss-item"><b>Ponto de equilíbrio (mês)</b><span>Receita necessária nesse mês para cobrir todos os gastos (fixos + variáveis reais desse mês) e ficar com Rendimento = 0.</span></div>
-        <div class="gloss-item"><b>Ponto de equilíbrio (nº alunos)</b><span>O ponto de equilíbrio em euros, traduzido para nº de alunos usando o ARPU desse mês.</span></div>
-        <div class="gloss-item"><b>Receita média por aluno (ARPU)</b><span>Receita Real do mês a dividir pelo nº de alunos ativos nesse mês (calculado no separador Alunos). Mostra se a receita cresce por mais alunos ou por preços mais altos.</span></div>
-        <div class="gloss-item"><b>CAC — Custo de Aquisição de Cliente</b><span>Gasto em marketing (Google Ads, Meta Ads, Lendarius, Fixando) nesse mês, a dividir pelo nº de alunos efetivos cuja Plataforma é Fixando, Website ou Redes Sociais e cuja Data de Início foi nesse mês.</span></div>
-        <div class="gloss-item"><b>LTV : CAC</b><span>Valor de vida do aluno (ARPU × retenção média em meses) a dividir pelo CAC. Acima de 3 costuma ser saudável; abaixo de 1 é sinal de alerta.</span></div>
-        <div class="gloss-item"><b>Período de recuperação do CAC</b><span>CAC a dividir pelo ARPU — quantos meses de mensalidade de um aluno são precisos para recuperar o que custou angariá-lo.</span></div>
-        <div class="gloss-item"><b>RAOS (retorno de marketing)</b><span>Estimativa: receita mensal gerada pelos alunos atualmente ativos vindos de Fixando, Website ou Redes Sociais, a dividir pelo gasto em marketing desse mês.</span></div>
+        <div class="gloss-item"><b>Receita do mês</b><span>Receita real do mês anterior ao mês atual — o último mês já fechado (aba DR) — comparada com o objetivo para esse mesmo mês.</span></div>
+        <div class="gloss-item"><b>Ponto de equilíbrio (média)</b><span>Gastos fixos + variáveis reais, <b>exceto "Professores" e "IfThenPay"</b> (não fazem parte da conta), em média por mês desde o início do ano letivo. É a receita que seria preciso gerar, em média, para ficar com Rendimento = 0.</span></div>
+        <div class="gloss-item"><b>Ponto de equilíbrio (nº alunos)</b><span>O ponto de equilíbrio do mês anterior, em euros, traduzido para nº de alunos usando o ARPU desse mesmo mês.</span></div>
+        <div class="gloss-item"><b>Receita média por aluno (ARPU)</b><span>Receita Real de cada mês a dividir pelo nº de alunos ativos nesse mês, em média desde o início do ano letivo (só entram meses com receita registada). Mostra se a receita cresce por mais alunos ou por preços mais altos.</span></div>
+        <div class="gloss-item"><b>CAC — Custo de Aquisição de Cliente</b><span>Gasto em marketing (Google Ads, Meta Ads, Lendarius, Fixando) a dividir pelo nº de alunos vindos de Fixando/Website/Redes Sociais, em média por mês desde o início do ano letivo.</span></div>
+        <div class="gloss-item"><b>LTV : CAC</b><span>Valor de vida do aluno (ARPU × retenção média em meses) a dividir pelo CAC, ambos do mês anterior. Acima de 3 costuma ser saudável; abaixo de 1 é sinal de alerta.</span></div>
+        <div class="gloss-item"><b>Período de recuperação do CAC</b><span>CAC a dividir pelo ARPU (do mês anterior) — quantos meses de mensalidade de um aluno são precisos para recuperar o que custou angariá-lo.</span></div>
+        <div class="gloss-item"><b>RAOS (retorno de marketing)</b><span>Estimativa: receita mensal gerada pelos alunos atualmente ativos vindos de Fixando, Website ou Redes Sociais, a dividir pelo gasto em marketing do mês anterior.</span></div>
         <div class="gloss-item"><b>Rendimento acumulado (Real)</b><span>Soma do Rendimento (Receita menos Gastos Fixos e Variáveis) em todos os meses reais até agora.</span></div>
-        <div class="gloss-item"><b>Desvio acumulado vs Objetivo</b><span>Soma, mês a mês desde o início do ano, da diferença entre a Receita Real e a Receita Objetivo. Positivo = à frente do objetivo; negativo = atrás.</span></div>
-        <div class="gloss-item"><b>ARR estimado</b><span>Receita Anual Recorrente estimada, assumindo que a receita do mês mais recente se mantém constante durante 12 meses (MRR × 12).</span></div>
-        <div class="gloss-item"><b>Fixos : Variáveis</b><span>Proporção dos gastos reais que são fixos (não escalam com o negócio) versus variáveis (escalam com o nº de alunos/pedidos).</span></div>
-        <div class="gloss-item"><b>Caixa atual (Real)</b><span>Saldo de caixa acumulado real, no último mês com dados (aba CF).</span></div>
+        <div class="gloss-item"><b>Desvio acumulado vs Objetivo</b><span>Soma, mês a mês desde o início do ano, da diferença entre a Receita Real e a Receita Objetivo. Positivo = à frente do objetivo; negativo = atrás. Não tem comparação com anos anteriores.</span></div>
+        <div class="gloss-item"><b>ARR estimado</b><span>Receita Anual Recorrente estimada, assumindo que a receita do mês anterior se mantém constante durante 12 meses (MRR × 12).</span></div>
+        <div class="gloss-item"><b>Fixos : Variáveis (média)</b><span>Proporção entre gastos fixos e variáveis reais, em média por mês desde o início do ano letivo (não a mesma conta do Ponto de equilíbrio — aqui entram todos os gastos, incluindo "Professores" e "IfThenPay").</span></div>
+        <div class="gloss-item"><b>Caixa atual (Real)</b><span>Saldo de caixa acumulado real, no último mês com dados (aba CF). Não tem comparação com anos anteriores.</span></div>
         <div class="gloss-item"><b>Runway estimado</b><span>Quantos meses a caixa atual aguenta, ao ritmo médio de consumo (burn rate) dos meses reais em que o Cash Flow foi negativo.</span></div>
+      </div>
+    </div>
+
+    <div class="gloss-section">
+      <h2>📊 Comparar com anos letivos anteriores</h2>
+      <div class="gloss-list">
+        <div class="gloss-row"><b>Receita do mês, Ponto de equilíbrio, ARPU, CAC e Fixos : Variáveis</b><span>O popup mostra a <b>média anual</b> de cada ano (não um só mês), mais uma tabela mês a mês e um gráfico de linhas. Anos históricos vêm da aba "Finanças" do Excel de alunos importado; o ano corrente usa sempre o Excel "Financeiro".</span></div>
+        <div class="gloss-row"><b>Rendimento acumulado</b><span>O popup mostra o total acumulado de cada ano (igual ao cartão), mais a evolução mês a mês em tabela e gráfico.</span></div>
+        <div class="gloss-row"><b>Inserção manual (24/25)</b><span>Só "Receita do mês" e "ARPU" suportam dados manuais do ano 24/25 — mês a mês, sem Excel. Uma vez guardada, não pode ser reeditada por aqui.</span></div>
       </div>
     </div>
 
@@ -2574,12 +2595,16 @@ const MANUAL_CAMPOS = {
   aulasPorMes: [{id:'abaixo', label:'Abaixo (<4)'}, {id:'dentro', label:'Dentro (4-9)'}, {id:'acima', label:'Acima (>9)'}],
   aulasPorProfessor: [{id:'total', label:'Nº de aulas dadas (total empresa)'}],
   efetivosPerdidos: [{id:'total', label:'Efetivos perdidos (total)'}],
-  aulasPorAluno: [{id:'total', label:'Nº de aulas / aluno (média)', step:'0.1'}]
+  aulasPorAluno: [{id:'total', label:'Nº de aulas / aluno (média)', step:'0.1'}],
+  finReceitaMes: [],
+  finArpu: []
 };
 const MANUAL_MENSAL_SUPORTADO = {
   alunosEfetivos:true, retencaoMedia:false, desistenciasMeioAno:true, origemAlunos:true,
-  aulasPorMes:true, aulasPorProfessor:true, efetivosPerdidos:true, aulasPorAluno:true
+  aulasPorMes:true, aulasPorProfessor:true, efetivosPerdidos:true, aulasPorAluno:true,
+  finReceitaMes:true, finArpu:true
 };
+const MANUAL_MENSAL_STEP = { aulasPorAluno:'0.1', finReceitaMes:'0.01', finArpu:'0.01' };
 function manualValoresParaMetrica(metricKey, v, mensal){
   const m = mensal || {};
   switch(metricKey){
@@ -2589,6 +2614,8 @@ function manualValoresParaMetrica(metricKey, v, mensal){
     case 'origemAlunos': return { mensal:m, total: { 'Fixando': v.fixando||0, 'Website': v.website||0, 'Redes Sociais': v.redes||0, 'Outras': v.outras||0 } };
     case 'aulasPorMes': return { mensal:m, total: { 'Abaixo (<4)': v.abaixo||0, 'Dentro (4-9)': v.dentro||0, 'Acima (>9)': v.acima||0 } };
     case 'aulasPorProfessor': case 'efetivosPerdidos': case 'aulasPorAluno': return { mensal:m, total: v.total };
+    case 'finReceitaMes': return { receitaMensal: m };
+    case 'finArpu': return { arpuMensal: m };
   }
 }
 function getManualEntry24_25(){ return historicoAlunos.find(y=>y.source==='manual' && y.label===MANUAL_ANO_LABEL) || null; }
@@ -2757,7 +2784,7 @@ document.getElementById('file-importar-ano-topo').addEventListener('change', (e)
 });
 function atualizarBotaoManual(){
   const btn = document.getElementById('btn-compare-manual-abrir');
-  if(!compareAtual || compareAtual.domain!=='alunos'){ btn.style.display = 'none'; return; }
+  if(!compareAtual || !MANUAL_CAMPOS.hasOwnProperty(compareAtual.metricKey)){ btn.style.display = 'none'; return; }
   const entry = getManualEntry24_25();
   const jaTem = entry && entry.manual && entry.manual[compareAtual.metricKey];
   btn.style.display = jaTem ? 'none' : 'inline-block';
@@ -2864,6 +2891,8 @@ function abrirComparacaoFinanceiro(metricKey){
       if(y.source==='excel' && y.financas){
         const snap = historicoAlunosSnapshot(y.dados);
         anos.push({ label:y.label, val: computeFinHistorico(y.financas, snap, anoInicioFromLabel(y.label)) });
+      } else if(y.source==='manual' && y.manual && y.manual[metricKey]){
+        anos.push({ label:y.label, val: y.manual[metricKey] });
       }
     });
   }
@@ -2918,16 +2947,17 @@ document.getElementById('btn-fechar-compare').addEventListener('click', ()=>{
   if(compareChartFinInstance){ compareChartFinInstance.destroy(); compareChartFinInstance=null; }
 });
 document.getElementById('btn-compare-manual-abrir').addEventListener('click', ()=>{
-  if(!compareAtual || compareAtual.domain!=='alunos') return;
+  if(!compareAtual) return;
   const metricKey = compareAtual.metricKey;
-  const def = HIST_ALUNOS_METRICAS[metricKey];
+  const def = HIST_ALUNOS_METRICAS[metricKey] || HIST_FIN_METRICAS[metricKey];
   const campos = MANUAL_CAMPOS[metricKey];
   document.getElementById('compare-manual-titulo').textContent = 'Inserir "'+def.label+'" de '+MANUAL_ANO_LABEL+' (sem Excel)';
-  let html = `<div style="grid-column:1/-1; font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.04em;">Totais</div>` +
-    campos.map(c=>`<div class="field"><label>${c.label}</label><input type="number" min="0" ${c.step?`step="${c.step}"`:''} data-manual-campo="${c.id}"></div>`).join('');
+  let html = campos.length ? `<div style="grid-column:1/-1; font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.04em;">Totais</div>` +
+    campos.map(c=>`<div class="field"><label>${c.label}</label><input type="number" min="0" ${c.step?`step="${c.step}"`:''} data-manual-campo="${c.id}"></div>`).join('') : '';
   if(MANUAL_MENSAL_SUPORTADO[metricKey]){
-    html += `<div style="grid-column:1/-1; font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; margin-top:8px;">Mensal (opcional — deixa em branco o que não souberes)</div>` +
-      MESES_LETIVOS.map(mes=>`<div class="field"><label>${mes}</label><input type="number" min="0" ${metricKey==='aulasPorAluno'?'step="0.1"':''} data-manual-mes="${mes}"></div>`).join('');
+    const stepMensal = MANUAL_MENSAL_STEP[metricKey];
+    html += `<div style="grid-column:1/-1; font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; margin-top:8px;">Mensal${campos.length?' (opcional — deixa em branco o que não souberes)':''}</div>` +
+      MESES_LETIVOS.map(mes=>`<div class="field"><label>${mes}</label><input type="number" min="0" ${stepMensal?`step="${stepMensal}"`:''} data-manual-mes="${mes}"></div>`).join('');
   }
   document.getElementById('compare-manual-campos').innerHTML = html;
   document.getElementById('compare-manual-form').style.display = 'block';
@@ -2936,7 +2966,7 @@ document.getElementById('btn-compare-manual-cancelar').addEventListener('click',
   document.getElementById('compare-manual-form').style.display = 'none';
 });
 document.getElementById('btn-compare-manual-guardar').addEventListener('click', ()=>{
-  if(!compareAtual || compareAtual.domain!=='alunos') return;
+  if(!compareAtual) return;
   const metricKey = compareAtual.metricKey;
   let entry = getManualEntry24_25();
   if(entry && entry.manual && entry.manual[metricKey]){ alert('Já existem dados de 24/25 para esta estatística.'); return; }

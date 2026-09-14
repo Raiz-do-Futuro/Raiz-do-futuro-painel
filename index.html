@@ -758,6 +758,14 @@ table.data tr.row-media td:last-child{border-right:1.5px solid var(--accent); bo
 
   <main class="main">
 
+    <div id="anos-letivos-bar" style="display:flex; flex-wrap:wrap; align-items:center; gap:10px; background:var(--sage-soft); border:1.5px solid var(--border); border-radius:10px; padding:10px 14px; margin:0 0 16px 0;">
+      <span style="font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.04em;">Anos letivos:</span>
+      <div id="anos-letivos-lista-topo" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
+      <button class="btn secondary" id="btn-importar-ano-topo" style="padding:6px 12px; font-size:11.5px;">↑ Importar Excel de um ano letivo anterior</button>
+      <input type="file" id="file-importar-ano-topo" accept=".xlsx,.xls" style="display:none;">
+      <span style="font-size:11px; color:var(--muted);">Atualiza as estatísticas de comparação em Alunos, Professores e Financeiro. O Excel deve ter as abas "Clientes Efetivos", "Ex-Clientes", "Pagamentos Alunos" e "Finanças".</span>
+    </div>
+
     <!-- ===================== TAB 1: ALUNOS ===================== -->
     <section class="panel active" id="panel-alunos">
       <div class="page-head">
@@ -1480,12 +1488,8 @@ table.data tr.row-media td:last-child{border-right:1.5px solid var(--accent); bo
     <div style="border:1.5px solid var(--border); border-radius:10px; padding:12px; margin-bottom:18px; background:var(--sage-soft);">
       <div style="font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; margin-bottom:8px;">Anos disponíveis para comparar</div>
       <div id="compare-anos-lista" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px;"></div>
-      <div style="display:flex; gap:8px; flex-wrap:wrap;">
-        <button class="btn secondary" id="btn-compare-importar" style="padding:8px 14px; font-size:12px;">↑ Importar Excel de um ano anterior</button>
-        <input type="file" id="file-compare-import" accept=".xlsx,.xls" style="display:none;">
-        <button class="btn secondary" id="btn-compare-manual-abrir" style="padding:8px 14px; font-size:12px;">+ Adicionar dados de 24/25 (uma só vez por estatística)</button>
-      </div>
-      <div style="font-size:11px; color:var(--muted); margin-top:8px;">O Excel deve ter a mesma estrutura do registo de alunos habitual — abas "Clientes Efetivos", "Ex-Clientes", "Pagamentos Alunos" e, para números financeiros, "Finanças".</div>
+      <div style="font-size:11px; color:var(--muted); margin-bottom:8px;">Para importar o Excel de um ano letivo anterior, usa o botão "Importar Excel de um ano letivo anterior" no topo da página — fica logo disponível em todas as estatísticas.</div>
+      <button class="btn secondary" id="btn-compare-manual-abrir" style="padding:8px 14px; font-size:12px;">+ Adicionar dados de 24/25 (uma só vez por estatística)</button>
     </div>
 
     <div id="compare-manual-form" style="display:none; border:1.5px solid var(--green); border-radius:10px; padding:14px; margin-bottom:18px;">
@@ -1622,6 +1626,7 @@ async function loadState(){
       return y;
     });
   }catch(e){ /* ainda sem anos históricos */ }
+  renderCompareAnosLista();
 }
 async function saveAlunos(){
   try{ await window.storage.set('alunos-data', JSON.stringify(crm), false); }catch(e){ console.error('storage error', e); }
@@ -2287,23 +2292,8 @@ function parseEstatisticasAlunosEfetivos(sheet){
       if(!isNaN(v)) mensal[mes] = v;
     }
   }
-  // Tabela "Aulas" / "Quant." — nº de aulas dadas por mês, fonte oficial (evita recalcular a partir dos registos de "Pagamentos Alunos")
-  const aulasMensal = {};
-  const headerAulasRow = aoa.findIndex(row=>{
-    const idx = row.findIndex(c=>String(c).trim()==='Aulas');
-    return idx>=0 && String(row[idx+1]||'').trim()==='Quant.';
-  });
-  if(headerAulasRow>=0){
-    const col = aoa[headerAulasRow].findIndex(c=>String(c).trim()==='Aulas');
-    for(let r=headerAulasRow+1; r<aoa.length; r++){
-      const mes = String(aoa[r][col]||'').trim();
-      if(!MESES_LETIVOS.includes(mes)) break;
-      const v = Number(aoa[r][col+1]);
-      if(!isNaN(v)) aulasMensal[mes] = v;
-    }
-  }
-  if(total===null && !Object.keys(mensal).length && !Object.keys(aulasMensal).length) return null;
-  return { mensal, total, aulasMensal: Object.keys(aulasMensal).length ? aulasMensal : null };
+  if(total===null && !Object.keys(mensal).length) return null;
+  return { mensal, total };
 }
 function historicoAlunosSnapshot(dados){
   const ativos = [
@@ -2469,10 +2459,6 @@ function calcAulasPorMes(snap, anoInicio){
   return { mensal, porMesCategoria, total: totalFaixas };
 }
 function calcAulasPorProfessor(snap, anoInicio){
-  if(snap.mesAlEfetivos && snap.mesAlEfetivos.aulasMensal){
-    const mensal = snap.mesAlEfetivos.aulasMensal;
-    return { mensal, total: Object.values(mensal).reduce((a,b)=>a+b,0) };
-  }
   const mensal = {};
   anoLetivoMeses(anoInicio).forEach(m=>{ mensal[m.nome] = snap.pagamentos.filter(pg=>pg.mes===m.nome).reduce((s,pg)=>s+(pg.nAulas||0),0); });
   return { mensal, total: snap.pagamentos.reduce((s,pg)=>s+(pg.nAulas||0),0) };
@@ -2603,22 +2589,48 @@ let compareChartInstance = null;
 let compareChartCatsInstance = null;
 let compareAtual = null;
 function renderCompareAnosLista(){
-  const wrap = document.getElementById('compare-anos-lista');
-  if(!wrap) return;
   const chips = [`<span style="background:var(--accent); color:#fff; padding:5px 11px; border-radius:999px; font-size:12px; font-weight:600;">${anoLetivoLabelAtual()} (atual)</span>`]
     .concat(historicoAlunos.map(y=>`<span style="background:var(--card); border:1.5px solid var(--border); padding:5px 11px; border-radius:999px; font-size:12px;">${y.label} ${y.source==='manual'?'✍️':'📄'} <button data-del-hist="${y.id}" style="background:none; border:none; color:var(--rust); cursor:pointer; font-size:12px; margin-left:4px;" title="Remover">✕</button></span>`));
-  wrap.innerHTML = chips.join('');
-  wrap.querySelectorAll('[data-del-hist]').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      if(!confirm('Remover este ano da comparação?')) return;
-      historicoAlunos = historicoAlunos.filter(y=>y.id!==btn.dataset.delHist);
-      saveHistoricoAlunos();
-      renderCompareAnosLista();
-      if(compareAtual) abrirComparacao(compareAtual.domain, compareAtual.metricKey);
+  [document.getElementById('compare-anos-lista'), document.getElementById('anos-letivos-lista-topo')].forEach(wrap=>{
+    if(!wrap) return;
+    wrap.innerHTML = chips.join('');
+    wrap.querySelectorAll('[data-del-hist]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        if(!confirm('Remover este ano da comparação?')) return;
+        historicoAlunos = historicoAlunos.filter(y=>y.id!==btn.dataset.delHist);
+        saveHistoricoAlunos();
+        renderCompareAnosLista();
+        if(compareAtual) abrirComparacao(compareAtual.domain, compareAtual.metricKey);
+      });
     });
   });
   atualizarBotaoManual();
 }
+function importarAnoLetivoExcel(file){
+  const label = prompt('Rótulo deste ano letivo (ex: 25/26):');
+  if(!label) return;
+  const reader = new FileReader();
+  reader.onload = (evt)=>{
+    try{
+      const wb = XLSX.read(evt.target.result, {type:'array', cellDates:true});
+      const dados = parseHistoricoAlunosWorkbook(wb);
+      const financas = parseHistoricoFinancasSheet(findSheet(wb,'finan'));
+      historicoAlunos = historicoAlunos.filter(y=>normStr(y.label)!==normStr(label));
+      historicoAlunos.push({ id:'hist_'+Date.now(), label:normStr(label), source:'excel', dados, financas });
+      saveHistoricoAlunos();
+      renderCompareAnosLista();
+      if(compareAtual) abrirComparacao(compareAtual.domain, compareAtual.metricKey);
+      alert('Ano '+label+' importado com sucesso'+(financas?' (incluindo dados financeiros da aba "Finanças").':'.'));
+    }catch(err){ alert('Não foi possível ler o ficheiro. Confirma que tem as abas "Clientes Efetivos", "Ex-Clientes" e "Pagamentos Alunos". ('+err.message+')'); }
+  };
+  reader.readAsArrayBuffer(file);
+}
+document.getElementById('btn-importar-ano-topo').addEventListener('click', ()=> document.getElementById('file-importar-ano-topo').click());
+document.getElementById('file-importar-ano-topo').addEventListener('change', (e)=>{
+  const file = e.target.files[0]; if(!file) return;
+  importarAnoLetivoExcel(file);
+  e.target.value = '';
+});
 function atualizarBotaoManual(){
   const btn = document.getElementById('btn-compare-manual-abrir');
   if(!compareAtual || compareAtual.domain!=='alunos'){ btn.style.display = 'none'; return; }
@@ -2740,28 +2752,6 @@ document.getElementById('btn-fechar-compare').addEventListener('click', ()=>{
   if(compareChartInstance){ compareChartInstance.destroy(); compareChartInstance=null; }
   if(compareChartCatsInstance){ compareChartCatsInstance.destroy(); compareChartCatsInstance=null; }
 });
-document.getElementById('btn-compare-importar').addEventListener('click', ()=> document.getElementById('file-compare-import').click());
-document.getElementById('file-compare-import').addEventListener('change', (e)=>{
-  const file = e.target.files[0]; if(!file) return;
-  const label = prompt('Rótulo deste ano letivo (ex: 25/26):');
-  if(!label){ e.target.value=''; return; }
-  const reader = new FileReader();
-  reader.onload = (evt)=>{
-    try{
-      const wb = XLSX.read(evt.target.result, {type:'array', cellDates:true});
-      const dados = parseHistoricoAlunosWorkbook(wb);
-      const financas = parseHistoricoFinancasSheet(findSheet(wb,'finan'));
-      historicoAlunos = historicoAlunos.filter(y=>normStr(y.label)!==normStr(label));
-      historicoAlunos.push({ id:'hist_'+Date.now(), label:normStr(label), source:'excel', dados, financas });
-      saveHistoricoAlunos();
-      renderCompareAnosLista();
-      if(compareAtual) abrirComparacao(compareAtual.domain, compareAtual.metricKey);
-      alert('Ano '+label+' importado com sucesso'+(financas?' (incluindo dados financeiros da aba "Finanças").':'.'));
-    }catch(err){ alert('Não foi possível ler o ficheiro. Confirma que tem as abas "Clientes Efetivos", "Ex-Clientes" e "Pagamentos Alunos". ('+err.message+')'); }
-  };
-  reader.readAsArrayBuffer(file);
-  e.target.value = '';
-});
 document.getElementById('btn-compare-manual-abrir').addEventListener('click', ()=>{
   if(!compareAtual || compareAtual.domain!=='alunos') return;
   const metricKey = compareAtual.metricKey;
@@ -2874,18 +2864,19 @@ function readPagamentosAlunosSheet(sheet){
   const blocks = [];
   monthRow.forEach((v,i)=>{ if(v && MESES_PT_ALL.includes(String(v).trim())) blocks.push({mes:String(v).trim(), col:i}); });
   const registos = [];
+  const ehLinhaResumo = nome => /^média\b/i.test(nome); // linhas de rodapé tipo "Média nº Aulas" / "Média €", não são alunos
   blocks.forEach(({mes,col})=>{
     // duas listas independentes lado a lado: (Aluno, Nº de Aulas) e (Pagamento=Aluno, Valor) — juntam-se pelo nome, não pela linha
     const nAulasPorNome = {};
     const valorPorNome = {};
     for(let r=headerRowIdx+2; r<aoa.length; r++){
       const alunoAulas = aoa[r][col];
-      if(alunoAulas && String(alunoAulas).trim()){
+      if(alunoAulas && String(alunoAulas).trim() && !ehLinhaResumo(String(alunoAulas).trim())){
         const k = normKey(String(alunoAulas).trim());
         nAulasPorNome[k] = (nAulasPorNome[k]||0) + (Number(aoa[r][col+1])||0);
       }
       const alunoPagamento = aoa[r][col+2];
-      if(alunoPagamento && String(alunoPagamento).trim()){
+      if(alunoPagamento && String(alunoPagamento).trim() && !ehLinhaResumo(String(alunoPagamento).trim())){
         const k = normKey(String(alunoPagamento).trim());
         valorPorNome[k] = (valorPorNome[k]||0) + (Number(aoa[r][col+3])||0);
         if(!nAulasPorNome.hasOwnProperty(k)) nAulasPorNome[k] = nAulasPorNome[k]||0;

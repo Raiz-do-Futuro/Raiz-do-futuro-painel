@@ -2370,17 +2370,35 @@ function historicoAnoIdxAtual(financas){
   let idx = financas.receita.map((v,i)=>({v,i})).filter(x=>x.v>0).map(x=>x.i).pop();
   return idx===undefined ? 0 : idx;
 }
+// Nº de alunos ativos num mês de um ano histórico — usa a tabela "Mês/Al. Efetivos" da aba Estatísticas quando existe
+// (fonte oficial do Excel), senão recalcula a partir de Data Início/Data Fim.
+function ativosNoMesHistorico(snapAlunos, anoInicio, mesNome){
+  if(snapAlunos && snapAlunos.mesAlEfetivos && snapAlunos.mesAlEfetivos.mensal && snapAlunos.mesAlEfetivos.mensal[mesNome]!=null){
+    return snapAlunos.mesAlEfetivos.mensal[mesNome];
+  }
+  if(!snapAlunos) return null;
+  const chaveMes = anoLetivoMeses(anoInicio)[MESES_LETIVOS.indexOf(mesNome)]?.key;
+  if(!chaveMes) return null;
+  const [y,m] = chaveMes.split('-').map(Number);
+  const monthStart = new Date(y,m-1,1), monthEnd = new Date(y,m,0);
+  return snapAlunos.ativos.filter(a=>a.dataInicio && a.dataInicio<=monthEnd && (!a.dataFim||a.dataFim>=monthStart)).length;
+}
 function computeFinHistorico(financas, snapAlunos, anoInicio){
   if(!financas) return null;
   const idx = historicoAnoIdxAtual(financas);
   const out = { mes: financas.months[idx] };
   out.receitaMes = financas.receita[idx];
   out.pontoEquilibrioMes = financas.custosFixos[idx] + financas.custosVariaveis[idx];
+  out.arpuMensal = {};
+  financas.months.forEach((mesNome,i)=>{
+    const ativos = ativosNoMesHistorico(snapAlunos, anoInicio, mesNome);
+    if(ativos) out.arpuMensal[mesNome] = financas.receita[i]/ativos;
+  });
   const chaveMes = anoLetivoMeses(anoInicio)[MESES_LETIVOS.indexOf(financas.months[idx])]?.key;
   if(snapAlunos && chaveMes){
     const [y,m] = chaveMes.split('-').map(Number);
     const monthStart = new Date(y,m-1,1), monthEnd = new Date(y,m,0);
-    const ativosMes = snapAlunos.ativos.filter(a=>a.dataInicio && a.dataInicio<=monthEnd && (!a.dataFim||a.dataFim>=monthStart)).length;
+    const ativosMes = ativosNoMesHistorico(snapAlunos, anoInicio, financas.months[idx]);
     if(ativosMes){
       out.arpu = out.receitaMes/ativosMes;
       out.pontoEquilibrioAlunos = out.arpu>0 ? Math.ceil(out.pontoEquilibrioMes/out.arpu) : null;
@@ -2557,6 +2575,13 @@ function computeFinKpisLiveCurrent(){
     out.arpu = out.receitaMes/ativosMes;
     out.pontoEquilibrioAlunos = out.arpu>0 ? Math.ceil(out.pontoEquilibrioMes/out.arpu) : null;
   }
+  out.arpuMensal = {};
+  real.months.forEach((mesNome,i)=>{
+    const chaveMesI = drMonthToKey(mesNome, i);
+    const ativosI = lastAtivosPorMesMap[chaveMesI];
+    const receitaI = real.receita.monthly[i];
+    if(ativosI && receitaI!=null) out.arpuMensal[mesNome] = receitaI/ativosI;
+  });
   const marketingMes = MARKETING_LABELS.reduce((soma,lbl)=>{
     const item = real.gastosFixosItems.find(x=>x.label===lbl) || real.gastosVariaveisItems.find(x=>x.label===lbl);
     return soma + (item ? item.monthly[idx] : 0);
@@ -2588,7 +2613,7 @@ function computeFinKpisLiveCurrent(){
 const HIST_FIN_METRICAS = {
   finReceitaMes: { label:'Receita do mês', field:'receitaMes', fmt:v=>fmtEuro(v) },
   finPontoEquilibrioMes: { label:'Ponto de equilíbrio (mês)', field:'pontoEquilibrioMes', fmt:v=>fmtEuro(v) },
-  finArpu: { label:'Receita média por aluno (ARPU)', field:'arpu', fmt:v=>fmtEuro(v) },
+  finArpu: { label:'Receita média por aluno (ARPU)', field:'arpu', fmt:v=>fmtEuro(v), mensalField:'arpuMensal' },
   finPontoEquilibrioAlunos: { label:'Ponto de equilíbrio (nº alunos)', field:'pontoEquilibrioAlunos', fmt:v=>v+' alunos' },
   finCac: { label:'CAC — Custo de Aquisição de Cliente', field:'cac', fmt:v=>fmtEuro(v) },
   finLtvCac: { label:'LTV : CAC', field:'ltvCac', fmt:v=>v.toFixed(1)+' : 1' },
@@ -2794,10 +2819,21 @@ function abrirComparacaoFinanceiro(metricKey){
   if(def.soLive) aviso = '<p style="font-size:12.5px; color:var(--muted); margin:0 0 10px 0;">Esta métrica depende do cenário "Objetivo" do Excel financeiro, que os anos anteriores (aba "Finanças" do registo de alunos) não têm — só é possível ver o ano corrente.</p>';
   const semDados = anos.filter(a=>a.label!==anoLetivoLabelAtual() && (!a.val || a.val[def.field]==null));
   if(!def.soLive && semDados.length) aviso += `<p style="font-size:12px; color:var(--muted); margin:0 0 10px 0;">Sem dados suficientes para: ${semDados.map(a=>a.label).join(', ')}.</p>`;
-  const tabela = `<table class="data"><thead><tr><th>Ano</th><th>${def.label}</th></tr></thead><tbody>${
-    anos.map(a=>`<tr><td>${a.label}</td><td>${(a.val && a.val[def.field]!=null) ? def.fmt(a.val[def.field]) : '—'}</td></tr>`).join('')
+  const tabela = `<table class="data"><thead><tr><th>Ano</th><th>${def.label}</th><th>Mês</th></tr></thead><tbody>${
+    anos.map(a=>`<tr><td>${a.label}</td><td>${(a.val && a.val[def.field]!=null) ? def.fmt(a.val[def.field]) : '—'}</td><td>${a.val ? a.val.mes : '—'}</td></tr>`).join('')
   }</tbody></table>`;
-  document.getElementById('compare-corpo').innerHTML = aviso + tabela;
+  let mensalHtml = '';
+  if(def.mensalField){
+    const anosComMensal = anos.filter(a=>a.val && a.val[def.mensalField] && Object.keys(a.val[def.mensalField]).length);
+    if(anosComMensal.length){
+      const mesesComDados = MESES_LETIVOS.filter(m=>anosComMensal.some(a=>a.val[def.mensalField][m]!=null));
+      mensalHtml = `<h4 style="margin:16px 0 6px 0; font-size:12.5px; color:var(--muted);">${def.label} por mês</h4>
+<div style="overflow-x:auto;"><table class="data"><thead><tr><th>Mês</th>${anosComMensal.map(a=>`<th>${a.label}</th>`).join('')}</tr></thead><tbody>${
+  mesesComDados.map(m=>`<tr><td>${m}</td>${anosComMensal.map(a=>`<td>${a.val[def.mensalField][m]!=null ? def.fmt(a.val[def.mensalField][m]) : '—'}</td>`).join('')}</tr>`).join('')
+}</tbody></table></div>`;
+    }
+  }
+  document.getElementById('compare-corpo').innerHTML = aviso + tabela + mensalHtml;
 }
 document.getElementById('btn-fechar-compare').addEventListener('click', ()=>{
   document.getElementById('compare-modal').style.display = 'none';

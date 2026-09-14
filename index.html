@@ -2407,7 +2407,7 @@ function computeFinHistorico(financas, snapAlunos, anoInicio){
   out.cacMensal = {};
   financas.months.forEach((mesNome,i)=>{
     const ativos = ativosNoMesHistorico(snapAlunos, anoInicio, mesNome);
-    if(ativos) out.arpuMensal[mesNome] = financas.receita[i]/ativos;
+    if(ativos && financas.receita[i]>0) out.arpuMensal[mesNome] = financas.receita[i]/ativos;
     const custosMesI = financas.custosFixos[i] + financas.custosVariaveis[i];
     if(financas.receita[i]>0 || custosMesI>0){
       out.receitaMensal[mesNome] = financas.receita[i];
@@ -2617,7 +2617,7 @@ function computeFinKpisLiveCurrent(){
     const chaveMesI = drMonthToKey(mesNome, i);
     const ativosI = lastAtivosPorMesMap[chaveMesI];
     const receitaI = real.receita.monthly[i];
-    if(ativosI && receitaI!=null) out.arpuMensal[mesNome] = receitaI/ativosI;
+    if(ativosI && receitaI>0) out.arpuMensal[mesNome] = receitaI/ativosI;
     const custosMesI = real.gastosFixosTotal.monthly[i] + real.gastosVariaveisTotal.monthly[i];
     if(receitaI>0 || custosMesI>0){
       out.receitaMensal[mesNome] = receitaI;
@@ -2661,17 +2661,17 @@ function computeFinKpisLiveCurrent(){
   return out;
 }
 const HIST_FIN_METRICAS = {
-  finReceitaMes: { label:'Receita do mês', field:'receitaMes', fmt:v=>fmtEuro(v), mensalField:'receitaMensal' },
-  finPontoEquilibrioMes: { label:'Ponto de equilíbrio (mês)', field:'pontoEquilibrioMes', fmt:v=>fmtEuro(v), mensalField:'pontoEquilibrioMensal' },
-  finArpu: { label:'Receita média por aluno (ARPU)', field:'arpu', fmt:v=>fmtEuro(v), mensalField:'arpuMensal' },
+  finReceitaMes: { label:'Receita do mês', field:'receitaMes', fmt:v=>fmtEuro(v), mensalField:'receitaMensal', mediaNoTotal:true },
+  finPontoEquilibrioMes: { label:'Ponto de equilíbrio (mês)', field:'pontoEquilibrioMes', fmt:v=>fmtEuro(v), mensalField:'pontoEquilibrioMensal', mediaNoTotal:true },
+  finArpu: { label:'Receita média por aluno (ARPU)', field:'arpu', fmt:v=>fmtEuro(v), mensalField:'arpuMensal', mediaNoTotal:true },
   finPontoEquilibrioAlunos: { label:'Ponto de equilíbrio (nº alunos)', field:'pontoEquilibrioAlunos', fmt:v=>v+' alunos' },
-  finCac: { label:'CAC — Custo de Aquisição de Cliente', field:'cac', fmt:v=>fmtEuro(v), mensalField:'cacMensal' },
+  finCac: { label:'CAC — Custo de Aquisição de Cliente', field:'cac', fmt:v=>fmtEuro(v), mensalField:'cacMensal', mediaNoTotal:true },
   finLtvCac: { label:'LTV : CAC', field:'ltvCac', fmt:v=>v.toFixed(1)+' : 1' },
   finPayback: { label:'Período de recuperação do CAC', field:'payback', fmt:v=>v.toFixed(1)+' meses' },
   finRaos: { label:'RAOS (retorno de marketing)', field:'raos', fmt:v=>v.toFixed(1)+'x' },
   finRendimentoAcumulado: { label:'Rendimento acumulado (Real)', field:'rendimentoAcumulado', fmt:v=>fmtEuro(v), mensalField:'rendimentoMensal' },
   finArr: { label:'ARR estimado', field:'arr', fmt:v=>fmtEuro(v) },
-  finFixosVariaveis: { label:'Fixos : Variáveis', field:'fixosPct', fmt:v=>v.fixos+'% : '+v.variaveis+'%', mensalField:'fixosPctMensal', fmtMensal:v=>Math.round(v)+'% fixos' },
+  finFixosVariaveis: { label:'Fixos : Variáveis', field:'fixosPct', fmt:v=>v.fixos+'% : '+v.variaveis+'%', mensalField:'fixosPctMensal', fmtMensal:v=>Math.round(v)+'% fixos', mediaNoTotal:true, fmtMedia:v=>Math.round(v)+'% : '+Math.round(100-v)+'%' },
   finRunway: { label:'Runway estimado', field:'runway', fmt:v=>v.toFixed(1)+' meses' }
 };
 
@@ -2870,11 +2870,15 @@ function abrirComparacaoFinanceiro(metricKey){
   anos.sort((a,b)=>(anoInicioFromLabel(b.label)||0)-(anoInicioFromLabel(a.label)||0));
   let aviso = '';
   if(def.soLive) aviso = '<p style="font-size:12.5px; color:var(--muted); margin:0 0 10px 0;">Esta métrica depende do cenário "Objetivo" do Excel financeiro, que os anos anteriores (aba "Finanças" do registo de alunos) não têm — só é possível ver o ano corrente.</p>';
-  const semDados = anos.filter(a=>a.label!==anoLetivoLabelAtual() && (!a.val || a.val[def.field]==null));
+  const semDados = anos.filter(a=>a.label!==anoLetivoLabelAtual() && (!a.val || (def.mediaNoTotal ? mediaSerie(a.val[def.mensalField])==null : a.val[def.field]==null)));
   if(!def.soLive && semDados.length) aviso += `<p style="font-size:12px; color:var(--muted); margin:0 0 10px 0;">Sem dados suficientes para: ${semDados.map(a=>a.label).join(', ')}.</p>`;
-  const tabela = `<table class="data"><thead><tr><th>Ano</th><th>${def.label}</th><th>Mês</th></tr></thead><tbody>${
-    anos.map(a=>`<tr><td>${a.label}</td><td>${(a.val && a.val[def.field]!=null) ? def.fmt(a.val[def.field]) : '—'}</td><td>${a.val ? a.val.mes : '—'}</td></tr>`).join('')
-  }</tbody></table>`;
+  const tabela = def.mediaNoTotal
+    ? `<table class="data"><thead><tr><th>Ano</th><th>${def.label} (média anual)</th></tr></thead><tbody>${
+        anos.map(a=>{ const media = a.val && a.val[def.mensalField] ? mediaSerie(a.val[def.mensalField]) : null; return `<tr><td>${a.label}</td><td>${media!=null ? (def.fmtMedia||def.fmt)(media) : '—'}</td></tr>`; }).join('')
+      }</tbody></table>`
+    : `<table class="data"><thead><tr><th>Ano</th><th>${def.label}</th><th>Mês</th></tr></thead><tbody>${
+        anos.map(a=>`<tr><td>${a.label}</td><td>${(a.val && a.val[def.field]!=null) ? def.fmt(a.val[def.field]) : '—'}</td><td>${a.val ? a.val.mes : '—'}</td></tr>`).join('')
+      }</tbody></table>`;
   let mensalHtml = '';
   let anosComMensal = [];
   if(def.mensalField){
@@ -4728,7 +4732,7 @@ function renderFinKPIs(){
     const arpuMensal = {};
     real.months.forEach((m,i)=>{
       const k = drMonthToKey(m,i); const at = lastAtivosPorMesMap[k]; const r = real.receita.monthly[i];
-      if(at && r!=null) arpuMensal[m] = r/at;
+      if(at && r>0) arpuMensal[m] = r/at;
     });
     const arpuMedia = mediaSerie(arpuMensal);
     if(arpuMedia!=null){

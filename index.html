@@ -763,7 +763,7 @@ table.data tr.row-media td:last-child{border-right:1.5px solid var(--accent); bo
       <div id="anos-letivos-lista-topo" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
       <button class="btn secondary" id="btn-importar-ano-topo" style="padding:6px 12px; font-size:11.5px;">↑ Importar Excel de um ano letivo anterior</button>
       <input type="file" id="file-importar-ano-topo" accept=".xlsx,.xls" style="display:none;">
-      <span style="font-size:11px; color:var(--muted);">Atualiza as estatísticas de comparação em Alunos, Professores e Financeiro. O Excel deve ter as abas "Clientes Efetivos", "Ex-Clientes", "Pagamentos Alunos" e "Finanças".</span>
+      <span style="font-size:11px; color:var(--muted);">Atualiza as estatísticas de comparação em Alunos, Professores e Financeiro. O ano letivo é identificado automaticamente pelo Excel — não precisas de o escrever. Clica no rótulo de um ano já importado (ex: "25/26 📄") para atualizares o Excel desse ano.</span>
     </div>
 
     <!-- ===================== TAB 1: ALUNOS ===================== -->
@@ -2292,8 +2292,24 @@ function parseEstatisticasAlunosEfetivos(sheet){
       if(!isNaN(v)) mensal[mes] = v;
     }
   }
-  if(total===null && !Object.keys(mensal).length) return null;
-  return { mensal, total };
+  // Tabela "Aulas" / "Quant." — nº de aulas dadas por mês. O Excel guarda o valor com casas decimais mas
+  // mostra-o arredondado (formatação da célula) — replicamos esse arredondamento para bater certo com o que se vê no ficheiro.
+  const aulasMensal = {};
+  const headerAulasRow = aoa.findIndex(row=>{
+    const idx = row.findIndex(c=>String(c).trim()==='Aulas');
+    return idx>=0 && String(row[idx+1]||'').trim()==='Quant.';
+  });
+  if(headerAulasRow>=0){
+    const col = aoa[headerAulasRow].findIndex(c=>String(c).trim()==='Aulas');
+    for(let r=headerAulasRow+1; r<aoa.length; r++){
+      const mes = String(aoa[r][col]||'').trim();
+      if(!MESES_LETIVOS.includes(mes)) break;
+      const v = Number(aoa[r][col+1]);
+      if(!isNaN(v)) aulasMensal[mes] = Math.round(v);
+    }
+  }
+  if(total===null && !Object.keys(mensal).length && !Object.keys(aulasMensal).length) return null;
+  return { mensal, total, aulasMensal: Object.keys(aulasMensal).length ? aulasMensal : null };
 }
 function historicoAlunosSnapshot(dados){
   const ativos = [
@@ -2459,6 +2475,10 @@ function calcAulasPorMes(snap, anoInicio){
   return { mensal, porMesCategoria, total: totalFaixas };
 }
 function calcAulasPorProfessor(snap, anoInicio){
+  if(snap.mesAlEfetivos && snap.mesAlEfetivos.aulasMensal){
+    const mensal = snap.mesAlEfetivos.aulasMensal;
+    return { mensal, total: Object.values(mensal).reduce((a,b)=>a+b,0) };
+  }
   const mensal = {};
   anoLetivoMeses(anoInicio).forEach(m=>{ mensal[m.nome] = snap.pagamentos.filter(pg=>pg.mes===m.nome).reduce((s,pg)=>s+(pg.nAulas||0),0); });
   return { mensal, total: snap.pagamentos.reduce((s,pg)=>s+(pg.nAulas||0),0) };
@@ -2590,7 +2610,9 @@ let compareChartCatsInstance = null;
 let compareAtual = null;
 function renderCompareAnosLista(){
   const chips = [`<span style="background:var(--accent); color:#fff; padding:5px 11px; border-radius:999px; font-size:12px; font-weight:600;">${anoLetivoLabelAtual()} (atual)</span>`]
-    .concat(historicoAlunos.map(y=>`<span style="background:var(--card); border:1.5px solid var(--border); padding:5px 11px; border-radius:999px; font-size:12px;">${y.label} ${y.source==='manual'?'✍️':'📄'} <button data-del-hist="${y.id}" style="background:none; border:none; color:var(--rust); cursor:pointer; font-size:12px; margin-left:4px;" title="Remover">✕</button></span>`));
+    .concat(historicoAlunos.map(y=>`<span style="background:var(--card); border:1.5px solid var(--border); padding:5px 11px; border-radius:999px; font-size:12px;">${
+      y.source==='manual' ? `${y.label} ✍️` : `<span data-reimportar-hist="${y.id}" title="Clica para importar/atualizar o Excel deste ano" style="cursor:pointer; text-decoration:underline dotted;">${y.label} 📄</span>`
+    } <button data-del-hist="${y.id}" style="background:none; border:none; color:var(--rust); cursor:pointer; font-size:12px; margin-left:4px;" title="Remover">✕</button></span>`));
   [document.getElementById('compare-anos-lista'), document.getElementById('anos-letivos-lista-topo')].forEach(wrap=>{
     if(!wrap) return;
     wrap.innerHTML = chips.join('');
@@ -2603,16 +2625,40 @@ function renderCompareAnosLista(){
         if(compareAtual) abrirComparacao(compareAtual.domain, compareAtual.metricKey);
       });
     });
+    wrap.querySelectorAll('[data-reimportar-hist]').forEach(el=>{
+      el.addEventListener('click', ()=>{
+        const y = historicoAlunos.find(h=>h.id===el.dataset.reimportarHist);
+        if(y) abrirSeletorImportacao(y.label);
+      });
+    });
   });
   atualizarBotaoManual();
 }
-function importarAnoLetivoExcel(file){
-  const label = prompt('Rótulo deste ano letivo (ex: 25/26):');
-  if(!label) return;
+// Procura na aba "Clientes Efetivos" uma célula com o ano letivo (ex: "2025/2026") e devolve-o no formato "25/26"
+function detectarLabelAnoLetivo(wb){
+  const sheet = findSheet(wb,'efetivo');
+  if(!sheet) return null;
+  const aoa = XLSX.utils.sheet_to_json(sheet, {header:1, defval:''});
+  for(let r=0; r<Math.min(10, aoa.length); r++){
+    for(let c=0; c<aoa[r].length; c++){
+      const m = String(aoa[r][c]||'').trim().match(/^(\d{4})\s*\/\s*(\d{4})$/);
+      if(m) return m[1].slice(2)+'/'+m[2].slice(2);
+    }
+  }
+  return null;
+}
+let pendingImportLabel = null;
+function abrirSeletorImportacao(labelForcado){
+  pendingImportLabel = labelForcado || null;
+  document.getElementById('file-importar-ano-topo').click();
+}
+function importarAnoLetivoExcel(file, labelForcado){
   const reader = new FileReader();
   reader.onload = (evt)=>{
     try{
       const wb = XLSX.read(evt.target.result, {type:'array', cellDates:true});
+      const label = labelForcado || detectarLabelAnoLetivo(wb) || prompt('Não consegui identificar o ano letivo automaticamente. Indica o rótulo (ex: 25/26):');
+      if(!label) return;
       const dados = parseHistoricoAlunosWorkbook(wb);
       const financas = parseHistoricoFinancasSheet(findSheet(wb,'finan'));
       historicoAlunos = historicoAlunos.filter(y=>normStr(y.label)!==normStr(label));
@@ -2625,10 +2671,11 @@ function importarAnoLetivoExcel(file){
   };
   reader.readAsArrayBuffer(file);
 }
-document.getElementById('btn-importar-ano-topo').addEventListener('click', ()=> document.getElementById('file-importar-ano-topo').click());
+document.getElementById('btn-importar-ano-topo').addEventListener('click', ()=> abrirSeletorImportacao(null));
 document.getElementById('file-importar-ano-topo').addEventListener('change', (e)=>{
   const file = e.target.files[0]; if(!file) return;
-  importarAnoLetivoExcel(file);
+  importarAnoLetivoExcel(file, pendingImportLabel);
+  pendingImportLabel = null;
   e.target.value = '';
 });
 function atualizarBotaoManual(){

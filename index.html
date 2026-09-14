@@ -2631,15 +2631,14 @@ function renderCompareCorpoAlunos(def, anos){
     const anosComMensal = anos.filter(a=>a.val && a.val.porMesCategoria);
     if(anosComMensal.length){
       const catsMensal = Array.from(new Set(anosComMensal.flatMap(a=>Object.values(a.val.porMesCategoria).flatMap(o=>Object.keys(o)))));
+      const mesesComDados = MESES_LETIVOS.filter(m=>anosComMensal.some(a=>Object.values(a.val.porMesCategoria[m]||{}).some(v=>v>0)));
       totaisHtml += `<h4 style="margin:16px 0 6px 0; font-size:12.5px; color:var(--muted);">Entradas por mês e por plataforma</h4>`;
-      totaisHtml += anosComMensal.map(a=>{
-        const meses = Object.keys(a.val.porMesCategoria).filter(m=>Object.values(a.val.porMesCategoria[m]).some(v=>v>0));
-        if(!meses.length) return '';
-        return `<div style="font-size:11.5px; font-weight:600; margin:10px 0 4px 0;">${a.label}</div>
-<table class="data"><thead><tr><th>Mês</th>${catsMensal.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>${
-  meses.map(m=>`<tr><td>${m}</td>${catsMensal.map(c=>`<td>${a.val.porMesCategoria[m][c] ?? 0}</td>`).join('')}</tr>`).join('')
-}</tbody></table>`;
-      }).join('');
+      totaisHtml += `<div style="overflow-x:auto;"><table class="data"><thead>
+<tr><th rowspan="2">Mês</th>${anosComMensal.map(a=>`<th colspan="${catsMensal.length}" style="text-align:center; border-left:2px solid var(--border);">${a.label}</th>`).join('')}</tr>
+<tr>${anosComMensal.map(()=>catsMensal.map((c,i)=>`<th style="${i===0?'border-left:2px solid var(--border);':''}">${c}</th>`).join('')).join('')}</tr>
+</thead><tbody>${
+  mesesComDados.map(m=>`<tr><td>${m}</td>${anosComMensal.map(a=>catsMensal.map((c,i)=>`<td style="${i===0?'border-left:2px solid var(--border);':''}">${(a.val.porMesCategoria[m]||{})[c] ?? 0}</td>`).join('')).join('')}</tr>`).join('')
+}</tbody></table></div>`;
       const anosSemMensal = anos.filter(a=>a.val && !a.val.porMesCategoria);
       if(anosSemMensal.length) totaisHtml += `<p style="font-size:11px; color:var(--muted); margin:8px 0 0 0;">Sem detalhe mensal por plataforma para: ${anosSemMensal.map(a=>a.label).join(', ')} (dados inseridos manualmente, só têm total anual).</p>`;
     }

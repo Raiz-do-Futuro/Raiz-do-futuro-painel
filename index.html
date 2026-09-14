@@ -2600,7 +2600,7 @@ function computeFinKpisLiveCurrent(){
   const idx = indiceMesAnteriorAtual(real.months);
   const out = { mes: real.months[idx] };
   out.receitaMes = real.receita.monthly[idx];
-  out.pontoEquilibrioMes = real.gastosFixosTotal.monthly[idx] + real.gastosVariaveisTotal.monthly[idx];
+  out.pontoEquilibrioMes = real.gastosFixosTotal.monthly[idx] + real.gastosVariaveisTotal.monthly[idx] - gastoExcluidoPontoEquilibrio(real, idx);
   const chaveMes = drMonthToKey(real.months[idx], idx);
   const ativosMes = lastAtivosPorMesMap[chaveMes] || null;
   if(ativosMes){
@@ -2621,7 +2621,7 @@ function computeFinKpisLiveCurrent(){
     const custosMesI = real.gastosFixosTotal.monthly[i] + real.gastosVariaveisTotal.monthly[i];
     if(receitaI>0 || custosMesI>0){
       out.receitaMensal[mesNome] = receitaI;
-      out.pontoEquilibrioMensal[mesNome] = custosMesI;
+      out.pontoEquilibrioMensal[mesNome] = custosMesI - gastoExcluidoPontoEquilibrio(real, i);
       out.rendimentoMensal[mesNome] = receitaI - custosMesI;
     }
     if(custosMesI>0) out.fixosPctMensal[mesNome] = 100*real.gastosFixosTotal.monthly[i]/custosMesI;
@@ -4324,6 +4324,13 @@ let lastRetencaoMediaMs = null; // vem do separador Alunos, para LTV
 let lastAtivosPorMesMap = {};   // "AAAA-MM" -> nº alunos ativos, vem do separador Alunos, para ARPU
 const MARKETING_LABELS = ['Google Ads', 'Meta Ads', 'Lendarius', 'Fixando']; // linhas da DR consideradas gasto de marketing/aquisição
 const ORIGENS_MARKETING = ['fixando', 'website', 'redes sociais']; // plataformas de origem contadas no CAC
+const PE_ITENS_EXCLUIDOS = ['Professores', 'IfThenPay']; // linhas da DR que não entram no Ponto de equilíbrio
+function gastoExcluidoPontoEquilibrio(real, i){
+  return PE_ITENS_EXCLUIDOS.reduce((soma,lbl)=>{
+    const item = real.gastosFixosItems.find(x=>x.label===lbl) || real.gastosVariaveisItems.find(x=>x.label===lbl);
+    return soma + (item ? item.monthly[i] : 0);
+  }, 0);
+}
 function alunosMarketingPorMes(){
   const contagem = {};
   const vistos = new Set();
@@ -4708,14 +4715,12 @@ function renderFinKPIs(){
     // Ponto de equilíbrio do mês anterior (para os cálculos abaixo) + média mensal desde o início do ano letivo
     const custoFixoMes = real.gastosFixosTotal.monthly[idx];
     const custoVarMes = real.gastosVariaveisTotal.monthly[idx];
-    const breakEven = custoFixoMes + custoVarMes;
+    const breakEven = custoFixoMes + custoVarMes - gastoExcluidoPontoEquilibrio(real, idx);
     const acimaBreakEven = receitaReal >= breakEven;
     const pontoEquilibrioMensal = {};
-    real.months.forEach((m,i)=>{ const v = real.gastosFixosTotal.monthly[i]+real.gastosVariaveisTotal.monthly[i]; if(real.receita.monthly[i]>0 || v>0) pontoEquilibrioMensal[m]=v; });
+    real.months.forEach((m,i)=>{ const v = real.gastosFixosTotal.monthly[i]+real.gastosVariaveisTotal.monthly[i]-gastoExcluidoPontoEquilibrio(real, i); if(real.receita.monthly[i]>0 || v>0) pontoEquilibrioMensal[m]=v; });
     const breakEvenMedia = mediaSerie(pontoEquilibrioMensal);
-    if(breakEvenMedia!=null){
-      kpis.push(kpiCard('Ponto de equilíbrio (média)', fmtEuro(breakEvenMedia), 'média de '+real.months[0]+' a '+real.months[idx]+' · '+(acimaBreakEven?'✅ receita de '+real.months[idx]+' acima do ponto de equilíbrio desse mês':'⚠️ receita de '+real.months[idx]+' ainda abaixo do ponto de equilíbrio desse mês'), false, 'card-table-dr', 'Receita necessária, em média por mês (desde o início do ano letivo), para cobrir todos os gastos (fixos + variáveis reais) e ficar com Rendimento = 0.', 'financeiro:finPontoEquilibrioMes'));
-    }
+    kpis.push(kpiCard('Ponto de equilíbrio (média)', breakEvenMedia!=null ? fmtEuro(breakEvenMedia) : '—', breakEvenMedia!=null ? ('média de '+real.months[0]+' a '+real.months[idx]+' · '+(acimaBreakEven?'✅ receita de '+real.months[idx]+' acima do ponto de equilíbrio desse mês':'⚠️ receita de '+real.months[idx]+' ainda abaixo do ponto de equilíbrio desse mês')) : 'ainda sem meses com dados suficientes este ano letivo', false, 'card-table-dr', 'Receita necessária, em média por mês (desde o início do ano letivo), para cobrir todos os gastos (fixos + variáveis reais) e ficar com Rendimento = 0.', 'financeiro:finPontoEquilibrioMes'));
 
     // ARPU (cruza com Alunos: nº ativos nesse mês) — mês anterior para os cálculos derivados, média mensal para o cartão
     const chaveMes = drMonthToKey(real.months[idx], idx);
@@ -4735,9 +4740,7 @@ function renderFinKPIs(){
       if(at && r>0) arpuMensal[m] = r/at;
     });
     const arpuMedia = mediaSerie(arpuMensal);
-    if(arpuMedia!=null){
-      kpis.push(kpiCard('Receita média por aluno (ARPU) — média', fmtEuro(arpuMedia), 'média de '+real.months[0]+' a '+real.months[idx], false, 'card-chart-ativos-mes', 'Receita Real de cada mês a dividir pelo nº de alunos ativos nesse mês, em média desde o início do ano letivo.', 'financeiro:finArpu'));
-    }
+    kpis.push(kpiCard('Receita média por aluno (ARPU) — média', arpuMedia!=null ? fmtEuro(arpuMedia) : '—', arpuMedia!=null ? ('média de '+real.months[0]+' a '+real.months[idx]) : 'ainda sem meses com dados suficientes este ano letivo', false, 'card-chart-ativos-mes', 'Receita Real de cada mês a dividir pelo nº de alunos ativos nesse mês, em média desde o início do ano letivo.', 'financeiro:finArpu'));
 
     // CAC do mês anterior (para LTV/payback/RAOS) + média mensal para o cartão
     const marketingMes = MARKETING_LABELS.reduce((soma,lbl)=>{
@@ -4756,9 +4759,7 @@ function renderFinKPIs(){
       if(mkt>0 && n>0) cacMensal[m] = mkt/n;
     });
     const cacMedia = mediaSerie(cacMensal);
-    if(cacMedia!=null){
-      kpis.push(kpiCard('CAC — média', fmtEuro(cacMedia), 'média de '+real.months[0]+' a '+real.months[idx], false, 'card-chart-cac', 'Gasto em marketing (Google Ads, Meta Ads, Lendarius, Fixando) a dividir pelo nº de alunos vindos de Fixando/Website/Redes Sociais, em média por mês, desde o início do ano letivo.', 'financeiro:finCac'));
-    }
+    kpis.push(kpiCard('CAC — média', cacMedia!=null ? fmtEuro(cacMedia) : '—', cacMedia!=null ? ('média de '+real.months[0]+' a '+real.months[idx]) : 'ainda sem meses com dados suficientes este ano letivo', false, 'card-chart-cac', 'Gasto em marketing (Google Ads, Meta Ads, Lendarius, Fixando) a dividir pelo nº de alunos vindos de Fixando/Website/Redes Sociais, em média por mês, desde o início do ano letivo.', 'financeiro:finCac'));
 
     // LTV : CAC
     if(arpu && lastRetencaoMediaMs){
@@ -4802,9 +4803,7 @@ function renderFinKPIs(){
     const fixosPctMensal = {};
     real.months.forEach((m,i)=>{ const soma = real.gastosFixosTotal.monthly[i]+real.gastosVariaveisTotal.monthly[i]; if(soma>0) fixosPctMensal[m] = 100*real.gastosFixosTotal.monthly[i]/soma; });
     const fixosPctMedia = mediaSerie(fixosPctMensal);
-    if(fixosPctMedia!=null){
-      kpis.push(kpiCard('Fixos : Variáveis (média)', Math.round(fixosPctMedia)+'% : '+Math.round(100-fixosPctMedia)+'%', 'média mensal de '+real.months[0]+' a '+real.months[idxAtual], false, 'card-chart-peso-gastos', 'Proporção dos gastos reais que são fixos (não escalam com o negócio) versus variáveis (escalam com o nº de alunos/pedidos), em média por mês desde o início do ano letivo.', 'financeiro:finFixosVariaveis'));
-    }
+    kpis.push(kpiCard('Fixos : Variáveis (média)', fixosPctMedia!=null ? (Math.round(fixosPctMedia)+'% : '+Math.round(100-fixosPctMedia)+'%') : '—', fixosPctMedia!=null ? ('média mensal de '+real.months[0]+' a '+real.months[idxAtual]) : 'ainda sem meses com dados suficientes este ano letivo', false, 'card-chart-peso-gastos', 'Proporção dos gastos reais que são fixos (não escalam com o negócio) versus variáveis (escalam com o nº de alunos/pedidos), em média por mês desde o início do ano letivo.', 'financeiro:finFixosVariaveis'));
   }
   if(cf && cf.Real && cf.Real.caixa.length){
     const caixaAtual = cf.Real.caixa[cf.Real.caixa.length-1];

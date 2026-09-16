@@ -282,6 +282,10 @@ body{
   transition:background .2s ease, color .2s ease, border-color .2s ease, transform .1s ease, box-shadow .2s ease;
 }
 .kpi-compare:hover{background:var(--green); color:#fff; border-color:var(--green); transform:translateY(-1px); box-shadow:0 3px 8px rgba(37,135,48,0.25);}
+.ano-chip .ano-toggle{opacity:0; transition:opacity .15s ease;}
+.ano-chip:hover .ano-toggle{opacity:1;}
+.ano-chip.ano-oculto .ano-toggle{opacity:.55;}
+.ano-chip.ano-oculto:hover .ano-toggle{opacity:1;}
 input[type=file]{display:none;}
 
 .notice{
@@ -1525,7 +1529,15 @@ table.data tr.row-media td:last-child{border-right:1.5px solid var(--accent); bo
       </div>
     </div>
 
-    <div id="compare-corpo"></div>
+    <div id="compare-janela-wrap" style="margin-bottom:14px; display:none;">
+      <div id="compare-janela-toggle" style="position:relative; display:inline-flex; background:var(--sage-soft); border:1.5px solid var(--border); border-radius:999px; padding:3px;">
+        <div id="compare-janela-slider" style="position:absolute; top:3px; bottom:3px; left:3px; width:calc(50% - 3px); background:var(--accent); border-radius:999px; transition:transform .28s cubic-bezier(.4,0,.2,1); z-index:0;"></div>
+        <button type="button" data-janela="completo" class="compare-janela-btn" style="position:relative; z-index:1; border:none; background:none; cursor:pointer; padding:7px 16px; font-size:12px; font-weight:600; font-family:'Bahnschrift','Poppins',sans-serif; transition:color .2s ease; border-radius:999px;">Ano completo</button>
+        <button type="button" data-janela="letivo" class="compare-janela-btn" style="position:relative; z-index:1; border:none; background:none; cursor:pointer; padding:7px 16px; font-size:12px; font-weight:600; font-family:'Bahnschrift','Poppins',sans-serif; transition:color .2s ease; border-radius:999px;">Outubro → Maio</button>
+      </div>
+    </div>
+
+    <div id="compare-corpo" style="transition:opacity .18s ease;"></div>
   </div>
 </div>
 
@@ -1583,7 +1595,8 @@ async function loadState(){
       crm = {
         efetivos: (parsed.efetivos||[]).map(reviveDates),
         pendentes: (parsed.pendentes||[]).map(reviveDates),
-        aes: (parsed.aes||[]).map(reviveDates)
+        aes: (parsed.aes||[]).map(reviveDates),
+        pagamentos: (parsed.pagamentos||[]).map(reviveDates)
       };
       hasStoredAlunos = (crm.efetivos.length + crm.pendentes.length + crm.aes.length) > 0;
     }
@@ -1650,7 +1663,30 @@ async function loadState(){
       return y;
     });
   }catch(e){ /* ainda sem anos históricos */ }
+  await verificarRolloverAnoLetivo();
   renderCompareAnosLista();
+}
+// Deteta a passagem para um novo ano letivo (1 de setembro) e arquiva automaticamente os dados "ao vivo"
+// do ano que acabou de terminar como um ano histórico de comparação — sem tocar nos dados ao vivo atuais.
+async function verificarRolloverAnoLetivo(){
+  const labelAtual = anoLetivoLabelAtual();
+  let ultimoVisto = null;
+  try{ const r = await window.storage.get('ultimo-ano-letivo-visto', false); ultimoVisto = r && r.value; }catch(e){ /* primeira vez */ }
+  if(ultimoVisto && ultimoVisto!==labelAtual && crm.efetivos && crm.efetivos.length){
+    const jaExiste = historicoAlunos.some(y=>normStr(y.label)===normStr(ultimoVisto));
+    if(!jaExiste){
+      const dados = {
+        efetivos: crm.efetivos.filter(a=>!a.dataFim).map(a=>({...a})),
+        exClientes: crm.efetivos.filter(a=>a.dataFim).map(a=>({...a})),
+        pagamentos: crm.pagamentos || [],
+        mesAlEfetivos: null
+      };
+      historicoAlunos.push({ id:'hist_'+Date.now(), label:normStr(ultimoVisto), source:'excel', dados, financas:null });
+      saveHistoricoAlunos();
+      alert('Começou o ano letivo '+labelAtual+'! Guardei automaticamente os dados de '+ultimoVisto+' na comparação com anos letivos anteriores — não precisas de fazer nada. Quando tiveres o Excel de '+labelAtual+', importa-o como o ficheiro normal de "Alunos" para continuares a usar o painel com os dados do novo ano.');
+    }
+  }
+  try{ await window.storage.set('ultimo-ano-letivo-visto', labelAtual, false); }catch(e){ /* ignora falha ao gravar */ }
 }
 async function saveAlunos(){
   try{ await window.storage.set('alunos-data', JSON.stringify(crm), false); }catch(e){ console.error('storage error', e); }
@@ -2592,8 +2628,6 @@ const MANUAL_CAMPOS = {
   alunosEfetivos: [{id:'total', label:'Alunos efetivos (total)'}],
   retencaoMedia: [{id:'dias', label:'Retenção média (dias)'}],
   desistenciasMeioAno: [{id:'count', label:'Nº de desistências a meio do ano'}, {id:'saidos', label:'Total de alunos que saíram nesse ano'}],
-  origemAlunos: [{id:'fixando', label:'Fixando'}, {id:'website', label:'Website'}, {id:'redes', label:'Redes Sociais'}, {id:'outras', label:'Outras plataformas'}],
-  aulasPorMes: [{id:'abaixo', label:'Abaixo (<4)'}, {id:'dentro', label:'Dentro (4-9)'}, {id:'acima', label:'Acima (>9)'}],
   aulasPorProfessor: [{id:'total', label:'Nº de aulas dadas (total empresa)'}],
   efetivosPerdidos: [{id:'total', label:'Efetivos perdidos (total)'}],
   aulasPorAluno: [{id:'total', label:'Nº de aulas / aluno (média)', step:'0.1'}],
@@ -2601,8 +2635,8 @@ const MANUAL_CAMPOS = {
   finArpu: []
 };
 const MANUAL_MENSAL_SUPORTADO = {
-  alunosEfetivos:true, retencaoMedia:false, desistenciasMeioAno:true, origemAlunos:true,
-  aulasPorMes:true, aulasPorProfessor:true, efetivosPerdidos:true, aulasPorAluno:true,
+  alunosEfetivos:true, retencaoMedia:false, desistenciasMeioAno:true,
+  aulasPorProfessor:true, efetivosPerdidos:true, aulasPorAluno:true,
   finReceitaMes:true, finArpu:true
 };
 const MANUAL_MENSAL_STEP = { aulasPorAluno:'0.1', finReceitaMes:'0.01', finArpu:'0.01' };
@@ -2612,8 +2646,6 @@ function manualValoresParaMetrica(metricKey, v, mensal){
     case 'alunosEfetivos': return { mensal:m, total: v.total };
     case 'retencaoMedia': return { total: v.dias!=null ? v.dias*86400000 : null };
     case 'desistenciasMeioAno': return { mensal:m, total: { count: v.count, pct: v.saidos ? 100*v.count/v.saidos : null } };
-    case 'origemAlunos': return { mensal:m, total: { 'Fixando': v.fixando||0, 'Website': v.website||0, 'Redes Sociais': v.redes||0, 'Outras': v.outras||0 } };
-    case 'aulasPorMes': return { mensal:m, total: { 'Abaixo (<4)': v.abaixo||0, 'Dentro (4-9)': v.dentro||0, 'Acima (>9)': v.acima||0 } };
     case 'aulasPorProfessor': case 'efetivosPerdidos': case 'aulasPorAluno': return { mensal:m, total: v.total };
     case 'finReceitaMes': return { receitaMensal: m };
     case 'finArpu': return { arpuMensal: m };
@@ -2719,9 +2751,9 @@ function renderCompareAnosLista(){
   const wrapTopo = document.getElementById('anos-letivos-lista-topo');
   if(wrapTopo){
     const chipsTopo = [`<span style="background:var(--accent); color:#fff; padding:5px 11px; border-radius:999px; font-size:12px; font-weight:600;">${anoLetivoLabelAtual()} (atual)</span>`]
-      .concat(historicoOrdenado.map(y=>`<span style="background:var(--card); border:1.5px solid var(--border); padding:5px 11px; border-radius:999px; font-size:12px; ${y.oculto?'opacity:.5;':''}">${
+      .concat(historicoOrdenado.map(y=>`<span class="ano-chip${y.oculto?' ano-oculto':''}" style="background:var(--card); border:1.5px solid var(--border); padding:5px 11px; border-radius:999px; font-size:12px; ${y.oculto?'opacity:.5;':''}">${
         y.source==='manual' ? `${y.label} ✍️` : `<span data-reimportar-hist="${y.id}" title="Clica para importar/atualizar o Excel deste ano" style="cursor:pointer; text-decoration:underline dotted;">${y.label} 📄</span>`
-      }${y.oculto?' <span style="font-size:10px; color:var(--muted);">(oculto)</span>':''} <button data-toggle-hist="${y.id}" style="background:none; border:none; color:var(--muted); cursor:pointer; font-size:12px; margin-left:4px;" title="${y.oculto?'Mostrar na comparação':'Ocultar temporariamente da comparação'}">${y.oculto?'👁️':'🙈'}</button></span>`));
+      }${y.oculto?' <span style="font-size:10px; color:var(--muted);">(oculto)</span>':''} <button data-toggle-hist="${y.id}" class="ano-toggle" style="background:none; border:none; color:var(--muted); cursor:pointer; font-size:12px; margin-left:4px;" title="${y.oculto?'Mostrar na comparação':'Ocultar temporariamente da comparação'}">👁️</button></span>`));
     wrapTopo.innerHTML = chipsTopo.join('');
     wrapTopo.querySelectorAll('[data-reimportar-hist]').forEach(el=>{
       el.addEventListener('click', ()=>{
@@ -2805,8 +2837,68 @@ function atualizarBotaoManual(){
   const jaTem = entry && entry.manual && entry.manual[compareAtual.metricKey];
   btn.style.display = jaTem ? 'none' : 'inline-block';
 }
+let compareJanela = 'completo';
+const JANELA_LETIVO_MESES = ['Outubro','Novembro','Dezembro','Janeiro','Fevereiro','Março','Abril','Maio'];
+function mesesDaJanela(){ return compareJanela==='letivo' ? JANELA_LETIVO_MESES : MESES_LETIVOS; }
+function filtrarMensalPelaJanela(mensalObj){
+  if(!mensalObj || compareJanela==='completo') return mensalObj;
+  const out = {};
+  JANELA_LETIVO_MESES.forEach(m=>{ if(mensalObj[m]!=null) out[m]=mensalObj[m]; });
+  return out;
+}
+function atualizarJanelaToggleUI(){
+  const slider = document.getElementById('compare-janela-slider');
+  if(!slider) return;
+  slider.style.transform = compareJanela==='letivo' ? 'translateX(100%)' : 'translateX(0)';
+  document.querySelectorAll('.compare-janela-btn').forEach(b=>{ b.style.color = b.dataset.janela===compareJanela ? '#fff' : 'var(--ink)'; });
+}
+document.getElementById('compare-janela-toggle').addEventListener('click', (e)=>{
+  const btn = e.target.closest('[data-janela]');
+  if(!btn || btn.dataset.janela===compareJanela) return;
+  compareJanela = btn.dataset.janela;
+  atualizarJanelaToggleUI();
+  if(!compareAtual) return;
+  const corpo = document.getElementById('compare-corpo');
+  corpo.style.opacity = '0';
+  setTimeout(()=>{
+    if(compareAtual.domain==='alunos') abrirComparacaoAlunos(compareAtual.metricKey);
+    else abrirComparacaoFinanceiro(compareAtual.metricKey);
+    corpo.style.opacity = '1';
+  }, 140);
+});
+// "Total" de uma métrica de Alunos, ajustado à janela de meses escolhida (soma/último-mês/média consoante o tipo de estatística)
+function totalFiltradoAlunos(def, metricKey, val){
+  if(!val) return null;
+  if(compareJanela==='completo' || !val.mensal) return val.total;
+  const meses = JANELA_LETIVO_MESES;
+  if(def.tipo==='numero'){
+    if(metricKey==='alunosEfetivos'){
+      for(let i=meses.length-1;i>=0;i--){ if(val.mensal[meses[i]]!=null) return val.mensal[meses[i]]; }
+      return val.total;
+    }
+    if(metricKey==='aulasPorAluno'){
+      const vs = meses.map(m=>val.mensal[m]).filter(v=>v!=null);
+      return vs.length? +(vs.reduce((a,b)=>a+b,0)/vs.length).toFixed(2) : null;
+    }
+    return meses.reduce((s,m)=>s+(val.mensal[m]||0),0);
+  }
+  if(def.tipo==='contagem-pct'){
+    const count = meses.reduce((s,m)=>s+(val.mensal[m]||0),0);
+    const denom = (val.total && val.total.pct!=null && val.total.pct>0) ? val.total.count/(val.total.pct/100) : null;
+    return { count, pct: denom!=null ? 100*count/denom : (val.total?val.total.pct:null) };
+  }
+  if(def.tipo==='categorias'){
+    if(!val.porMesCategoria) return val.total;
+    const total = {};
+    meses.forEach(m=>{ Object.entries(val.porMesCategoria[m]||{}).forEach(([k,v])=>{ total[k]=(total[k]||0)+v; }); });
+    return total;
+  }
+  return val.total;
+}
 function abrirComparacao(domain, metricKey){
   compareAtual = { domain, metricKey };
+  compareJanela = 'completo';
+  atualizarJanelaToggleUI();
   document.getElementById('compare-modal').style.display = 'flex';
   document.getElementById('compare-manual-form').style.display = 'none';
   renderCompareAnosLista();
@@ -2826,23 +2918,24 @@ function abrirComparacaoAlunos(metricKey){
     anos.push({ label:y.label, val });
   });
   anos.sort((a,b)=>(anoInicioFromLabel(b.label)||0)-(anoInicioFromLabel(a.label)||0));
-  document.getElementById('compare-corpo').innerHTML = renderCompareCorpoAlunos(def, anos);
-  desenharCompareChartAlunos(def, anos);
+  document.getElementById('compare-janela-wrap').style.display = def.tipo==='duracao' ? 'none' : 'block';
+  document.getElementById('compare-corpo').innerHTML = renderCompareCorpoAlunos(def, metricKey, anos);
+  desenharCompareChartAlunos(def, metricKey, anos);
 }
-function renderCompareCorpoAlunos(def, anos){
+function renderCompareCorpoAlunos(def, metricKey, anos){
   let totaisHtml;
   if(def.tipo==='duracao'){
     totaisHtml = `<table class="data"><thead><tr><th>Ano</th><th>Retenção média</th></tr></thead><tbody>${anos.map(a=>`<tr><td>${a.label}</td><td>${a.val? fmtDuration(a.val.total) : '—'}</td></tr>`).join('')}</tbody></table>`;
   } else if(def.tipo==='contagem-pct'){
-    totaisHtml = `<table class="data"><thead><tr><th>Ano</th><th>Nº desistências</th><th>%</th></tr></thead><tbody>${anos.map(a=>`<tr><td>${a.label}</td><td>${a.val? (a.val.total.count ?? '—') : '—'}</td><td>${a.val && a.val.total.pct!=null? a.val.total.pct.toFixed(0)+'%':'—'}</td></tr>`).join('')}</tbody></table>`;
+    totaisHtml = `<table class="data"><thead><tr><th>Ano</th><th>Nº desistências</th><th>%</th></tr></thead><tbody>${anos.map(a=>{ const t = totalFiltradoAlunos(def, metricKey, a.val); return `<tr><td>${a.label}</td><td>${a.val? (t.count ?? '—') : '—'}</td><td>${a.val && t.pct!=null? t.pct.toFixed(0)+'%':'—'}</td></tr>`; }).join('')}</tbody></table>`;
   } else if(def.tipo==='categorias'){
     const cats = Array.from(new Set(anos.filter(a=>a.val).flatMap(a=>Object.keys(a.val.total||{}))));
-    totaisHtml = `<table class="data"><thead><tr><th>Ano</th>${cats.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>${anos.map(a=>`<tr><td>${a.label}</td>${cats.map(c=>`<td>${a.val? ((a.val.total||{})[c] ?? 0) : '—'}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+    totaisHtml = `<table class="data"><thead><tr><th>Ano</th>${cats.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>${anos.map(a=>{ const t = a.val? totalFiltradoAlunos(def, metricKey, a.val) : {}; return `<tr><td>${a.label}</td>${cats.map(c=>`<td>${a.val? (t[c] ?? 0) : '—'}</td>`).join('')}</tr>`; }).join('')}</tbody></table>`;
     totaisHtml += `<div class="chart-card" style="height:240px; margin:14px 0; padding:10px;"><canvas id="compare-chart-cats"></canvas></div>`;
     const anosComMensal = anos.filter(a=>a.val && a.val.porMesCategoria);
     if(anosComMensal.length){
       const catsMensal = Array.from(new Set(anosComMensal.flatMap(a=>Object.values(a.val.porMesCategoria).flatMap(o=>Object.keys(o)))));
-      const mesesComDados = MESES_LETIVOS.filter(m=>anosComMensal.some(a=>Object.values(a.val.porMesCategoria[m]||{}).some(v=>v>0)));
+      const mesesComDados = mesesDaJanela().filter(m=>anosComMensal.some(a=>Object.values(a.val.porMesCategoria[m]||{}).some(v=>v>0)));
       totaisHtml += `<h4 style="margin:16px 0 6px 0; font-size:12.5px; color:var(--muted);">Entradas por mês e por plataforma</h4>`;
       totaisHtml += `<div style="overflow-x:auto;"><table class="data"><thead>
 <tr><th rowspan="2">Mês</th>${catsMensal.map(c=>`<th colspan="${anosComMensal.length}" style="text-align:center; border-left:2px solid var(--border);">${c}</th>`).join('')}</tr>
@@ -2854,23 +2947,24 @@ function renderCompareCorpoAlunos(def, anos){
       if(anosSemMensal.length) totaisHtml += `<p style="font-size:11px; color:var(--muted); margin:8px 0 0 0;">Sem detalhe mensal por plataforma para: ${anosSemMensal.map(a=>a.label).join(', ')} (dados inseridos manualmente, só têm total anual).</p>`;
     }
   } else {
-    totaisHtml = `<table class="data"><thead><tr><th>Ano</th><th>Total</th></tr></thead><tbody>${anos.map(a=>`<tr><td>${a.label}</td><td>${a.val && a.val.total!=null ? a.val.total : '—'}</td></tr>`).join('')}</tbody></table>`;
+    totaisHtml = `<table class="data"><thead><tr><th>Ano</th><th>Total</th></tr></thead><tbody>${anos.map(a=>{ const t = totalFiltradoAlunos(def, metricKey, a.val); return `<tr><td>${a.label}</td><td>${a.val && t!=null ? t : '—'}</td></tr>`; }).join('')}</tbody></table>`;
   }
-  const chartHtml = def.tipo!=='duracao' ? `<div class="chart-card" style="height:280px; margin-bottom:14px; padding:10px;"><canvas id="compare-chart"></canvas></div><div style="font-size:11px; color:var(--muted); margin:-8px 0 12px 0;">Linha por mês do ano letivo (Setembro → Agosto) — nos anos manuais só aparecem os meses que preencheste.</div>` : '';
+  const chartHtml = def.tipo!=='duracao' ? `<div class="chart-card" style="height:280px; margin-bottom:14px; padding:10px;"><canvas id="compare-chart"></canvas></div><div style="font-size:11px; color:var(--muted); margin:-8px 0 12px 0;">Linha por mês ${compareJanela==='letivo'?'(Outubro → Maio)':'do ano letivo (Setembro → Agosto)'} — nos anos manuais só aparecem os meses que preencheste.</div>` : '';
   return chartHtml + totaisHtml;
 }
-function desenharCompareChartAlunos(def, anos){
+function desenharCompareChartAlunos(def, metricKey, anos){
   if(compareChartInstance){ compareChartInstance.destroy(); compareChartInstance=null; }
   if(compareChartCatsInstance){ compareChartCatsInstance.destroy(); compareChartCatsInstance=null; }
   if(compareChartFinInstance){ compareChartFinInstance.destroy(); compareChartFinInstance=null; }
   if(def.tipo==='duracao') return;
   const cores = ['#33587F','#258730','#8B4A3D','#CBE170','#9FC7AA'];
+  const meses = mesesDaJanela();
   const ctx = document.getElementById('compare-chart');
   if(ctx){
     compareChartInstance = new Chart(ctx, {
       type:'line',
-      data:{ labels: MESES_LETIVOS.map(m=>m.slice(0,3)), datasets: anos.map((a,i)=>({
-        label:a.label, data: MESES_LETIVOS.map(m=> (a.val && a.val.mensal && a.val.mensal[m]!==undefined) ? a.val.mensal[m] : null),
+      data:{ labels: meses.map(m=>m.slice(0,3)), datasets: anos.map((a,i)=>({
+        label:a.label, data: meses.map(m=> (a.val && a.val.mensal && a.val.mensal[m]!==undefined) ? a.val.mensal[m] : null),
         borderColor:cores[i%cores.length], backgroundColor:cores[i%cores.length], tension:.25, spanGaps:true
       })) },
       options:{ responsive:true, maintainAspectRatio:false,
@@ -2885,11 +2979,11 @@ function desenharCompareChartAlunos(def, anos){
       compareChartCatsInstance = new Chart(ctxCats, {
         type:'bar',
         data:{ labels: cats, datasets: anos.map((a,i)=>({
-          label:a.label, data: cats.map(c=> a.val ? ((a.val.total||{})[c] ?? 0) : null),
+          label:a.label, data: cats.map(c=> a.val ? (totalFiltradoAlunos(def, metricKey, a.val)[c] ?? 0) : null),
           backgroundColor:cores[i%cores.length]
         })) },
         options:{ responsive:true, maintainAspectRatio:false,
-          plugins:{legend:{display:true, position:'top', labels:{boxWidth:10, font:{family:'Bahnschrift', size:11}}}, title:{display:true, text:'Distribuição por categoria (total do ano)', font:{size:11.5}}},
+          plugins:{legend:{display:true, position:'top', labels:{boxWidth:10, font:{family:'Bahnschrift', size:11}}}, title:{display:true, text:'Distribuição por categoria ('+(compareJanela==='letivo'?'Outubro → Maio':'total do ano')+')', font:{size:11.5}}},
           scales:{x:{grid:{display:false}}, y:{grid:{color:'rgba(37,135,48,0.06)'}, beginAtZero:true}} }
       });
     }
@@ -2915,13 +3009,26 @@ function abrirComparacaoFinanceiro(metricKey){
     });
   }
   anos.sort((a,b)=>(anoInicioFromLabel(b.label)||0)-(anoInicioFromLabel(a.label)||0));
+  document.getElementById('compare-janela-wrap').style.display = def.mensalField ? 'block' : 'none';
+  const valorFinanceiroFiltrado = (val)=>{
+    if(!val) return null;
+    if(def.mediaNoTotal) return mediaSerie(filtrarMensalPelaJanela(val[def.mensalField]));
+    if(compareJanela==='completo' || !def.mensalField) return val[def.field];
+    const vs = Object.values(filtrarMensalPelaJanela(val[def.mensalField])||{});
+    return vs.length ? vs.reduce((a,b)=>a+b,0) : null;
+  };
   let aviso = '';
   if(def.soLive) aviso = '<p style="font-size:12.5px; color:var(--muted); margin:0 0 10px 0;">Esta métrica depende do cenário "Objetivo" do Excel financeiro, que os anos anteriores (aba "Finanças" do registo de alunos) não têm — só é possível ver o ano corrente.</p>';
-  const semDados = anos.filter(a=>a.label!==anoLetivoLabelAtual() && (!a.val || (def.mediaNoTotal ? mediaSerie(a.val[def.mensalField])==null : a.val[def.field]==null)));
+  const semDados = anos.filter(a=>a.label!==anoLetivoLabelAtual() && (!a.val || valorFinanceiroFiltrado(a.val)==null));
   if(!def.soLive && semDados.length) aviso += `<p style="font-size:12px; color:var(--muted); margin:0 0 10px 0;">Sem dados suficientes para: ${semDados.map(a=>a.label).join(', ')}.</p>`;
+  const usarSomaJanela = !def.mediaNoTotal && def.mensalField && compareJanela==='letivo';
   const tabela = def.mediaNoTotal
-    ? `<table class="data"><thead><tr><th>Ano</th><th>${def.label} (média anual)</th></tr></thead><tbody>${
-        anos.map(a=>{ const media = a.val && a.val[def.mensalField] ? mediaSerie(a.val[def.mensalField]) : null; return `<tr><td>${a.label}</td><td>${media!=null ? (def.fmtMedia||def.fmt)(media) : '—'}</td></tr>`; }).join('')
+    ? `<table class="data"><thead><tr><th>Ano</th><th>${def.label} (média ${compareJanela==='letivo'?'Out. → Mai.':'anual'})</th></tr></thead><tbody>${
+        anos.map(a=>{ const v = valorFinanceiroFiltrado(a.val); return `<tr><td>${a.label}</td><td>${v!=null ? (def.fmtMedia||def.fmt)(v) : '—'}</td></tr>`; }).join('')
+      }</tbody></table>`
+    : usarSomaJanela
+    ? `<table class="data"><thead><tr><th>Ano</th><th>${def.label} (Out. → Mai.)</th></tr></thead><tbody>${
+        anos.map(a=>{ const v = valorFinanceiroFiltrado(a.val); return `<tr><td>${a.label}</td><td>${v!=null ? def.fmt(v) : '—'}</td></tr>`; }).join('')
       }</tbody></table>`
     : `<table class="data"><thead><tr><th>Ano</th><th>${def.label}</th><th>Mês</th></tr></thead><tbody>${
         anos.map(a=>`<tr><td>${a.label}</td><td>${(a.val && a.val[def.field]!=null) ? def.fmt(a.val[def.field]) : '—'}</td><td>${a.val ? a.val.mes : '—'}</td></tr>`).join('')
@@ -2932,7 +3039,7 @@ function abrirComparacaoFinanceiro(metricKey){
     const fmtMensal = def.fmtMensal || def.fmt;
     anosComMensal = anos.filter(a=>a.val && a.val[def.mensalField] && Object.keys(a.val[def.mensalField]).length);
     if(anosComMensal.length){
-      const mesesComDados = MESES_LETIVOS.filter(m=>anosComMensal.some(a=>a.val[def.mensalField][m]!=null));
+      const mesesComDados = mesesDaJanela().filter(m=>anosComMensal.some(a=>a.val[def.mensalField][m]!=null));
       mensalHtml = `<h4 style="margin:16px 0 6px 0; font-size:12.5px; color:var(--muted);">${def.label} por mês</h4>
 <div class="chart-card" style="height:260px; margin-bottom:14px; padding:10px;"><canvas id="compare-chart-fin"></canvas></div>
 <div style="overflow-x:auto;"><table class="data"><thead><tr><th>Mês</th>${anosComMensal.map(a=>`<th>${a.label}</th>`).join('')}</tr></thead><tbody>${
@@ -2945,10 +3052,11 @@ function abrirComparacaoFinanceiro(metricKey){
     const ctxFin = document.getElementById('compare-chart-fin');
     const cores = ['#33587F','#258730','#8B4A3D','#CBE170','#9FC7AA'];
     if(ctxFin){
+      const meses = mesesDaJanela();
       compareChartFinInstance = new Chart(ctxFin, {
         type:'line',
-        data:{ labels: MESES_LETIVOS.map(m=>m.slice(0,3)), datasets: anosComMensal.map((a,i)=>({
-          label:a.label, data: MESES_LETIVOS.map(m=> a.val[def.mensalField][m]!=null ? a.val[def.mensalField][m] : null),
+        data:{ labels: meses.map(m=>m.slice(0,3)), datasets: anosComMensal.map((a,i)=>({
+          label:a.label, data: meses.map(m=> a.val[def.mensalField][m]!=null ? a.val[def.mensalField][m] : null),
           borderColor:cores[i%cores.length], backgroundColor:cores[i%cores.length], tension:.25, spanGaps:true
         })) },
         options:{ responsive:true, maintainAspectRatio:false,

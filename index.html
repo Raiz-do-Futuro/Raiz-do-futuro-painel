@@ -3077,6 +3077,7 @@ function abrirComparacaoFinanceiro(metricKey){
 }
 document.getElementById('btn-fechar-compare').addEventListener('click', ()=>{
   document.getElementById('compare-modal').style.display = 'none';
+  compareAtual = null;
   if(compareChartInstance){ compareChartInstance.destroy(); compareChartInstance=null; }
   if(compareChartCatsInstance){ compareChartCatsInstance.destroy(); compareChartCatsInstance=null; }
   if(compareChartFinInstance){ compareChartFinInstance.destroy(); compareChartFinInstance=null; }

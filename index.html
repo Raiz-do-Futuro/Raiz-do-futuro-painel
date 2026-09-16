@@ -282,10 +282,8 @@ body{
   transition:background .2s ease, color .2s ease, border-color .2s ease, transform .1s ease, box-shadow .2s ease;
 }
 .kpi-compare:hover{background:var(--green); color:#fff; border-color:var(--green); transform:translateY(-1px); box-shadow:0 3px 8px rgba(37,135,48,0.25);}
-.ano-chip .ano-toggle{opacity:0; transition:opacity .15s ease;}
-.ano-chip:hover .ano-toggle{opacity:1;}
-.ano-chip.ano-oculto .ano-toggle{opacity:.55;}
-.ano-chip.ano-oculto:hover .ano-toggle{opacity:1;}
+.ano-toggle{display:inline-flex; align-items:center; justify-content:center; vertical-align:middle; color:var(--muted); transition:color .15s ease;}
+.ano-toggle:hover{color:var(--ink);}
 input[type=file]{display:none;}
 
 .notice{
@@ -2756,13 +2754,15 @@ let compareAtual = null;
 function renderCompareAnosLista(){
   const historicoOrdenado = [...historicoAlunos].sort((a,b)=>(anoInicioFromLabel(b.label)||0)-(anoInicioFromLabel(a.label)||0));
 
+  const ICON_OLHO = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>';
+  const ICON_OLHO_RISCADO = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/><line x1="2" y1="2" x2="22" y2="22"/></svg>';
   // Topo da página — única zona de gestão: reimportar/atualizar e ocultar/mostrar. Nunca apagar dados.
   const wrapTopo = document.getElementById('anos-letivos-lista-topo');
   if(wrapTopo){
     const chipsTopo = [`<span style="background:var(--accent); color:#fff; padding:5px 11px; border-radius:999px; font-size:12px; font-weight:600;">${anoLetivoLabelAtual()} (atual)</span>`]
       .concat(historicoOrdenado.map(y=>`<span class="ano-chip${y.oculto?' ano-oculto':''}" style="background:var(--card); border:1.5px solid var(--border); padding:5px 11px; border-radius:999px; font-size:12px; ${y.oculto?'opacity:.5;':''}">${
         y.source==='manual' ? `${y.label} ✍️` : `<span data-reimportar-hist="${y.id}" title="Clica para importar/atualizar o Excel deste ano" style="cursor:pointer; text-decoration:underline dotted;">${y.label} 📄</span>`
-      }${y.oculto?' <span style="font-size:10px; color:var(--muted);">(oculto)</span>':''} <button data-toggle-hist="${y.id}" class="ano-toggle" style="background:none; border:none; color:var(--muted); cursor:pointer; font-size:12px; margin-left:4px;" title="${y.oculto?'Mostrar na comparação':'Ocultar temporariamente da comparação'}">👁️</button></span>`));
+      }${y.oculto?' <span style="font-size:10px; color:var(--muted);">(oculto)</span>':''} <button data-toggle-hist="${y.id}" class="ano-toggle" style="background:none; border:none; padding:0; cursor:pointer; margin-left:4px;" title="${y.oculto?'Mostrar na comparação':'Ocultar temporariamente da comparação'}">${y.oculto?ICON_OLHO_RISCADO:ICON_OLHO}</button></span>`));
     wrapTopo.innerHTML = chipsTopo.join('');
     wrapTopo.querySelectorAll('[data-reimportar-hist]').forEach(el=>{
       el.addEventListener('click', ()=>{

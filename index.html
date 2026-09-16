@@ -792,7 +792,7 @@ table.data tr.row-media td:last-child{border-right:1.5px solid var(--accent); bo
       <div id="anos-letivos-lista-topo" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
       <button class="btn secondary" id="btn-importar-ano-topo" style="padding:6px 12px; font-size:11.5px;">↑ Importar Excel de um ano letivo anterior</button>
       <input type="file" id="file-importar-ano-topo" accept=".xlsx,.xls" style="display:none;">
-      <span style="font-size:11px; color:var(--muted);">Atualiza as estatísticas de comparação em Alunos, Professores e Financeiro. O ano letivo é identificado automaticamente pelo Excel — não precisas de o escrever. Clica no rótulo de um ano já importado (ex: "25/26 📄") para atualizares o Excel desse ano.</span>
+      <span style="font-size:11px; color:var(--muted);">Atualiza as estatísticas de comparação em Alunos, Professores e Financeiro. O ano letivo é identificado automaticamente pelo Excel — não precisas de o escrever. Clica no rótulo de um ano já importado (ex: "25/26 📄") para atualizares o Excel desse ano; usa 🙈/👁️ para o ocultar/mostrar temporariamente na comparação — os dados nunca são apagados por aqui.</span>
     </div>
 
     <!-- ===================== TAB 1: ALUNOS ===================== -->
@@ -1511,7 +1511,8 @@ table.data tr.row-media td:last-child{border-right:1.5px solid var(--accent); bo
     <div style="border:1.5px solid var(--border); border-radius:10px; padding:12px; margin-bottom:18px; background:var(--sage-soft);">
       <div style="font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; margin-bottom:8px;">Anos disponíveis para comparar</div>
       <div id="compare-anos-lista" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px;"></div>
-      <div style="font-size:11px; color:var(--muted); margin-bottom:8px;">Para importar o Excel de um ano letivo anterior, usa o botão "Importar Excel de um ano letivo anterior" no topo da página — fica logo disponível em todas as estatísticas.</div>
+      <div id="compare-anos-ocultos-nota" style="font-size:11px; color:var(--muted); margin-bottom:4px;"></div>
+      <div style="font-size:11px; color:var(--muted); margin-bottom:8px;">Para importar, atualizar ou ocultar o Excel de um ano letivo anterior, usa a barra no topo da página — fica logo disponível em todas as estatísticas.</div>
       <button class="btn secondary" id="btn-compare-manual-abrir" style="padding:8px 14px; font-size:12px;">+ Adicionar dados de 24/25 (uma só vez por estatística)</button>
     </div>
 
@@ -2713,29 +2714,44 @@ let compareChartFinInstance = null;
 let compareAtual = null;
 function renderCompareAnosLista(){
   const historicoOrdenado = [...historicoAlunos].sort((a,b)=>(anoInicioFromLabel(b.label)||0)-(anoInicioFromLabel(a.label)||0));
-  const chips = [`<span style="background:var(--accent); color:#fff; padding:5px 11px; border-radius:999px; font-size:12px; font-weight:600;">${anoLetivoLabelAtual()} (atual)</span>`]
-    .concat(historicoOrdenado.map(y=>`<span style="background:var(--card); border:1.5px solid var(--border); padding:5px 11px; border-radius:999px; font-size:12px;">${
-      y.source==='manual' ? `${y.label} ✍️` : `<span data-reimportar-hist="${y.id}" title="Clica para importar/atualizar o Excel deste ano" style="cursor:pointer; text-decoration:underline dotted;">${y.label} 📄</span>`
-    } <button data-del-hist="${y.id}" style="background:none; border:none; color:var(--rust); cursor:pointer; font-size:12px; margin-left:4px;" title="Remover">✕</button></span>`));
-  [document.getElementById('compare-anos-lista'), document.getElementById('anos-letivos-lista-topo')].forEach(wrap=>{
-    if(!wrap) return;
-    wrap.innerHTML = chips.join('');
-    wrap.querySelectorAll('[data-del-hist]').forEach(btn=>{
-      btn.addEventListener('click', ()=>{
-        if(!confirm('Remover este ano da comparação?')) return;
-        historicoAlunos = historicoAlunos.filter(y=>y.id!==btn.dataset.delHist);
-        saveHistoricoAlunos();
-        renderCompareAnosLista();
-        if(compareAtual) abrirComparacao(compareAtual.domain, compareAtual.metricKey);
-      });
-    });
-    wrap.querySelectorAll('[data-reimportar-hist]').forEach(el=>{
+
+  // Topo da página — única zona de gestão: reimportar/atualizar e ocultar/mostrar. Nunca apagar dados.
+  const wrapTopo = document.getElementById('anos-letivos-lista-topo');
+  if(wrapTopo){
+    const chipsTopo = [`<span style="background:var(--accent); color:#fff; padding:5px 11px; border-radius:999px; font-size:12px; font-weight:600;">${anoLetivoLabelAtual()} (atual)</span>`]
+      .concat(historicoOrdenado.map(y=>`<span style="background:var(--card); border:1.5px solid var(--border); padding:5px 11px; border-radius:999px; font-size:12px; ${y.oculto?'opacity:.5;':''}">${
+        y.source==='manual' ? `${y.label} ✍️` : `<span data-reimportar-hist="${y.id}" title="Clica para importar/atualizar o Excel deste ano" style="cursor:pointer; text-decoration:underline dotted;">${y.label} 📄</span>`
+      }${y.oculto?' <span style="font-size:10px; color:var(--muted);">(oculto)</span>':''} <button data-toggle-hist="${y.id}" style="background:none; border:none; color:var(--muted); cursor:pointer; font-size:12px; margin-left:4px;" title="${y.oculto?'Mostrar na comparação':'Ocultar temporariamente da comparação'}">${y.oculto?'👁️':'🙈'}</button></span>`));
+    wrapTopo.innerHTML = chipsTopo.join('');
+    wrapTopo.querySelectorAll('[data-reimportar-hist]').forEach(el=>{
       el.addEventListener('click', ()=>{
         const y = historicoAlunos.find(h=>h.id===el.dataset.reimportarHist);
         if(y) abrirSeletorImportacao(y.label);
       });
     });
-  });
+    wrapTopo.querySelectorAll('[data-toggle-hist]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const y = historicoAlunos.find(h=>h.id===btn.dataset.toggleHist);
+        if(!y) return;
+        y.oculto = !y.oculto;
+        saveHistoricoAlunos();
+        renderCompareAnosLista();
+        if(compareAtual) abrirComparacao(compareAtual.domain, compareAtual.metricKey);
+      });
+    });
+  }
+
+  // Dentro do popup — só leitura, apenas os anos atualmente visíveis (a gestão faz-se no topo)
+  const wrapModal = document.getElementById('compare-anos-lista');
+  if(wrapModal){
+    const visiveis = historicoOrdenado.filter(y=>!y.oculto);
+    const chipsModal = [`<span style="background:var(--accent); color:#fff; padding:5px 11px; border-radius:999px; font-size:12px; font-weight:600;">${anoLetivoLabelAtual()} (atual)</span>`]
+      .concat(visiveis.map(y=>`<span style="background:var(--card); border:1.5px solid var(--border); padding:5px 11px; border-radius:999px; font-size:12px;">${y.label} ${y.source==='manual'?'✍️':'📄'}</span>`));
+    wrapModal.innerHTML = chipsModal.join('');
+    const ocultosCount = historicoOrdenado.length - visiveis.length;
+    const nota = document.getElementById('compare-anos-ocultos-nota');
+    if(nota) nota.textContent = ocultosCount ? `${ocultosCount} ano(s) oculto(s) temporariamente — gere isso no topo da página.` : '';
+  }
   atualizarBotaoManual();
 }
 // Procura na aba "Clientes Efetivos" uma célula com o ano letivo (ex: "2025/2026") e devolve-o no formato "25/26"
@@ -2803,6 +2819,7 @@ function abrirComparacaoAlunos(metricKey){
   const anoAtualIni = anoLetivoInicioAtual();
   const anos = [{ label: anoLetivoLabelAtual(), val: def.calc(liveAlunosSnapshot(), anoAtualIni) }];
   historicoAlunos.forEach(y=>{
+    if(y.oculto) return;
     let val = null;
     if(y.source==='excel') val = def.calc(historicoAlunosSnapshot(y.dados), anoInicioFromLabel(y.label));
     else if(y.manual && y.manual[metricKey]) val = y.manual[metricKey];
@@ -2888,6 +2905,7 @@ function abrirComparacaoFinanceiro(metricKey){
   const anos = [{ label: anoLetivoLabelAtual(), val: liveVal }];
   if(!def.soLive){
     historicoAlunos.forEach(y=>{
+      if(y.oculto) return;
       if(y.source==='excel' && y.financas){
         const snap = historicoAlunosSnapshot(y.dados);
         anos.push({ label:y.label, val: computeFinHistorico(y.financas, snap, anoInicioFromLabel(y.label)) });

@@ -595,7 +595,7 @@ table.data tr.row-media td:last-child{border-right:1.5px solid var(--accent); bo
         <div class="gloss-row"><b>👥 Alunos ativos por mês</b><span>Por mês, desde o 1º "Data Início" registado até hoje: alunos já começados e ainda não terminados nesse mês.</span></div>
         <div class="gloss-row"><b>🔗 Origem dos alunos</b><span>Alunos únicos agrupados pela coluna "Plataforma". Quando essa coluna tem o rótulo de um ano letivo (ex: "25/26") em vez de uma plataforma, é porque o aluno transitou do ano anterior — aparece como "Renovações".</span></div>
         <div class="gloss-row"><b>🍎 Alunos por professor</b><span>Contagem por matrícula (não por aluno único), agrupada por "Professor" — top 12.</span></div>
-        <div class="gloss-row"><b>🔻 Funil de pendentes → efetivação</b><span>Linhas de "Clientes pendentes" agrupadas pela coluna "Estado".</span></div>
+        <div class="gloss-row"><b>🔻 Funil de pendentes → efetivação</b><span>Linhas de "Clientes pendentes" agrupadas pela coluna "Estado" — maiúsculas/minúsculas não fazem diferença ("Pendente"/"PENDENTE" contam juntos, mostrados sempre como "Pendente"). Estados "Em Espera" não entram no funil.</span></div>
         <div class="gloss-row"><b>💶 Receita por aluno (Total)</b><span>Soma, por aluno, de todas as linhas da aba "Pagamentos Alunos" (todos os meses) — top 10 por valor pago.</span></div>
         <div class="gloss-row"><b>📚 Alunos por nº de aulas/mês</b><span>Só o mês mais recente com dados em "Pagamentos Alunos": Abaixo (&lt;4), Dentro (4–9) ou Acima (&gt;9) aulas.</span></div>
       </div>
@@ -2081,6 +2081,15 @@ function temPotencialRenovacao(anoRaw, disciplinasDoAluno){
   if(!discs.length) return true; // sem disciplina registada — não assumir que só tem "sem renovação"
   return discs.some(d=> !DISCIPLINAS_SEM_RENOVACAO_NORM.includes(stripAccents(d).toLowerCase()));
 }
+// Normaliza o "Estado" do funil de pendentes ignorando maiúsculas/minúsculas — estados conhecidos usam a grafia oficial,
+// qualquer outro valor fica com a 1ª letra maiúscula e o resto minúsculo (ex: "PENDENTE" -> "Pendente").
+const ESTADO_FUNIL_CANONICOS = { 'sem resposta':'Sem Resposta', 'conversações':'Conversações', 'conversacoes':'Conversações', 'ae':'AE' };
+function normalizarEstadoFunil(s){
+  const norm = normStr(s).toLowerCase();
+  if(!norm) return s;
+  if(ESTADO_FUNIL_CANONICOS[norm]) return ESTADO_FUNIL_CANONICOS[norm];
+  return norm.charAt(0).toUpperCase()+norm.slice(1);
+}
 function groupCount(arr, keyFn){
   const map = {};
   arr.forEach(item=>{
@@ -3474,9 +3483,10 @@ function renderAlunos(){
   const profE = sortedEntries(groupCount(efetivos, a=>a.professor), 12);
   barChart('chart-professor', profE.map(e=>e[0]), profE.map(e=>e[1]), '#9FC7AA', true);
 
-  // funil de pendentes
-  const ORDEM_FUNIL = ['Sem Resposta','Em Espera','Conversações','AE'];
-  const estadoCount = groupCount(pendentes, p=>p.estado);
+  // funil de pendentes — "Estado" é lido sem distinguir maiúsculas/minúsculas ("Pendente"/"PENDENTE"/"pendente" contam juntos)
+  const ORDEM_FUNIL = ['Sem Resposta','Conversações','AE'];
+  const pendentesFunil = pendentes.filter(p=>normStr(p.estado).toLowerCase()!=='em espera'); // "Em Espera" não entra no funil
+  const estadoCount = groupCount(pendentesFunil, p=>normalizarEstadoFunil(p.estado));
   const funilLabels = Array.from(new Set([...ORDEM_FUNIL, ...Object.keys(estadoCount)]));
   barChart('chart-funil', funilLabels, funilLabels.map(l=>estadoCount[l]||0), '#8C9C3B');
 

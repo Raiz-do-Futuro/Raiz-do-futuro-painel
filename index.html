@@ -284,6 +284,11 @@ body{
 .kpi-compare:hover{background:var(--green); color:#fff; border-color:var(--green); transform:translateY(-1px); box-shadow:0 3px 8px rgba(37,135,48,0.25);}
 .ano-toggle{display:inline-flex; align-items:center; justify-content:center; vertical-align:middle; color:var(--muted); transition:color .15s ease;}
 .ano-toggle:hover{color:var(--ink);}
+.kpi-alt-toggle{position:relative; display:inline-flex; background:var(--sage-soft); border:1px solid var(--border); border-radius:999px; padding:2px; margin-top:8px;}
+.kpi-alt-slider{position:absolute; top:2px; bottom:2px; left:2px; width:calc(50% - 2px); background:var(--accent); border-radius:999px; transition:transform .2s ease;}
+.kpi-alt-toggle.kpi-alt-second .kpi-alt-slider{transform:translateX(100%);}
+.kpi-alt-btn{position:relative; z-index:1; border:none; background:none; cursor:pointer; padding:4px 11px; font-size:10.5px; font-weight:600; font-family:'Bahnschrift','Poppins',sans-serif; color:var(--ink); transition:color .2s ease; border-radius:999px;}
+.kpi-alt-btn.active{color:#fff;}
 input[type=file]{display:none;}
 
 .notice{
@@ -628,10 +633,10 @@ table.data tr.row-media td:last-child{border-right:1.5px solid var(--accent); bo
       <h2>As 5 estatísticas principais</h2>
       <div class="gloss-grid">
         <div class="gloss-item"><b>Pedidos / mês (média)</b><span>Total de pedidos registados dividido pelo número de meses diferentes em que há pelo menos um pedido.</span></div>
-        <div class="gloss-item"><b>Pedidos online / mês (média)</b><span>O mesmo cálculo que "Pedidos / mês", mas contando só os pedidos com Modalidade = Online.</span></div>
-        <div class="gloss-item"><b>% abordados sobre pedidos online</b><span>Entre os pedidos com Modalidade = Online, a percentagem em que clicaste em "Marcar abordámos" (ou seja, o telemóvel do cliente já é conhecido).</span></div>
+        <div class="gloss-item"><b>Pedidos online / mês (média)</b><span>O mesmo cálculo que "Pedidos / mês", mas contando só os pedidos com Modalidade = Online. Mostra também a % que os pedidos online representam sobre o total de pedidos.</span></div>
+        <div class="gloss-item"><b>% abordados sobre pedidos online</b><span>Entre os pedidos com Modalidade = Online, a percentagem em que clicaste em "Marcar abordámos" (ou seja, o telemóvel do cliente já é conhecido). Tem um botão "Total" / "Sem AL" que recalcula a percentagem excluindo pedidos cujo "Ano de ensino" é "AL".</span></div>
         <div class="gloss-item"><b>% ficámos sobre abordados</b><span>Entre os pedidos que abordaste, a percentagem cujo telemóvel apareceu depois em "Clientes Efetivos" — ou seja, que se tornaram alunos.</span></div>
-        <div class="gloss-item"><b>% ficámos sobre pedidos online</b><span>Percentagem de todos os pedidos online que acabaram por se tornar alunos efetivos — o funil completo, do pedido ao aluno.</span></div>
+        <div class="gloss-item"><b>% ficámos sobre pedidos online</b><span>Percentagem de todos os pedidos online que acabaram por se tornar alunos efetivos — o funil completo, do pedido ao aluno. Tem também o botão "Total" / "Sem AL".</span></div>
       </div>
     </div>
 
@@ -1057,6 +1062,16 @@ table.data tr.row-media td:last-child{border-right:1.5px solid var(--accent); bo
         </div>
       </details>
 
+      <details class="fold">
+        <summary>ℹ️ Como funcionam os estados "Abordámos" e "Ficámos"</summary>
+        <div class="fold-body">
+        <p style="font-size:13px; color:var(--body); line-height:1.55; margin:0;">
+        <b>"Abordámos" marca-se à mão, na tabela abaixo</b> — clica em "Marcar abordámos" no pedido correspondente e indica o telemóvel do cliente (só o sabes depois de contactares o pedido no Fixando). Podes corrigir esse número a qualquer momento no link "editar".<br><br>
+        <b>"Ficámos" continua 100% automático</b>: assim que esse mesmo telemóvel aparecer em "Clientes Efetivos" (Plataforma Fixando) no teu Excel, o pedido passa sozinho a "Ficámos = Sim" — sem precisares de fazer mais nada.
+        </p>
+        </div>
+      </details>
+
       <div class="toolbar">
         <button class="btn secondary" id="btn-template-fixando">↓ Descarregar modelo Excel</button>
         <button class="btn secondary" id="btn-upload-fixando">↑ Importar em lote</button>
@@ -1098,15 +1113,6 @@ table.data tr.row-media td:last-child{border-right:1.5px solid var(--accent); bo
           <div class="field" style="align-self:end;"><button class="btn" id="btn-add-fixando" style="width:100%;">+ Adicionar pedido</button></div>
         </div>
       </div>
-      <details class="fold">
-        <summary>ℹ️ Como funcionam os estados "Abordámos" e "Ficámos"</summary>
-        <div class="fold-body">
-        <p style="font-size:13px; color:var(--body); line-height:1.55; margin:0;">
-        <b>"Abordámos" marca-se à mão, na tabela abaixo</b> — clica em "Marcar abordámos" no pedido correspondente e indica o telemóvel do cliente (só o sabes depois de contactares o pedido no Fixando). Podes corrigir esse número a qualquer momento no link "editar".<br><br>
-        <b>"Ficámos" continua 100% automático</b>: assim que esse mesmo telemóvel aparecer em "Clientes Efetivos" (Plataforma Fixando) no teu Excel, o pedido passa sozinho a "Ficámos = Sim" — sem precisares de fazer mais nada.
-        </p>
-        </div>
-      </details>
 
       <div id="fixando-empty" class="empty-state">
         <b>Ainda sem pedidos registados</b>
@@ -2177,7 +2183,7 @@ function doughnutChart(id, labels, data){
   });
 }
 
-function kpiCard(label, value, sub, circled, targetId, definicao, compareKey){
+function kpiCard(label, value, sub, circled, targetId, definicao, compareKey, alt){
   const clickable = targetId ? ` onclick="scrollToSection('${targetId}')"` : '';
   const goLabel = targetId && targetId.includes('table') ? 'Ver tabela →' : 'Ver gráfico →';
   const labelAttr = definicao ? ` title="${definicao.replace(/"/g,'&quot;')}"` : '';
@@ -2187,7 +2193,29 @@ function kpiCard(label, value, sub, circled, targetId, definicao, compareKey){
     const [dom, key] = compareKey.split(':');
     compareBtn = ` <span class="kpi-compare" onclick="event.stopPropagation(); abrirComparacao('${dom}','${key}')" title="Comparar com anos letivos anteriores">📊 Comparar</span>`;
   }
-  return `<div class="kpi"${clickable}><div class="label"${labelAttr}>${label}${helpIcon}${compareBtn}</div><div class="value${circled?' circled':''}">${value}</div>${sub?`<div class="sub">${sub}</div>`:''}${targetId?`<div class="go">${goLabel}</div>`:''}</div>`;
+  let altHtml = '';
+  if(alt){
+    const esc = s => String(s==null?'':s).replace(/"/g,'&quot;');
+    altHtml = `<div class="kpi-alt-toggle" onclick="event.stopPropagation();">
+      <div class="kpi-alt-slider"></div>
+      <button type="button" class="kpi-alt-btn active" data-value="${esc(value)}" data-sub="${esc(sub||'')}" onclick="kpiAltSwitch(this)">Total</button>
+      <button type="button" class="kpi-alt-btn" data-value="${esc(alt.value)}" data-sub="${esc(alt.sub||'')}" onclick="kpiAltSwitch(this)">${alt.label}</button>
+    </div>`;
+  }
+  const temSub = sub || (alt && alt.sub);
+  return `<div class="kpi"${clickable}><div class="label"${labelAttr}>${label}${helpIcon}${compareBtn}</div><div class="value${circled?' circled':''}">${value}</div>${temSub?`<div class="sub">${sub||''}</div>`:''}${altHtml}${targetId?`<div class="go">${goLabel}</div>`:''}</div>`;
+}
+function kpiAltSwitch(btn){
+  const toggle = btn.closest('.kpi-alt-toggle');
+  const card = btn.closest('.kpi');
+  const btns = Array.from(toggle.querySelectorAll('.kpi-alt-btn'));
+  toggle.classList.toggle('kpi-alt-second', btns.indexOf(btn)===1);
+  btns.forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const valueEl = card.querySelector('.value');
+  const subEl = card.querySelector('.sub');
+  if(valueEl) valueEl.textContent = btn.dataset.value;
+  if(subEl) subEl.textContent = btn.dataset.sub;
 }
 function scrollToSection(id){
   const el = document.getElementById(id);
@@ -4226,13 +4254,28 @@ function renderFixando(){
   const pctAbordAmosOnline = onlineResolved.length? 100*onlineResolved.filter(x=>x.abordamos.value).length/onlineResolved.length : null;
   const pctFicamosAbordados = abordadosArr.length? 100*abordadosArr.filter(x=>x.ficamos.value).length/abordadosArr.length : null;
   const pctFicamosOnline = onlineResolved.length? 100*onlineResolved.filter(x=>x.ficamos.value).length/onlineResolved.length : null;
+  const pctOnlineDoTotal = total? 100*online.length/total : null;
+
+  // "Sem AL" — mesmas percentagens, excluindo pedidos cujo "Ano de ensino" é "AL"
+  const onlineResolvedSemAL = onlineResolved.filter(x=>normStr(x.p.ano).toLowerCase()!=='al');
+  const abordadosArrSemAL = abordadosArr.filter(x=>normStr(x.p.ano).toLowerCase()!=='al');
+  const pctAbordAmosOnlineSemAL = onlineResolvedSemAL.length? 100*onlineResolvedSemAL.filter(x=>x.abordamos.value).length/onlineResolvedSemAL.length : null;
+  const pctFicamosOnlineSemAL = onlineResolvedSemAL.length? 100*onlineResolvedSemAL.filter(x=>x.ficamos.value).length/onlineResolvedSemAL.length : null;
 
   document.getElementById('fixando-kpis').innerHTML = [
     kpiCard('Pedidos / mês (média)', mediaMes, total+' pedidos registados no total', true, 'card-chart-evolucao-mensal', 'Total de pedidos registados dividido pelo número de meses diferentes em que há pelo menos um pedido.'),
-    kpiCard('Pedidos online / mês (média)', mediaMesOnline, online.length+' pedidos online no total', false, 'card-chart-loc-online', 'O mesmo cálculo que "Pedidos / mês", mas contando só os pedidos com Modalidade = Online.'),
-    kpiCard('% abordados sobre pedidos online', pctAbordAmosOnline!==null? pctAbordAmosOnline.toFixed(0)+'%':'—', abordadosArr.length+' abordados (associação automática por telemóvel)', false, 'card-chart-evolucao-mensal', 'Entre os pedidos com Modalidade = Online, a percentagem em que clicaste em "Marcar abordámos" (ou seja, o telemóvel do cliente já é conhecido).'),
+    kpiCard('Pedidos online / mês (média)', mediaMesOnline, online.length+' pedidos online no total'+(pctOnlineDoTotal!=null?' ('+pctOnlineDoTotal.toFixed(0)+'% de todos os pedidos)':''), false, 'card-chart-loc-online', 'O mesmo cálculo que "Pedidos / mês", mas contando só os pedidos com Modalidade = Online. A percentagem é o nº de pedidos online ÷ nº total de pedidos.'),
+    kpiCard('% abordados sobre pedidos online', pctAbordAmosOnline!==null? pctAbordAmosOnline.toFixed(0)+'%':'—', abordadosArr.length+' abordados (associação automática por telemóvel)', false, 'card-chart-evolucao-mensal', 'Entre os pedidos com Modalidade = Online, a percentagem em que clicaste em "Marcar abordámos" (ou seja, o telemóvel do cliente já é conhecido).', undefined, {
+      label:'Sem AL',
+      value: pctAbordAmosOnlineSemAL!=null? pctAbordAmosOnlineSemAL.toFixed(0)+'%':'—',
+      sub: onlineResolvedSemAL.filter(x=>x.abordamos.value).length+' abordados, excluindo pedidos com Ano de ensino = "AL"'
+    }),
     kpiCard('% ficámos sobre abordados', pctFicamosAbordados!==null? pctFicamosAbordados.toFixed(0)+'%':'—', ficadosCount+' ficámos no total', false, 'card-chart-evolucao-mensal', 'Entre os pedidos que abordaste, a percentagem cujo telemóvel apareceu depois em "Clientes Efetivos" — ou seja, que se tornaram alunos.'),
-    kpiCard('% ficámos sobre pedidos online', pctFicamosOnline!==null? pctFicamosOnline.toFixed(0)+'%':'—', null, false, 'card-chart-evolucao-mensal', 'Percentagem de todos os pedidos online que acabaram por se tornar alunos efetivos — o funil completo, do pedido ao aluno.')
+    kpiCard('% ficámos sobre pedidos online', pctFicamosOnline!==null? pctFicamosOnline.toFixed(0)+'%':'—', null, false, 'card-chart-evolucao-mensal', 'Percentagem de todos os pedidos online que acabaram por se tornar alunos efetivos — o funil completo, do pedido ao aluno.', undefined, {
+      label:'Sem AL',
+      value: pctFicamosOnlineSemAL!=null? pctFicamosOnlineSemAL.toFixed(0)+'%':'—',
+      sub: 'Excluindo pedidos com Ano de ensino = "AL"'
+    })
   ].join('');
 
   renderMercadoCharts();

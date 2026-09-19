@@ -605,6 +605,20 @@ table.data tr.row-media td:last-child{border-right:1.5px solid var(--accent); bo
     </div>
 
     <div class="gloss-section">
+      <h2>🎯 Retenção, permanência e renovação</h2>
+      <div class="gloss-list">
+        <div class="gloss-row"><b>Total de alunos singulares</b><span>Todos os alunos individuais que passaram pelo centro no ano letivo — ativos e já saídos. Cada aluno conta uma só vez (ao contrário dos "Alunos efetivos", que só contam quem está ativo e a pagar). Mostra também o total histórico com todos os anos importados.</span></div>
+        <div class="gloss-row"><b>% de one-timers</b><span>Alunos com exatamente 1 aula em todo o ano letivo (soma do "Nº de aulas" em "Pagamentos Alunos") ÷ alunos com pelo menos 1 aula.</span></div>
+        <div class="gloss-row"><b>Saíram com menos de 1 / 3 / 6 / 10 meses</b><span>Alunos com "Data Fim" cuja permanência (Data Fim − Data Início) foi inferior a esse nº de meses, em valor absoluto e em % dos alunos singulares. Alunos ainda ativos não contam.</span></div>
+        <div class="gloss-row"><b>Retenção consoante o mês de entrada</b><span>Alunos agrupados pelo mês da "Data Início": média de meses que ficam (até à Data Fim ou, se ainda ativos, até hoje/30 de junho) e % que chegou ao fim do ano letivo (sem Data Fim ou com Data Fim a partir de 30 de junho).</span></div>
+        <div class="gloss-row"><b>Retenção média por ano de ensino</b><span>O mesmo cálculo de permanência, agrupado pela coluna "Ano" do aluno.</span></div>
+        <div class="gloss-row"><b>Nº de aulas por mês, por ano de ensino</b><span>Média de aulas por aluno em cada mês (só alunos com aulas nesse mês, entre parênteses), cruzando "Pagamentos Alunos" com o ano de ensino do aluno.</span></div>
+        <div class="gloss-row"><b>Taxa de renovação</b><span>Dos alunos do ano letivo anterior, % que voltou a entrar em setembro do ano letivo atual (por nome). Vista consoante o mês de entrada e o tempo de retenção (&lt;1, 1–3, 3–6, 6–10, ≥10 meses) no ano anterior, e o ano de ensino. Precisa do Excel do ano anterior importado no topo da página.</span></div>
+        <div class="gloss-row"><b>Taxa de reingressão</b><span>Dos alunos do ano letivo anterior, % que voltou em qualquer momento do ano letivo atual (inclui as renovações). Mesmas três vistas da taxa de renovação.</span></div>
+      </div>
+    </div>
+
+    <div class="gloss-section">
       <h2>🏆 Tabela "Desempenho por professor"</h2>
       <div class="gloss-list">
         <div class="gloss-row"><b>Nº Alunos</b><span>Alunos únicos deste professor, sem Data Fim e com Pagamento = "Sim".</span></div>
@@ -918,6 +932,13 @@ table.data tr.row-media td:last-child{border-right:1.5px solid var(--accent); bo
             <button class="btn secondary" onclick="abrirComparacao('alunos','aulasPorMes')" style="padding:6px 12px; font-size:11px; margin-bottom:8px;">📊 Comparar com anos letivos anteriores</button>
             <div class="chart-card" id="card-chart-faixa-aulas"><div class="chart-wrap"><canvas id="chart-faixa-aulas"></canvas></div></div>
           </div>
+        </div>
+
+        <div class="section" id="sec-retencao">
+          <h3>🎯 Retenção, permanência e renovação</h3>
+          <p class="desc">Quanto tempo os alunos ficam, quantos passam pelo centro e quantos regressam no ano letivo seguinte.</p>
+          <div class="kpi-grid" id="alunos-ret-kpis"></div>
+          <div id="alunos-ret-tabelas"></div>
         </div>
 
         <div class="section">
@@ -2347,14 +2368,14 @@ function parseHistoricoAlunosWorkbook(wb){
   const efetivosRaw = readSheetFrom(findSheet(wb,'efetivo'), 'Clientes');
   const efetivos = efetivosRaw.map(o=>({
     nome: normStr(o['Clientes']), professor: normStr(o['Professor']) || 'Não especificado',
-    plataforma: normStr(o['Plataforma']) || 'Não especificado',
+    plataforma: normStr(o['Plataforma']) || 'Não especificado', ano: normStr(o['Ano']),
     dataInicio: parseDate(o['Data Início']), pagamento: normStr(o['Pagamento'])
   })).filter(a=>a.nome);
   const exSheet = findSheet(wb,'ex-cliente') || findSheet(wb,'ex cliente');
   const exRaw = readSheetFrom(exSheet, 'Clientes');
   const exClientes = exRaw.map(o=>({
     nome: normStr(o['Clientes']), professor: normStr(o['Professor']) || 'Não especificado',
-    plataforma: normStr(o['Plataforma']) || 'Não especificado',
+    plataforma: normStr(o['Plataforma']) || 'Não especificado', ano: normStr(o['Ano']),
     dataInicio: parseDate(o['Data Início']), dataFim: parseDate(o['Data Fim']), pagamento: normStr(o['Pagamento'])
   })).filter(a=>a.nome);
   const pagamentos = readPagamentosAlunosSheet(findSheet(wb,'pagamentos alunos'));
@@ -2412,6 +2433,119 @@ function historicoAlunosSnapshot(dados){
     ...dados.exClientes.map(a=>({...a}))
   ];
   return { ativos, pagamentos: dados.pagamentos, mesAlEfetivos: dados.mesAlEfetivos || null };
+}
+/* ---------- Retenção, permanência e renovação (módulo 01) ---------- */
+const MS_MES = 30.44*86400000;
+const BUCKETS_RET = [ {label:'< 1 mês', max:1}, {label:'1–3 meses', max:3}, {label:'3–6 meses', max:6}, {label:'6–10 meses', max:10}, {label:'≥ 10 meses', max:Infinity} ];
+// 1 linha por aluno (junta as várias disciplinas): entrada mais antiga; só tem Data Fim se todas as matrículas a tiverem
+function agregarAlunosUnicos(lista){
+  const mapa = new Map();
+  (lista||[]).forEach(r=>{
+    const k = normKey(r.nome); if(!k) return;
+    let a = mapa.get(k);
+    if(!a){ a = { nome:r.nome, ano:normStr(r.ano), dataInicio:r.dataInicio||null, aberta:!r.dataFim, fins:r.dataFim?[r.dataFim]:[] }; mapa.set(k,a); return; }
+    if(!a.ano && r.ano) a.ano = normStr(r.ano);
+    if(r.dataInicio && (!a.dataInicio || r.dataInicio<a.dataInicio)) a.dataInicio = r.dataInicio;
+    if(!r.dataFim) a.aberta = true; else a.fins.push(r.dataFim);
+  });
+  return Array.from(mapa.values()).map(a=>({ nome:a.nome, ano:a.ano||'Não especificado', dataInicio:a.dataInicio,
+    dataFim: (!a.aberta && a.fins.length) ? new Date(Math.max(...a.fins.map(d=>+d))) : null }));
+}
+function retMesesAluno(a, anoIni){
+  if(!a.dataInicio) return null;
+  const fimAno = new Date(anoIni+1,5,30), hoje = new Date();
+  const fim = a.dataFim || (fimAno<hoje ? fimAno : hoje);
+  return Math.max(0, (fim - a.dataInicio)/MS_MES);
+}
+function bucketRetencao(m){ return m==null ? 'Sem data' : BUCKETS_RET.find(b=>m<b.max).label; }
+function mesEntradaAluno(a, anoIni){
+  if(!a.dataInicio) return 'Sem data';
+  if(a.dataInicio < new Date(anoIni,8,1)) return 'Antes do ano letivo';
+  return MESES_LETIVOS[(a.dataInicio.getMonth()-8+12)%12];
+}
+function calcRenovacaoReingressao(){
+  const anoIni = anoLetivoInicioAtual();
+  const labelPrev = String(anoIni-1).slice(2)+'/'+String(anoIni).slice(2);
+  const entry = historicoAlunos.find(y=>y.source==='excel' && y.dados && normStr(y.label)===labelPrev);
+  if(!entry) return { labelPrev, semDados:true };
+  const prev = agregarAlunosUnicos(historicoAlunosSnapshot(entry.dados).ativos);
+  const atuais = new Map(agregarAlunosUnicos(crm.efetivos).map(a=>[normKey(a.nome), a]));
+  const fimSetembro = new Date(anoIni,8,30,23,59,59);
+  const linhas = prev.map(p=>{
+    const at = atuais.get(normKey(p.nome));
+    return { mes:mesEntradaAluno(p, anoIni-1), ret:bucketRetencao(retMesesAluno(p, anoIni-1)), ano:p.ano,
+      reingressou:!!at, renovou:!!at && (!at.dataInicio || at.dataInicio<=fimSetembro) };
+  });
+  return { labelPrev, linhas };
+}
+function renderAlunosRetencao(){
+  const kEl = document.getElementById('alunos-ret-kpis'), tEl = document.getElementById('alunos-ret-tabelas');
+  if(!kEl || !tEl) return;
+  const anoIni = anoLetivoInicioAtual();
+  const alunos = agregarAlunosUnicos(crm.efetivos);
+  const pct = (n,d)=> d ? Math.round(100*n/d)+'%' : '—';
+  const fimAno = new Date(anoIni+1,5,30);
+
+  // --- KPIs ---
+  const historicoNomes = new Set(alunos.map(a=>normKey(a.nome)));
+  historicoAlunos.forEach(y=>{ if(y.source==='excel' && y.dados) agregarAlunosUnicos(historicoAlunosSnapshot(y.dados).ativos).forEach(a=>historicoNomes.add(normKey(a.nome))); });
+  const somaAulas = new Map();
+  (crm.pagamentos||[]).forEach(p=>{ const k=normKey(p.aluno); somaAulas.set(k, (somaAulas.get(k)||0)+(p.nAulas||0)); });
+  const comAulas = Array.from(somaAulas.values()).filter(v=>v>0);
+  const oneTimers = comAulas.filter(v=>Math.abs(v-1)<1e-9).length;
+  const kpis = [
+    kpiCard('Total de alunos singulares', alunos.length, historicoAlunos.some(y=>y.source==='excel') ? historicoNomes.size+' no total histórico (todos os anos importados)' : 'ativos e não ativos, este ano letivo', false, null, 'Todos os alunos individuais que passaram pelo centro neste ano letivo — ativos e já saídos (cada aluno conta uma só vez, mesmo com várias disciplinas).'),
+    kpiCard('% de one-timers', comAulas.length ? pct(oneTimers, comAulas.length) : '—', comAulas.length ? oneTimers+' de '+comAulas.length+' alunos com aulas tiveram só 1 aula' : 'sem dados em "Pagamentos Alunos"', false, null, 'Alunos com exatamente 1 aula em todo o ano letivo (soma do "Nº de aulas" em "Pagamentos Alunos") ÷ alunos com pelo menos 1 aula.')
+  ];
+  [1,3,6,10].forEach(n=>{
+    const c = alunos.filter(a=>a.dataFim && retMesesAluno(a, anoIni)<n).length;
+    kpis.push(kpiCard('Saíram com menos de '+n+(n===1?' mês':' meses'), c, pct(c, alunos.length)+' dos alunos singulares', false, null, 'Alunos com Data Fim preenchida cuja permanência (Data Fim − Data Início) foi inferior a '+n+(n===1?' mês':' meses')+'. Alunos ainda ativos não contam — podem ainda ficar mais tempo.'));
+  });
+  kEl.innerHTML = kpis.join('');
+
+  // --- tabelas ---
+  const tabela = (titulo, nota, cabecalhos, linhas)=> `<h4 style="margin:18px 0 4px 0; font-size:13px; color:var(--ink);">${titulo}</h4>${nota?`<p class="desc" style="margin:0 0 6px 0;">${nota}</p>`:''}<div class="chart-card" style="overflow-x:auto; padding:8px 12px;"><table class="data"><thead><tr>${cabecalhos.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>${linhas.length?linhas.map(l=>`<tr>${l.map(c=>`<td>${c}</td>`).join('')}</tr>`).join(''):`<tr><td colspan="${cabecalhos.length}" style="color:var(--muted);">Sem dados.</td></tr>`}</tbody></table></div>`;
+  const media = arr => arr.length ? (arr.reduce((a,b)=>a+b,0)/arr.length).toFixed(1) : '—';
+  let html = '';
+
+  // A) retenção por mês de entrada
+  const ordemMeses = ['Antes do ano letivo', ...MESES_LETIVOS, 'Sem data'];
+  const porMes = {}; alunos.forEach(a=>{ (porMes[mesEntradaAluno(a, anoIni)] = porMes[mesEntradaAluno(a, anoIni)]||[]).push(a); });
+  html += tabela('Retenção consoante o mês de entrada', 'Média de meses que o aluno fica e % que chegou ao fim do ano letivo (30 de junho) ou ainda está ativo.',
+    ['Mês de entrada','Alunos','Média de meses','% chegaram ao fim'],
+    ordemMeses.filter(m=>porMes[m]).map(m=>{ const g = porMes[m]; return [m, g.length, media(g.map(a=>retMesesAluno(a,anoIni)).filter(v=>v!=null)), pct(g.filter(a=>!a.dataFim || a.dataFim>=fimAno).length, g.length)]; }));
+
+  // B) retenção média por ano de ensino
+  const porAno = {}; alunos.forEach(a=>{ (porAno[a.ano] = porAno[a.ano]||[]).push(a); });
+  html += tabela('Retenção média por ano de ensino', null, ['Ano de ensino','Alunos','Média de meses'],
+    Object.entries(porAno).sort((x,y)=>y[1].length-x[1].length).map(([ano,g])=>[ano, g.length, media(g.map(a=>retMesesAluno(a,anoIni)).filter(v=>v!=null))]));
+
+  // C) aulas por mês × ano de ensino (média de aulas por aluno)
+  const anoDe = new Map(alunos.map(a=>[normKey(a.nome), a.ano]));
+  const celulas = {}; const mesesAulas = new Set();
+  (crm.pagamentos||[]).forEach(p=>{ if(!(p.nAulas>0)) return; const ano = anoDe.get(normKey(p.aluno)) || 'Não especificado'; mesesAulas.add(p.mes);
+    const c = (celulas[ano] = celulas[ano]||{}); const x = (c[p.mes] = c[p.mes]||{soma:0,n:0}); x.soma += p.nAulas; x.n++; });
+  const colsMeses = MESES_LETIVOS.filter(m=>mesesAulas.has(m));
+  html += tabela('Nº de aulas por mês, por ano de ensino', 'Média de aulas por aluno em cada mês (só alunos com aulas nesse mês), a partir de "Pagamentos Alunos".',
+    ['Ano de ensino', ...colsMeses],
+    Object.keys(celulas).sort().map(ano=>[ano, ...colsMeses.map(m=>{ const x = celulas[ano][m]; return x ? (x.soma/x.n).toFixed(1)+' <span style="color:var(--muted); font-size:10px;">('+x.n+')</span>' : '—'; })]));
+
+  // D–F) renovação e reingressão
+  const rr = calcRenovacaoReingressao();
+  if(rr.semDados){
+    html += `<p class="desc" style="margin-top:18px;">Para calcular a taxa de renovação e de reingressão, importa o Excel de <b>${rr.labelPrev}</b> na barra "Anos letivos" no topo da página.</p>`;
+  } else {
+    const L = rr.linhas;
+    const linha = (nome, g)=> [nome, g.length, g.filter(x=>x.renovou).length, pct(g.filter(x=>x.renovou).length, g.length), g.filter(x=>x.reingressou).length, pct(g.filter(x=>x.reingressou).length, g.length)];
+    const cab = g=>[g,'Alunos '+rr.labelPrev,'Renovaram','Taxa de renovação','Reingressaram','Taxa de reingressão'];
+    const agrupar = (chave, ordem)=>{ const m = {}; L.forEach(x=>{ (m[x[chave]] = m[x[chave]]||[]).push(x); }); return (ordem || Object.keys(m).sort((a,b)=>m[b].length-m[a].length)).filter(k=>m[k]).map(k=>linha(k, m[k])); };
+    const notaRR = 'Renovação = aluno de '+rr.labelPrev+' que voltou a entrar em setembro deste ano letivo. Reingressão = aluno de '+rr.labelPrev+' que voltou em qualquer momento deste ano letivo (inclui as renovações).';
+    html += `<h4 style="margin:22px 0 0 0; font-size:14px; color:var(--ink);">Renovação e reingressão (alunos de ${rr.labelPrev})</h4>`;
+    html += tabela('Consoante o mês de entrada', notaRR, cab('Mês de entrada em '+rr.labelPrev), [linha('Total', L), ...agrupar('mes', ordemMeses)]);
+    html += tabela('Consoante o tempo de retenção', null, cab('Tempo em '+rr.labelPrev), agrupar('ret', [...BUCKETS_RET.map(b=>b.label),'Sem data']));
+    html += tabela('Consoante o ano de ensino', L.length && L.every(x=>x.ano==='Não especificado') ? 'O ano de ensino não veio no Excel de '+rr.labelPrev+' importado antes — reimporta-o (clica em "'+rr.labelPrev+' 📄" no topo) para preencher este quadro.' : null, cab('Ano de ensino'), agrupar('ano'));
+  }
+  tEl.innerHTML = html;
 }
 function liveAlunosSnapshot(){
   const seen = new Set(); const ativos = [];
@@ -2821,6 +2955,7 @@ function renderCompareAnosLista(){
     const nota = document.getElementById('compare-anos-ocultos-nota');
     if(nota) nota.textContent = ocultosCount ? `${ocultosCount} ano(s) oculto(s) temporariamente — gere isso no topo da página.` : '';
   }
+  renderAlunosRetencao();
   atualizarBotaoManual();
 }
 // Procura na aba "Clientes Efetivos" uma célula com o ano letivo (ex: "2025/2026") e devolve-o no formato "25/26"
@@ -3466,6 +3601,7 @@ function renderAlunos(){
     kpiCard('Efetivos perdidos', efetivosPerdidosCalc.total, 'total da empresa, todos os professores, este ano letivo', false, 'card-table-professores', 'Alunos efetivos (todos os professores) que já têm "Data Fim" preenchida, neste ano letivo.', 'alunos:efetivosPerdidos'),
     kpiCard('Nº de aulas / aluno', aulasPorAlunoCalc.total!=null? aulasPorAlunoCalc.total.toFixed(1) : '—', 'média da empresa, todos os professores, este ano letivo', false, 'card-table-professores', 'Nº de aulas dadas (todos os professores) a dividir pelo nº de alunos ativos em cada mês, somado ao longo do ano letivo corrente.', 'alunos:aulasPorAluno')
   ].join('');
+  renderAlunosRetencao();
 
   // geo (localização — normalmente ainda por preencher)
   const geoE = sortedEntries(groupCount(unicos, a=>a.localizacao), 10);

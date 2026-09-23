@@ -343,15 +343,16 @@ input[type=file]{display:none;}
 .kpi-ra-slider{
   position:relative; display:flex; align-items:center; justify-content:space-between; gap:2px;
   background:var(--card); border:1.5px solid var(--border); border-radius:999px; padding:4px 6px;
-  flex:1; min-width:0; cursor:grab; user-select:none; transition:opacity .2s ease;
+  flex:1; min-width:0; user-select:none; transition:opacity .2s ease;
 }
 .kpi-ra-slider.dim{opacity:.4;}
-.kpi-ra-slider:active{cursor:grabbing;}
 .kpi-ra-mes{
   font-size:10px; font-weight:600; color:var(--muted); padding:3px 6px; border-radius:999px;
   white-space:nowrap; cursor:pointer; transition:color .15s ease, font-weight .15s ease;
 }
 .kpi-ra-mes.ativo{color:#fff; background:var(--accent); font-weight:700; padding:3px 9px;}
+.kpi-ra-tipo-toggle{margin-top:8px; transition:opacity .2s ease;}
+.kpi-ra-tipo-toggle.dim{opacity:.4;}
 .kpi .label{font-size:12px; color:var(--muted); font-weight:600; line-height:1.35; min-height:32px;}
 .kpi .value{
   font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:26px; color:var(--ink);
@@ -5405,31 +5406,43 @@ function janelaTresMeses(idx){
   if(idx>=11) return [9,10,11];
   return [idx-1, idx, idx+1];
 }
-let raModo = 'total', raMesIdx = null;
+let raModo = 'total', raMesIdx = null, raTipoMes = 'acumulado';
 let _raCtx = null;
 function receitaAcumuladaCardHtml(real, objetivo, idxAtual){
   if(raMesIdx==null) raMesIdx = idxAtual;
-  const idxParaValor = raModo==='total' ? idxAtual : raMesIdx;
-  const valor = receitaAcumuladaAteIdx(real.receita.monthly, idxParaValor);
-  let severidade = null;
-  if(objetivo){
-    const valorObj = receitaAcumuladaAteIdx(objetivo.receita.monthly, idxParaValor);
-    severidade = severidadePercentual(valor, valorObj, 0.15);
+  let valor, valorObj;
+  if(raModo==='total'){
+    valor = receitaAcumuladaAteIdx(real.receita.monthly, idxAtual);
+    valorObj = objetivo ? receitaAcumuladaAteIdx(objetivo.receita.monthly, idxAtual) : null;
+  } else if(raTipoMes==='unico'){
+    valor = real.receita.monthly[raMesIdx];
+    valorObj = objetivo ? objetivo.receita.monthly[raMesIdx] : null;
+  } else {
+    valor = receitaAcumuladaAteIdx(real.receita.monthly, raMesIdx);
+    valorObj = objetivo ? receitaAcumuladaAteIdx(objetivo.receita.monthly, raMesIdx) : null;
   }
+  const severidade = valorObj!=null ? severidadePercentual(valor, valorObj, 0.15) : null;
   const cor = corSeveridade(severidade);
   const corStyle = cor ? ` style="background:${cor.bg} !important; border-top-color:${cor.border} !important;"` : '';
   const sub = raModo==='total'
     ? ('todos os meses com dados até '+real.months[idxAtual])
+    : raTipoMes==='unico'
+    ? ('receita de '+real.months[raMesIdx]+' apenas (não acumulada)')
     : ('acumulada de '+real.months[0]+' a '+real.months[raMesIdx]);
   const janela = janelaTresMeses(raMesIdx);
   const mesesHtml = janela.map(i=>`<span class="kpi-ra-mes${raModo==='mes' && i===raMesIdx?' ativo':''}" data-mesidx="${i}">${real.months[i].slice(0,3)}</span>`).join('');
   return `<div class="kpi destaque" id="kpi-receita-acumulada"${corStyle}>
-    <div class="label" title="Soma da Receita Real. &quot;Total&quot; soma todos os meses com dados até agora; o slider ao lado deixa escolher um mês e mostra a soma acumulada até esse mês.">Receita acumulada <span style="opacity:.5; font-size:11px;">ⓘ</span></div>
+    <div class="label" title="Soma da Receita Real. &quot;Total&quot; soma todos os meses com dados até agora; clica num mês para escolheres um período específico — acumulado desde Setembro, ou só esse mês.">Receita acumulada <span style="opacity:.5; font-size:11px;">ⓘ</span></div>
     <div class="value">${fmtEuro(valor)}</div>
     <div class="sub">${sub}</div>
     <div class="kpi-ra-filtro" onclick="event.stopPropagation();">
       <button type="button" class="kpi-ra-total-btn${raModo!=='total'?' dim':''}" id="kpi-ra-total-btn">Total</button>
       <div class="kpi-ra-slider${raModo!=='mes'?' dim':''}" id="kpi-ra-slider">${mesesHtml}</div>
+    </div>
+    <div class="chart-view-toggle two-way kpi-ra-tipo-toggle${raModo!=='mes'?' dim':''}" data-view="${raTipoMes}" id="kpi-ra-tipo-toggle" onclick="event.stopPropagation();">
+      <div class="chart-view-slider"></div>
+      <button type="button" class="chart-view-btn${raTipoMes==='acumulado'?' active':''}" data-view="acumulado">Acumulado</button>
+      <button type="button" class="chart-view-btn${raTipoMes==='unico'?' active':''}" data-view="unico">Só este mês</button>
     </div>
   </div>`;
 }
@@ -5443,27 +5456,27 @@ function atualizarReceitaAcumuladaCard(){
 function bindReceitaAcumuladaCard(){
   const totalBtn = document.getElementById('kpi-ra-total-btn');
   const slider = document.getElementById('kpi-ra-slider');
+  const tipoToggle = document.getElementById('kpi-ra-tipo-toggle');
   if(totalBtn) totalBtn.addEventListener('click', (e)=>{ e.stopPropagation(); raModo='total'; atualizarReceitaAcumuladaCard(); });
-  if(!slider) return;
-  slider.querySelectorAll('.kpi-ra-mes').forEach(span=>{
-    span.addEventListener('click', (e)=>{
-      e.stopPropagation();
-      raModo = 'mes'; raMesIdx = Number(span.dataset.mesidx);
-      atualizarReceitaAcumuladaCard();
+  if(slider){
+    slider.querySelectorAll('.kpi-ra-mes').forEach(span=>{
+      span.addEventListener('click', (e)=>{
+        e.stopPropagation();
+        raModo = 'mes'; raMesIdx = Number(span.dataset.mesidx);
+        atualizarReceitaAcumuladaCard();
+      });
     });
-  });
-  let startX = null;
-  slider.addEventListener('pointerdown', (e)=>{ startX = e.clientX; try{ slider.setPointerCapture(e.pointerId); }catch(err){} });
-  slider.addEventListener('pointerup', (e)=>{
-    if(startX==null) return;
-    const dx = e.clientX - startX;
-    startX = null;
-    if(Math.abs(dx) < 26) return;
-    const dir = dx < 0 ? 1 : -1; // arrastar para a esquerda avança no tempo (meses seguintes)
-    const novo = Math.max(0, Math.min(11, raMesIdx + dir));
-    raModo = 'mes'; raMesIdx = novo;
-    atualizarReceitaAcumuladaCard();
-  });
+  }
+  if(tipoToggle){
+    posicionarChartViewSlider(tipoToggle);
+    tipoToggle.querySelectorAll('.chart-view-btn').forEach(btn=>{
+      btn.addEventListener('click', (e)=>{
+        e.stopPropagation();
+        raTipoMes = btn.dataset.view; raModo = 'mes';
+        atualizarReceitaAcumuladaCard();
+      });
+    });
+  }
 }
 function renderFinKPIs(){
   const real = fin.dr.real, objetivo = fin.dr.objetivo;

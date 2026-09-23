@@ -435,9 +435,30 @@ table.data tr.row-media td{
 table.data tr.row-media:hover td{background:var(--accent-light);}
 table.data tr.row-media td:first-child{border-left:1.5px solid var(--accent); border-radius:8px 0 0 8px;}
 table.data tr.row-media td:last-child{border-right:1.5px solid var(--accent); border-radius:0 8px 8px 0;}
-table.data th.col-real{color:var(--accent); font-weight:800;}
-table.data td.col-real{font-weight:700; color:var(--accent); background:var(--accent-soft);}
-table.data tr:hover td.col-real{background:var(--accent-light);}
+table.data th.col-real{
+  font-family:'Stardos Stencil','Bahnschrift',sans-serif; font-size:11px; letter-spacing:.02em;
+  color:#fff; text-transform:none; font-weight:700;
+  background:linear-gradient(160deg, var(--accent-mid) 0%, var(--accent-dark) 100%);
+  border-bottom:3px solid var(--olive); border-radius:8px 8px 0 0;
+}
+table.data th.col-real::before{content:'🌱 '; font-size:10px;}
+table.data td.col-real{
+  font-weight:700; color:var(--accent-dark);
+  background:
+    radial-gradient(circle, rgba(37,135,48,0.20) 1.2px, transparent 1.6px) 0 0/13px 13px,
+    linear-gradient(160deg, var(--lime-soft) 0%, var(--sage-soft) 60%, var(--green-soft) 100%);
+  border-left:2px solid var(--sage); border-right:2px solid var(--sage);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,0.6);
+  transition:background .2s ease;
+}
+table.data tr:hover td.col-real{
+  background:
+    radial-gradient(circle, rgba(37,135,48,0.26) 1.2px, transparent 1.6px) 0 0/13px 13px,
+    linear-gradient(160deg, var(--lime) 0%, var(--sage) 60%, var(--accent-mid) 100%);
+  color:#fff;
+}
+table.data tr.row-media td.col-real{border-top-color:var(--olive); border-bottom-color:var(--olive);}
+table.data tbody tr:last-child td.col-real{border-radius:0 0 8px 8px;}
 
 .empty-state{
   border:1.5px dashed var(--accent-light); border-radius:16px; padding:40px 20px; text-align:center; color:var(--muted); transition:border-color .3s ease;

@@ -290,10 +290,8 @@ body{
 .kpi-alt-btn{position:relative; z-index:1; border:none; background:none; cursor:pointer; padding:4px 11px; font-size:10.5px; font-weight:600; font-family:'Bahnschrift','Poppins',sans-serif; color:var(--ink); transition:color .2s ease; border-radius:999px;}
 .kpi-alt-btn.active{color:#fff;}
 .chart-view-toggle{position:relative; display:inline-flex; background:var(--sage-soft); border:1px solid var(--border); border-radius:999px; padding:2px;}
-.chart-view-slider{position:absolute; top:2px; bottom:2px; left:2px; width:calc(33.333% - 2px); background:var(--accent); border-radius:999px; transition:transform .2s ease;}
-.chart-view-toggle[data-view="presencial"] .chart-view-slider{transform:translateX(100%);}
-.chart-view-toggle[data-view="online"] .chart-view-slider{transform:translateX(200%);}
-.chart-view-btn{position:relative; z-index:1; border:none; background:none; cursor:pointer; padding:5px 13px; font-size:11px; font-weight:600; font-family:'Bahnschrift','Poppins',sans-serif; color:var(--ink); transition:color .2s ease; border-radius:999px; white-space:nowrap;}
+.chart-view-slider{position:absolute; top:2px; bottom:2px; left:2px; width:0; background:var(--accent); border-radius:999px; transition:left .2s ease, width .2s ease;}
+.chart-view-btn{position:relative; z-index:1; text-align:center; border:none; background:none; cursor:pointer; padding:5px 13px; font-size:11px; font-weight:600; font-family:'Bahnschrift','Poppins',sans-serif; color:var(--ink); transition:color .2s ease; border-radius:999px; white-space:nowrap;}
 .chart-view-btn.active{color:#fff;}
 input[type=file]{display:none;}
 
@@ -1099,13 +1097,24 @@ table.data tr.row-media td:last-child{border-right:1.5px solid var(--accent); bo
         </div>
       </details>
 
-      <div class="toolbar">
-        <button class="btn secondary" id="btn-template-fixando">↓ Descarregar modelo Excel</button>
-        <button class="btn secondary" id="btn-upload-fixando">↑ Importar em lote</button>
-        <input type="file" id="file-fixando" accept=".xlsx,.xls,.csv">
-        <button class="btn" id="btn-export-fixando">⬇️ Exportar cópia de segurança</button>
-        <button class="btn danger" id="btn-clear-fixando">Limpar dados</button>
-      </div>
+      <details class="fold">
+        <summary>✍️ Registar novo pedido</summary>
+        <div class="fold-body">
+        <p class="desc" style="margin-top:0;">Modalidade nasce "Online" — muda se for diferente. Contacto não se preenche aqui: abordas o pedido diretamente na tabela abaixo.</p>
+        <div class="entry-form" id="fixando-form">
+          <div class="field" id="field-data"><label>Data do pedido</label><input type="date" id="f-data"></div>
+          <div class="field" id="field-hora"><label>Hora (0–23)</label><input type="number" id="f-hora" min="0" max="23" placeholder="ex: 18"></div>
+          <div class="field" id="field-disciplina"><label>Disciplina</label><input type="text" id="f-disciplina" placeholder="ex: Matemática"></div>
+          <div class="field" id="field-ano"><label>Ano de ensino</label><input type="text" id="f-ano" placeholder="ex: 10º ano"></div>
+          <div class="field" id="field-localidade"><label>Localidade</label><input type="text" id="f-localidade" placeholder="ex: Porto"></div>
+          <div class="field needs-input" id="field-modalidade"><label>Modalidade</label>
+            <select id="f-modalidade"><option>Online</option><option>Presencial</option></select>
+          </div>
+          <div class="full" style="grid-column:span 2; align-self:end;"></div>
+          <div class="field" style="align-self:end;"><button class="btn" id="btn-add-fixando" style="width:100%;">+ Adicionar pedido</button></div>
+        </div>
+        </div>
+      </details>
 
       <details class="fold">
         <summary>🔄 Sincronização automática (Google Sheets) <span class="fold-hint" id="sync-status">Ainda sem fonte automática ligada.</span></summary>
@@ -1124,21 +1133,12 @@ table.data tr.row-media td:last-child{border-right:1.5px solid var(--accent); bo
         </div>
       </details>
 
-      <div class="section">
-        <h3>✍️ Registar novo pedido</h3>
-        <p class="desc">Modalidade nasce "Online" — muda se for diferente. Contacto não se preenche aqui: abordas o pedido diretamente na tabela abaixo.</p>
-        <div class="entry-form" id="fixando-form">
-          <div class="field" id="field-data"><label>Data do pedido</label><input type="date" id="f-data"></div>
-          <div class="field" id="field-hora"><label>Hora (0–23)</label><input type="number" id="f-hora" min="0" max="23" placeholder="ex: 18"></div>
-          <div class="field" id="field-disciplina"><label>Disciplina</label><input type="text" id="f-disciplina" placeholder="ex: Matemática"></div>
-          <div class="field" id="field-ano"><label>Ano de ensino</label><input type="text" id="f-ano" placeholder="ex: 10º ano"></div>
-          <div class="field" id="field-localidade"><label>Localidade</label><input type="text" id="f-localidade" placeholder="ex: Porto"></div>
-          <div class="field needs-input" id="field-modalidade"><label>Modalidade</label>
-            <select id="f-modalidade"><option>Online</option><option>Presencial</option></select>
-          </div>
-          <div class="full" style="grid-column:span 2; align-self:end;"></div>
-          <div class="field" style="align-self:end;"><button class="btn" id="btn-add-fixando" style="width:100%;">+ Adicionar pedido</button></div>
-        </div>
+      <div class="toolbar">
+        <button class="btn secondary" id="btn-template-fixando">↓ Descarregar modelo Excel</button>
+        <button class="btn secondary" id="btn-upload-fixando">↑ Importar em lote</button>
+        <input type="file" id="file-fixando" accept=".xlsx,.xls,.csv">
+        <button class="btn" id="btn-export-fixando">⬇️ Exportar cópia de segurança</button>
+        <button class="btn danger" id="btn-clear-fixando">Limpar dados</button>
       </div>
 
       <div id="fixando-empty" class="empty-state">
@@ -1181,6 +1181,15 @@ table.data tr.row-media td:last-child{border-right:1.5px solid var(--accent); bo
               </div>
               <span style="font-size:11px; color:var(--muted);">Passa o rato numa barra para ver a % de pedidos online nessa categoria</span>
             </div>
+            <div style="display:flex; align-items:center; gap:10px; margin-top:12px;">
+              <label style="font-size:11px; color:var(--muted);">Mostrar:</label>
+              <div class="chart-view-toggle two-way" id="mercado-modo-toggle" data-view="grafico" style="max-width:340px;">
+                <div class="chart-view-slider"></div>
+                <button type="button" class="chart-view-btn active" data-view="grafico">Gráfico</button>
+                <button type="button" class="chart-view-btn" data-view="pct">% Online vs Presencial</button>
+              </div>
+              <span style="font-size:11px; color:var(--muted);">Aplica-se a Momento do dia, Dia da semana, Disciplinas e Anos de ensino</span>
+            </div>
           </div>
         </div>
 
@@ -1193,7 +1202,12 @@ table.data tr.row-media td:last-child{border-right:1.5px solid var(--accent); bo
           <div class="section">
             <h3>🕐 Momento do dia</h3>
             <p class="desc">Pedidos por período (madrugada / manhã / tarde / noite)</p>
-            <div class="chart-card" id="card-chart-periodo"><div class="chart-wrap"><canvas id="chart-periodo"></canvas></div></div>
+            <div class="chart-card" id="card-chart-periodo">
+              <div class="chart-wrap"><canvas id="chart-periodo"></canvas></div>
+              <div class="table-scroll mercado-pct-table" id="pct-wrap-periodo" style="display:none;">
+                <table class="data" id="table-pct-periodo"><thead><tr><th>Momento do dia</th><th>Pedidos</th><th>% Online</th><th>% Presencial</th></tr></thead><tbody></tbody></table>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -1201,19 +1215,34 @@ table.data tr.row-media td:last-child{border-right:1.5px solid var(--accent); bo
           <div class="section">
             <h3>📅 Dia da semana</h3>
             <p class="desc">Pedidos por dia da semana</p>
-            <div class="chart-card" id="card-chart-dia-semana"><div class="chart-wrap"><canvas id="chart-dia-semana"></canvas></div></div>
+            <div class="chart-card" id="card-chart-dia-semana">
+              <div class="chart-wrap"><canvas id="chart-dia-semana"></canvas></div>
+              <div class="table-scroll mercado-pct-table" id="pct-wrap-dia-semana" style="display:none;">
+                <table class="data" id="table-pct-dia-semana"><thead><tr><th>Dia da semana</th><th>Pedidos</th><th>% Online</th><th>% Presencial</th></tr></thead><tbody></tbody></table>
+              </div>
+            </div>
           </div>
           <div class="section">
             <h3>📖 Disciplinas mais requisitadas</h3>
             <p class="desc">Contagem de pedidos por disciplina</p>
-            <div class="chart-card" id="card-chart-disc-mercado"><div class="chart-wrap"><canvas id="chart-disc-mercado"></canvas></div></div>
+            <div class="chart-card" id="card-chart-disc-mercado">
+              <div class="chart-wrap"><canvas id="chart-disc-mercado"></canvas></div>
+              <div class="table-scroll mercado-pct-table" id="pct-wrap-disc-mercado" style="display:none;">
+                <table class="data" id="table-pct-disc-mercado"><thead><tr><th>Disciplina</th><th>Pedidos</th><th>% Online</th><th>% Presencial</th></tr></thead><tbody></tbody></table>
+              </div>
+            </div>
           </div>
         </div>
 
         <div class="section">
           <h3>🎓 Anos de ensino mais requisitados</h3>
           <p class="desc">Contagem de pedidos por ano de ensino</p>
-          <div class="chart-card" id="card-chart-ano-mercado"><div class="chart-wrap"><canvas id="chart-ano-mercado"></canvas></div></div>
+          <div class="chart-card" id="card-chart-ano-mercado">
+            <div class="chart-wrap"><canvas id="chart-ano-mercado"></canvas></div>
+            <div class="table-scroll mercado-pct-table" id="pct-wrap-ano-mercado" style="display:none;">
+              <table class="data" id="table-pct-ano-mercado"><thead><tr><th>Ano de ensino</th><th>Pedidos</th><th>% Online</th><th>% Presencial</th></tr></thead><tbody></tbody></table>
+            </div>
+          </div>
         </div>
 
         <hr class="divider">
@@ -1233,7 +1262,15 @@ table.data tr.row-media td:last-child{border-right:1.5px solid var(--accent); bo
 
         <div class="section">
           <h3>📈 Evolução mensal</h3>
-          <p class="desc">Pedidos por mês (barras) e taxas de abordagem/conversão ao longo do tempo (linhas)</p>
+          <p class="desc" id="desc-evolucao-mensal">Percentagem de pedidos online, taxa de abordagem e taxa de conversão, mês a mês</p>
+          <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+            <label style="font-size:11px; color:var(--muted);">Ver:</label>
+            <div class="chart-view-toggle two-way" id="mercado-evolucao-toggle" data-view="pct" style="max-width:320px;">
+              <div class="chart-view-slider"></div>
+              <button type="button" class="chart-view-btn active" data-view="pct">Percentagens</button>
+              <button type="button" class="chart-view-btn" data-view="numeros">Números absolutos</button>
+            </div>
+          </div>
           <div class="chart-card" id="card-chart-evolucao-mensal"><div class="chart-wrap"><canvas id="chart-evolucao-mensal"></canvas></div></div>
         </div>
 
@@ -1740,6 +1777,7 @@ function selectTab(tabName){
   document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active', p.id==='panel-'+tabName));
   const backHub = document.getElementById('btn-back-hub');
   if(backHub) backHub.style.display = 'none';
+  requestAnimationFrame(()=>{ document.querySelectorAll('.chart-view-toggle').forEach(posicionarChartViewSlider); });
 }
 document.querySelectorAll('.tab-btn').forEach(btn=>{
   btn.addEventListener('click', ()=> selectTab(btn.dataset.tab));
@@ -4483,12 +4521,24 @@ function getPedidosNoPeriodoMercado(){
   if(mes && mes!=='total') return pedidos.filter(p=>monthKey(p.data)===mes);
   return pedidos;
 }
+function posicionarChartViewSlider(wrap){
+  if(!wrap) return;
+  const active = wrap.querySelector('.chart-view-btn.active');
+  const slider = wrap.querySelector('.chart-view-slider');
+  if(!active || !slider) return;
+  slider.style.left = active.offsetLeft+'px';
+  slider.style.width = active.offsetWidth+'px';
+}
+window.addEventListener('resize', ()=>{
+  document.querySelectorAll('.chart-view-toggle').forEach(posicionarChartViewSlider);
+});
 let mercadoChartView = 'total';
 function atualizarMercadoViewToggle(){
   const wrap = document.getElementById('mercado-view-toggle');
   if(!wrap) return;
   wrap.dataset.view = mercadoChartView;
   wrap.querySelectorAll('.chart-view-btn').forEach(b=>b.classList.toggle('active', b.dataset.view===mercadoChartView));
+  posicionarChartViewSlider(wrap);
 }
 document.getElementById('mercado-view-toggle')?.addEventListener('click', (e)=>{
   const btn = e.target.closest('.chart-view-btn');
@@ -4503,6 +4553,35 @@ function pctOnlinePorCategoria(pedidosArr, keyFn, multi){
   const out = {};
   Object.keys(totalMap).forEach(k=>{ out[k] = totalMap[k] ? Math.round(100*(onlineMap[k]||0)/totalMap[k]) : null; });
   return out;
+}
+let mercadoModo = 'grafico';
+function atualizarMercadoModoToggle(){
+  const wrap = document.getElementById('mercado-modo-toggle');
+  if(!wrap) return;
+  wrap.dataset.view = mercadoModo;
+  wrap.querySelectorAll('.chart-view-btn').forEach(b=>b.classList.toggle('active', b.dataset.view===mercadoModo));
+  posicionarChartViewSlider(wrap);
+  ['periodo','dia-semana','disc-mercado','ano-mercado'].forEach(key=>{
+    const chartWrap = document.querySelector('#card-chart-'+key+' .chart-wrap');
+    const pctWrap = document.getElementById('pct-wrap-'+key);
+    if(chartWrap) chartWrap.style.display = mercadoModo==='pct' ? 'none' : '';
+    if(pctWrap) pctWrap.style.display = mercadoModo==='pct' ? '' : 'none';
+  });
+}
+document.getElementById('mercado-modo-toggle')?.addEventListener('click', (e)=>{
+  const btn = e.target.closest('.chart-view-btn');
+  if(!btn || btn.dataset.view===mercadoModo) return;
+  mercadoModo = btn.dataset.view;
+  atualizarMercadoModoToggle();
+});
+function renderPctTable(tableId, entries, pctMap){
+  const tbody = document.querySelector('#'+tableId+' tbody');
+  if(!tbody) return;
+  tbody.innerHTML = entries.length ? entries.map(([label,total])=>{
+    const pctOnline = pctMap[label]!=null ? pctMap[label] : 0;
+    const pctPresencial = 100-pctOnline;
+    return `<tr><td>${label}</td><td>${total}</td><td>${pctOnline}%</td><td>${pctPresencial}%</td></tr>`;
+  }).join('') : '<tr><td colspan="4" style="text-align:center; color:var(--muted);">Sem dados.</td></tr>';
 }
 function barChartComPct(id, labels, data, pctMap, color, horizontal){
   destroyChart(id);
@@ -4522,6 +4601,7 @@ function barChartComPct(id, labels, data, pctMap, color, horizontal){
 function renderMercadoCharts(){
   popularSeletorPeriodoMercado();
   atualizarMercadoViewToggle();
+  atualizarMercadoModoToggle();
   const pedidosPeriodo = getPedidosNoPeriodoMercado();
   const pedidosVista = mercadoChartView==='online' ? pedidosPeriodo.filter(p=>p.modalidade==='Online')
     : mercadoChartView==='presencial' ? pedidosPeriodo.filter(p=>p.modalidade==='Presencial')
@@ -4535,18 +4615,26 @@ function renderMercadoCharts(){
   const pctPeriodo = pctOnlinePorCategoria(pedidosPeriodo, p=>periodo(p.hora));
   const perCount = groupCount(pedidosVista, p=>periodo(p.hora));
   barChartComPct('chart-periodo', periodos, periodos.map(p=>perCount[p]||0), pctPeriodo, '#8C9C3B');
+  const perCountTotal = groupCount(pedidosPeriodo, p=>periodo(p.hora));
+  renderPctTable('table-pct-periodo', periodos.map(p=>[p, perCountTotal[p]||0]), pctPeriodo);
 
   const pctDia = pctOnlinePorCategoria(pedidosPeriodo, p=>weekdayLabel(p.data));
   const diaCount = groupCount(pedidosVista, p=>weekdayLabel(p.data));
   barChartComPct('chart-dia-semana', DIAS_SEMANA, DIAS_SEMANA.map(d=>diaCount[d]||0), pctDia, '#8B4A3D');
+  const diaCountTotal = groupCount(pedidosPeriodo, p=>weekdayLabel(p.data));
+  renderPctTable('table-pct-dia-semana', DIAS_SEMANA.map(d=>[d, diaCountTotal[d]||0]), pctDia);
 
   const pctDisc = pctOnlinePorCategoria(pedidosPeriodo, p=>p.disciplina, true);
   const discE = sortedEntries(groupCountMulti(pedidosVista, p=>p.disciplina), 10);
   barChartComPct('chart-disc-mercado', discE.map(e=>e[0]), discE.map(e=>e[1]), pctDisc, '#4C7C63');
+  const discETotal = sortedEntries(groupCountMulti(pedidosPeriodo, p=>p.disciplina), 10);
+  renderPctTable('table-pct-disc-mercado', discETotal, pctDisc);
 
   const pctAno = pctOnlinePorCategoria(pedidosPeriodo, p=>p.ano);
   const anoE = sortedEntries(groupCount(pedidosVista, p=>p.ano), 10);
   barChartComPct('chart-ano-mercado', anoE.map(e=>e[0]), anoE.map(e=>e[1]), pctAno, '#258730');
+  const anoETotal = sortedEntries(groupCount(pedidosPeriodo, p=>p.ano), 10);
+  renderPctTable('table-pct-ano-mercado', anoETotal, pctAno);
 }
 document.getElementById('mercado-periodo-mes')?.addEventListener('change', ()=>{
   document.getElementById('mercado-periodo-de').value = '';
@@ -4565,40 +4653,86 @@ document.getElementById('btn-limpar-periodo-mercado')?.addEventListener('click',
   document.getElementById('mercado-periodo-ate').value = '';
   renderMercadoCharts();
 });
+let mercadoEvolucaoModo = 'pct';
+function atualizarMercadoEvolucaoToggle(){
+  const wrap = document.getElementById('mercado-evolucao-toggle');
+  if(!wrap) return;
+  wrap.dataset.view = mercadoEvolucaoModo;
+  wrap.querySelectorAll('.chart-view-btn').forEach(b=>b.classList.toggle('active', b.dataset.view===mercadoEvolucaoModo));
+  posicionarChartViewSlider(wrap);
+}
+document.getElementById('mercado-evolucao-toggle')?.addEventListener('click', (e)=>{
+  const btn = e.target.closest('.chart-view-btn');
+  if(!btn || btn.dataset.view===mercadoEvolucaoModo) return;
+  mercadoEvolucaoModo = btn.dataset.view;
+  atualizarMercadoEvolucaoToggle();
+  renderEvolucaoMensal(lastResolvedPedidos);
+});
 function renderEvolucaoMensal(resolved){
+  atualizarMercadoEvolucaoToggle();
   const monthsSet = new Set(resolved.map(x=>monthKey(x.p.data)));
   const months = Array.from(monthsSet).sort();
-  const totais = [], pctAbord = [], pctFica = [];
+  const totaisSemAL = [], onlineSemAL = [], abordadosArr = [], ficamosArr = [];
+  const pctOnlineSemAL = [], pctAbord = [], pctFica = [];
   months.forEach(mk=>{
     const rows = resolved.filter(x=>monthKey(x.p.data)===mk);
+    const rowsSemAL = rows.filter(x=>normStr(x.p.ano).toLowerCase()!=='al');
     const onlineRows = rows.filter(x=>x.p.modalidade==='Online');
+    const onlineRowsSemAL = rowsSemAL.filter(x=>x.p.modalidade==='Online');
     const abord = rows.filter(x=>x.abordamos.value);
-    totais.push(rows.length);
+    const fica = rows.filter(x=>x.ficamos.value);
+
+    totaisSemAL.push(rowsSemAL.length);
+    onlineSemAL.push(onlineRowsSemAL.length);
+    abordadosArr.push(abord.length);
+    ficamosArr.push(fica.length);
+
+    pctOnlineSemAL.push(rowsSemAL.length ? +(100*onlineRowsSemAL.length/rowsSemAL.length).toFixed(1) : null);
     pctAbord.push(onlineRows.length ? +(100*onlineRows.filter(x=>x.abordamos.value).length/onlineRows.length).toFixed(1) : null);
     pctFica.push(abord.length ? +(100*abord.filter(x=>x.ficamos.value).length/abord.length).toFixed(1) : null);
   });
   destroyChart('chart-evolucao-mensal');
   const ctx = document.getElementById('chart-evolucao-mensal');
   if(!ctx) return;
-  charts['chart-evolucao-mensal'] = new Chart(ctx, {
-    data:{
-      labels: months.map(monthLabel),
-      datasets:[
-        {type:'bar', label:'Pedidos (total)', data: totais, backgroundColor:'#9FC7AA', order:3, yAxisID:'yCount', borderRadius:6},
-        {type:'line', label:'% Abordados / Online', data: pctAbord, borderColor:'#258730', backgroundColor:'#258730', tension:.3, yAxisID:'yPct', order:1, spanGaps:true},
-        {type:'line', label:'% Ficámos / Abordados', data: pctFica, borderColor:'#8B4A3D', backgroundColor:'#8B4A3D', tension:.3, yAxisID:'yPct', order:2, spanGaps:true}
-      ]
-    },
-    options:{
-      responsive:true, maintainAspectRatio:false,
-      plugins:{legend:{display:true, position:'top', labels:{boxWidth:10, font:{family:'Bahnschrift', size:11}}}},
-      scales:{
-        x:{grid:{color:'rgba(37,135,48,0.06)'}, ticks:{font:{family:'Bahnschrift', size:11}, color:'#3E332F'}},
-        yCount:{position:'left', beginAtZero:true, grid:{color:'rgba(37,135,48,0.06)'}, ticks:{font:{size:11}, color:'#3E332F'}},
-        yPct:{position:'right', beginAtZero:true, max:100, grid:{display:false}, ticks:{font:{size:11}, color:'#3E332F', callback:v=>v+'%'}}
+  const desc = document.getElementById('desc-evolucao-mensal');
+
+  if(mercadoEvolucaoModo==='numeros'){
+    if(desc) desc.textContent = 'Pedidos totais (sem AL), pedidos online (sem AL), abordámos e ficámos, mês a mês';
+    charts['chart-evolucao-mensal'] = new Chart(ctx, {
+      type:'bar',
+      data:{
+        labels: months.map(monthLabel),
+        datasets:[
+          {label:'Pedidos totais (sem AL)', data: totaisSemAL, backgroundColor:'#9FC7AA', borderRadius:6},
+          {label:'Pedidos online (sem AL)', data: onlineSemAL, backgroundColor:'#258730', borderRadius:6},
+          {label:'Abordámos', data: abordadosArr, backgroundColor:'#8C9C3B', borderRadius:6},
+          {label:'Ficámos', data: ficamosArr, backgroundColor:'#8B4A3D', borderRadius:6}
+        ]
+      },
+      options: baseOpts({plugins:{legend:{display:true, position:'top', labels:{boxWidth:10, font:{family:'Bahnschrift', size:11}}}}})
+    });
+  } else {
+    if(desc) desc.textContent = 'Percentagem de pedidos online (sem AL), taxa de abordagem e taxa de conversão, mês a mês';
+    charts['chart-evolucao-mensal'] = new Chart(ctx, {
+      type:'line',
+      data:{
+        labels: months.map(monthLabel),
+        datasets:[
+          {label:'% Pedidos online (sem AL)', data: pctOnlineSemAL, borderColor:'#4C7C63', backgroundColor:'#4C7C63', tension:.3, spanGaps:true},
+          {label:'% Abordados / Online', data: pctAbord, borderColor:'#258730', backgroundColor:'#258730', tension:.3, spanGaps:true},
+          {label:'% Ficámos / Abordados', data: pctFica, borderColor:'#8B4A3D', backgroundColor:'#8B4A3D', tension:.3, spanGaps:true}
+        ]
+      },
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        plugins:{legend:{display:true, position:'top', labels:{boxWidth:10, font:{family:'Bahnschrift', size:11}}}},
+        scales:{
+          x:{grid:{color:'rgba(37,135,48,0.06)'}, ticks:{font:{family:'Bahnschrift', size:11}, color:'#3E332F'}},
+          y:{beginAtZero:true, max:100, grid:{color:'rgba(37,135,48,0.06)'}, ticks:{font:{size:11}, color:'#3E332F', callback:v=>v+'%'}}
+        }
       }
-    }
-  });
+    });
+  }
 }
 
 function populateFilterOptions(){

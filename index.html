@@ -328,6 +328,11 @@ input[type=file]{display:none;}
 .kpi:nth-of-type(5n+4){background:#FBF1EC; border-top-color:var(--rust);}
 .kpi:nth-of-type(5n+5){background:#FFF8E8; border-top-color:#C7A233;}
 .kpi:hover{transform:translateY(-3px) scale(1.01); box-shadow:0 10px 22px rgba(37,135,48,0.2);}
+.kpi.destaque{border-top-width:7px; box-shadow:0 6px 18px rgba(37,135,48,0.16);}
+.kpi.destaque .label{font-size:13px;}
+.kpi.destaque .value{font-size:32px;}
+.kpi.aviso{background:var(--rust-soft) !important; border-top-color:var(--rust) !important; border-color:var(--rust-soft);}
+.kpi.aviso .value{color:var(--rust);}
 .kpi .label{font-size:12px; color:var(--muted); font-weight:600; line-height:1.35; min-height:32px;}
 .kpi .value{
   font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:26px; color:var(--ink);
@@ -1341,7 +1346,7 @@ table.data tr.row-media td:last-child{border-right:1.5px solid var(--accent); bo
       </div>
 
       <div class="notice">
-        Lê as abas <b>"DR"</b>, <b>"DR Pessimista"</b>, <b>"DR Objetivo"</b>, <b>"DR Otimista"</b> e <b>"CF"</b> (com as 4 previsões — Pessimista/Objetivo/Otimista/Real — todas dentro dessa mesma aba). A aba "Gastos" é ignorada, tal como pediste.
+        Leitura efetuada através das folhas <b>"DR"</b>, <b>"DR Pessimista"</b>, <b>"DR Objetivo"</b>, <b>"DR Otimista"</b> e <b>"CF"</b> presentes no Excel <b>"Financeiro"</b>.
       </div>
 
       <div id="financeiro-empty" class="empty-state">
@@ -1352,7 +1357,96 @@ table.data tr.row-media td:last-child{border-right:1.5px solid var(--accent); bo
       <div id="financeiro-content" style="display:none;">
 
         <div id="fin-alerta-runway" class="notice" style="display:none; border-left:4px solid var(--rust); background:var(--rust-soft);"></div>
-        <div class="kpi-grid" id="financeiro-kpis"></div>
+
+        <div class="kpi-grid" id="financeiro-kpis-destaque"></div>
+
+        <hr class="divider">
+
+        <div class="kpi-grid" id="financeiro-kpis-receita"></div>
+
+        <hr class="divider">
+
+        <div class="two-col">
+          <div class="section">
+            <h3>📈 Evolução da Caixa</h3>
+            <p class="desc">Saldo de caixa acumulado, mês a mês, nos 4 cenários</p>
+            <div class="chart-card" id="card-chart-caixa"><div class="chart-wrap"><canvas id="chart-caixa"></canvas></div></div>
+          </div>
+          <div class="section">
+            <h3>📈 Evolução da Receita</h3>
+            <p class="desc">Receita mensal nos 4 cenários</p>
+            <div class="chart-card" id="card-chart-receita-fin"><div class="chart-wrap"><canvas id="chart-receita-fin"></canvas></div></div>
+          </div>
+        </div>
+
+        <div class="two-col">
+          <div class="section">
+            <h3>📉 Desvio acumulado — Real vs Objetivo</h3>
+            <p class="desc">Diferença acumulada, mês a mês, entre Receita/Rendimento Real e Objetivo</p>
+            <div class="chart-card" id="card-chart-desvio"><div class="chart-wrap"><canvas id="chart-desvio"></canvas></div></div>
+          </div>
+          <div class="section">
+            <h3>📊 Crescimento mensal (Receita Real)</h3>
+            <p class="desc">Variação % da receita face ao mês anterior</p>
+            <div class="chart-card" id="card-chart-crescimento"><div class="chart-wrap"><canvas id="chart-crescimento"></canvas></div></div>
+          </div>
+        </div>
+
+        <hr class="divider">
+
+        <div class="kpi-grid" id="financeiro-kpis-equilibrio"></div>
+
+        <hr class="divider">
+
+        <div class="two-col">
+          <div class="section">
+            <h3>🥧 Peso de cada gasto na Receita</h3>
+            <p class="desc">Gastos fixos e variáveis reais como % da Receita Real (Total anual)</p>
+            <div class="chart-card" id="card-chart-peso-gastos"><div class="chart-wrap"><canvas id="chart-peso-gastos"></canvas></div></div>
+          </div>
+          <div class="section">
+            <h3>📊 Gastos por categoria ao longo do tempo</h3>
+            <p class="desc">Cada categoria de gasto real, mês a mês (empilhado)</p>
+            <div class="chart-card" id="card-chart-gastos-tempo"><div class="chart-wrap"><canvas id="chart-gastos-tempo"></canvas></div></div>
+          </div>
+        </div>
+
+        <hr class="divider">
+
+        <div class="kpi-grid" id="financeiro-kpis-cac"></div>
+
+        <div class="section">
+          <h3>🎯 CAC — evolução mensal</h3>
+          <p class="desc">(Google Ads + Meta Ads + Lendarius + Fixando) ÷ alunos efetivos vindos de Fixando/Website/Redes Sociais nesse mês</p>
+          <div class="chart-card" id="card-chart-cac"><div class="chart-wrap"><canvas id="chart-cac"></canvas></div></div>
+        </div>
+
+        <div class="two-col">
+          <div class="section">
+            <h3>🎯 CAC por mês</h3>
+            <p class="desc">Gasto de marketing, alunos angariados e CAC, mês a mês</p>
+            <div class="chart-card" id="card-table-cac">
+              <div style="overflow-x:auto;">
+              <table class="data" id="table-cac-mensal">
+                <thead><tr><th>Mês</th><th>Gasto marketing</th><th>Alunos (Fixando/Website/Redes Sociais)</th><th>CAC</th></tr></thead>
+                <tbody></tbody>
+              </table>
+              </div>
+            </div>
+          </div>
+          <div class="section">
+            <h3>📣 RAOS por plataforma</h3>
+            <p class="desc">Retorno de marketing estimado, por plataforma de origem, no mês mais recente com dados</p>
+            <div class="chart-card" id="card-table-raos-plataforma">
+              <div style="overflow-x:auto;">
+              <table class="data" id="table-raos-plataforma">
+                <thead><tr><th>Plataforma</th><th>Alunos ativos</th><th>Gasto (mês)</th><th>Receita estimada</th><th>RAOS</th></tr></thead>
+                <tbody></tbody>
+              </table>
+              </div>
+            </div>
+          </div>
+        </div>
 
         <hr class="divider">
 
@@ -1388,52 +1482,6 @@ table.data tr.row-media td:last-child{border-right:1.5px solid var(--accent); bo
             </table>
             </div>
           </div>
-        </div>
-
-        <hr class="divider">
-
-        <div class="two-col">
-          <div class="section">
-            <h3>📈 Evolução da Caixa</h3>
-            <p class="desc">Saldo de caixa acumulado, mês a mês, nos 4 cenários</p>
-            <div class="chart-card" id="card-chart-caixa"><div class="chart-wrap"><canvas id="chart-caixa"></canvas></div></div>
-          </div>
-          <div class="section">
-            <h3>📈 Evolução da Receita</h3>
-            <p class="desc">Receita mensal nos 4 cenários</p>
-            <div class="chart-card" id="card-chart-receita-fin"><div class="chart-wrap"><canvas id="chart-receita-fin"></canvas></div></div>
-          </div>
-        </div>
-
-        <div class="two-col">
-          <div class="section">
-            <h3>📊 Crescimento mensal (Receita Real)</h3>
-            <p class="desc">Variação % da receita face ao mês anterior</p>
-            <div class="chart-card" id="card-chart-crescimento"><div class="chart-wrap"><canvas id="chart-crescimento"></canvas></div></div>
-          </div>
-          <div class="section">
-            <h3>📉 Desvio acumulado — Real vs Objetivo</h3>
-            <p class="desc">Diferença acumulada, mês a mês, entre Receita/Rendimento Real e Objetivo</p>
-            <div class="chart-card" id="card-chart-desvio"><div class="chart-wrap"><canvas id="chart-desvio"></canvas></div></div>
-          </div>
-        </div>
-
-        <div class="section">
-          <h3>🥧 Peso de cada gasto na Receita</h3>
-          <p class="desc">Gastos fixos e variáveis reais como % da Receita Real (Total anual)</p>
-          <div class="chart-card" id="card-chart-peso-gastos"><div class="chart-wrap"><canvas id="chart-peso-gastos"></canvas></div></div>
-        </div>
-
-        <div class="section">
-          <h3>🎯 CAC — Custo de Aquisição de Cliente</h3>
-          <p class="desc">(Google Ads + Meta Ads + Lendarius + Fixando) ÷ alunos efetivos vindos de Fixando/Website/Redes Sociais nesse mês</p>
-          <div class="chart-card" id="card-chart-cac"><div class="chart-wrap"><canvas id="chart-cac"></canvas></div></div>
-        </div>
-
-        <div class="section">
-          <h3>📊 Gastos por categoria ao longo do tempo</h3>
-          <p class="desc">Cada categoria de gasto real, mês a mês (empilhado)</p>
-          <div class="chart-card" id="card-chart-gastos-tempo"><div class="chart-wrap"><canvas id="chart-gastos-tempo"></canvas></div></div>
         </div>
 
       </div>
@@ -2251,7 +2299,8 @@ function doughnutChart(id, labels, data){
   });
 }
 
-function kpiCard(label, value, sub, circled, targetId, definicao, compareKey, alt){
+function kpiCard(label, value, sub, circled, targetId, definicao, compareKey, alt, opts){
+  const { destaque, aviso } = opts || {};
   const clickable = targetId ? ` onclick="scrollToSection('${targetId}')"` : '';
   const goLabel = targetId && targetId.includes('table') ? 'Ver tabela →' : 'Ver gráfico →';
   const labelAttr = definicao ? ` title="${definicao.replace(/"/g,'&quot;')}"` : '';
@@ -2271,7 +2320,8 @@ function kpiCard(label, value, sub, circled, targetId, definicao, compareKey, al
     </div>`;
   }
   const temSub = sub || (alt && alt.sub);
-  return `<div class="kpi"${clickable}><div class="label"${labelAttr}>${label}${helpIcon}${compareBtn}</div><div class="value${circled?' circled':''}">${value}</div>${temSub?`<div class="sub">${sub||''}</div>`:''}${altHtml}${targetId?`<div class="go">${goLabel}</div>`:''}</div>`;
+  const classes = 'kpi'+(destaque?' destaque':'')+(aviso?' aviso':'');
+  return `<div class="${classes}"${clickable}><div class="label"${labelAttr}>${label}${helpIcon}${compareBtn}</div><div class="value${circled?' circled':''}">${value}</div>${temSub?`<div class="sub">${sub||''}</div>`:''}${altHtml}${targetId?`<div class="go">${goLabel}</div>`:''}</div>`;
 }
 function kpiAltSwitch(btn){
   const toggle = btn.closest('.kpi-alt-toggle');
@@ -5231,18 +5281,93 @@ function renderFinCharts(){
     });
   }
 }
+function getHistoricoReceitaMensal(label){
+  const y = historicoAlunos.find(h=>normStr(h.label)===label && !h.oculto);
+  if(!y) return null;
+  if(y.source==='excel' && y.financas){
+    const snap = historicoAlunosSnapshot(y.dados);
+    const val = computeFinHistorico(y.financas, snap, anoInicioFromLabel(y.label));
+    return (val && val.receitaMensal && Object.keys(val.receitaMensal).length) ? val.receitaMensal : null;
+  }
+  if(y.source==='manual' && y.manual && y.manual.finReceitaMes && y.manual.finReceitaMes.receitaMensal){
+    const m = y.manual.finReceitaMes.receitaMensal;
+    return Object.keys(m).length ? m : null;
+  }
+  return null;
+}
+// ARR ajustado à sazonalidade: usa a forma como a receita se distribuiu pelos meses em 24/25 e 25/26
+// (quando existirem) para saber que fração de um ano "típico" já passou, em vez de assumir MRR × 12.
+function estimarArrSazonal(real, idxAtual){
+  const mrr = real.receita.monthly[idxAtual];
+  const receitaAcumulada = real.receita.monthly.slice(0, idxAtual+1).reduce((a,b)=>a+b, 0);
+  const curvas = [];
+  ['24/25','25/26'].forEach(label=>{
+    const mensal = getHistoricoReceitaMensal(label);
+    if(!mensal) return;
+    const totalAno = MESES_LETIVOS.reduce((s,m)=>s+(mensal[m]||0), 0);
+    if(totalAno<=0) return;
+    curvas.push({ label, shares: MESES_LETIVOS.map(m=>(mensal[m]||0)/totalAno) });
+  });
+  if(curvas.length && receitaAcumulada>0){
+    const shareMedia = MESES_LETIVOS.map((_,i)=> curvas.reduce((s,c)=>s+c.shares[i],0)/curvas.length);
+    const shareAcumulada = shareMedia.slice(0, idxAtual+1).reduce((a,b)=>a+b,0);
+    if(shareAcumulada>0.03){
+      return { arr: receitaAcumulada/shareAcumulada, metodo:'sazonal', anos: curvas.map(c=>c.label) };
+    }
+  }
+  if(mrr>0) return { arr: mrr*12, metodo:'simples', anos:[] };
+  return null;
+}
+const PLATAFORMAS_RAOS = [
+  { nome:'Fixando', origem:'fixando', gastoLabels:['Fixando'] },
+  { nome:'Website', origem:'website', gastoLabels:['Google Ads'] },
+  { nome:'Redes Sociais', origem:'redes sociais', gastoLabels:['Meta Ads'] }
+];
+function renderTabelaRaosPlataforma(real, idx, arpu){
+  const tbody = document.querySelector('#table-raos-plataforma tbody');
+  if(!tbody) return;
+  if(!real || idx==null || !arpu){ tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--muted);">Ainda sem dados suficientes.</td></tr>'; return; }
+  const rows = PLATAFORMAS_RAOS.map(p=>{
+    const gastoMes = p.gastoLabels.reduce((soma,lbl)=>{
+      const item = real.gastosFixosItems.find(x=>x.label===lbl) || real.gastosVariaveisItems.find(x=>x.label===lbl);
+      return soma + (item ? item.monthly[idx] : 0);
+    }, 0);
+    const alunosAtivos = crm.efetivos.filter(a=>!a.dataFim && normStr(a.plataforma).toLowerCase().includes(p.origem)).length;
+    const receitaEstimada = alunosAtivos * arpu;
+    const raos = gastoMes>0 ? receitaEstimada/gastoMes : null;
+    return {nome:p.nome, alunosAtivos, gastoMes, receitaEstimada, raos};
+  });
+  tbody.innerHTML = rows.map(r=>`<tr${r.raos!=null && r.raos<1 ? ' style="background:var(--rust-soft);"' : ''}><td>${r.nome}</td><td>${r.alunosAtivos}</td><td>${fmtEuro(r.gastoMes)}</td><td>${fmtEuro(r.receitaEstimada)}</td><td>${r.raos!=null ? r.raos.toFixed(1)+'x' : '—'}</td></tr>`).join('');
+}
+function renderTabelaCacMensal(real){
+  const tbody = document.querySelector('#table-cac-mensal tbody');
+  if(!tbody) return;
+  if(!real){ tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--muted);">Ainda sem dados suficientes.</td></tr>'; return; }
+  const alunosMktPorMesMap = alunosMarketingPorMes();
+  const rows = real.months.map((m,i)=>{
+    const k = drMonthToKey(m,i);
+    const mkt = MARKETING_LABELS.reduce((soma,lbl)=>{ const item = real.gastosFixosItems.find(x=>x.label===lbl) || real.gastosVariaveisItems.find(x=>x.label===lbl); return soma + (item ? item.monthly[i] : 0); }, 0);
+    const n = alunosMktPorMesMap[k] || 0;
+    const cac = (mkt>0 && n>0) ? mkt/n : null;
+    return {m, mkt, n, cac};
+  }).filter(r=>r.mkt>0 || r.n>0);
+  tbody.innerHTML = rows.length ? rows.map(r=>`<tr><td>${r.m}</td><td>${fmtEuro(r.mkt)}</td><td>${r.n}</td><td>${r.cac!=null?fmtEuro(r.cac):'—'}</td></tr>`).join('') : '<tr><td colspan="4" style="text-align:center; color:var(--muted);">Ainda sem dados suficientes.</td></tr>';
+}
 function renderFinKPIs(){
   const real = fin.dr.real, objetivo = fin.dr.objetivo;
   const cf = fin.cf;
-  const kpis = [];
-  let idxAtual = null;
+  const kpisDestaque = [], kpisReceita = [], kpisEquilibrio = [], kpisCac = [];
+  let idxAtual = null, arpu = null;
+  const mesesSeguranca = 3;
+
   if(real && real.receita){
     // mês anterior ao mês civil atual — último mês já fechado, para não mostrar um mês ainda a meio
     const idx = indiceMesAnteriorAtual(real.months);
     idxAtual = idx;
     const receitaReal = real.receita.monthly[idx];
     const receitaObj = objetivo ? objetivo.receita.monthly[idx] : null;
-    kpis.push(kpiCard('Receita do mês ('+real.months[idx]+')', fmtEuro(receitaReal), receitaObj!==null? 'objetivo: '+fmtEuro(receitaObj) : null, true, 'card-table-dr', 'Receita real do mês anterior ao mês atual (o último mês já fechado), comparada com o objetivo para esse mesmo mês.', 'financeiro:finReceitaMes'));
+    const receitaAbaixoObjetivo = receitaObj!==null && receitaReal < receitaObj;
+    kpisReceita.push(kpiCard('Receita do mês ('+real.months[idx]+')', fmtEuro(receitaReal), receitaObj!==null? 'objetivo: '+fmtEuro(receitaObj) : null, true, 'card-table-dr', 'Receita real do mês anterior ao mês atual (o último mês já fechado), comparada com o objetivo para esse mesmo mês.', 'financeiro:finReceitaMes', undefined, {aviso:receitaAbaixoObjetivo}));
 
     // Ponto de equilíbrio do mês anterior (para os cálculos abaixo) + média mensal desde o início do ano letivo
     const custoFixoMes = real.gastosFixosTotal.monthly[idx];
@@ -5252,18 +5377,17 @@ function renderFinKPIs(){
     const pontoEquilibrioMensal = {};
     real.months.forEach((m,i)=>{ const v = real.gastosFixosTotal.monthly[i]+real.gastosVariaveisTotal.monthly[i]-gastoExcluidoPontoEquilibrio(real, i); if(real.receita.monthly[i]>0 || v>0) pontoEquilibrioMensal[m]=v; });
     const breakEvenMedia = mediaSerie(pontoEquilibrioMensal);
-    kpis.push(kpiCard('Ponto de equilíbrio (média)', breakEvenMedia!=null ? fmtEuro(breakEvenMedia) : '—', breakEvenMedia!=null ? ('média de '+real.months[0]+' a '+real.months[idx]+' · '+(acimaBreakEven?'✅ receita de '+real.months[idx]+' acima do ponto de equilíbrio desse mês':'⚠️ receita de '+real.months[idx]+' ainda abaixo do ponto de equilíbrio desse mês')) : 'ainda sem meses com dados suficientes este ano letivo', false, 'card-table-dr', 'Receita necessária, em média por mês (desde o início do ano letivo), para cobrir todos os gastos (fixos + variáveis reais) e ficar com Rendimento = 0.', 'financeiro:finPontoEquilibrioMes'));
+    kpisEquilibrio.push(kpiCard('Ponto de equilíbrio (média)', breakEvenMedia!=null ? fmtEuro(breakEvenMedia) : '—', breakEvenMedia!=null ? ('média de '+real.months[0]+' a '+real.months[idx]+' · '+(acimaBreakEven?'✅ receita de '+real.months[idx]+' acima do ponto de equilíbrio desse mês':'⚠️ receita de '+real.months[idx]+' ainda abaixo do ponto de equilíbrio desse mês')) : 'ainda sem meses com dados suficientes este ano letivo', false, 'card-table-dr', 'Receita necessária, em média por mês (desde o início do ano letivo), para cobrir todos os gastos (fixos + variáveis reais) e ficar com Rendimento = 0.', 'financeiro:finPontoEquilibrioMes', undefined, {aviso: breakEvenMedia!=null && !acimaBreakEven}));
 
     // ARPU (cruza com Alunos: nº ativos nesse mês) — mês anterior para os cálculos derivados, média mensal para o cartão
     const chaveMes = drMonthToKey(real.months[idx], idx);
     const alunosAtivosMes = lastAtivosPorMesMap[chaveMes] || null;
-    let arpu = null;
     if(alunosAtivosMes){
       arpu = receitaReal / alunosAtivosMes;
       // Ponto de equilíbrio em nº de alunos
       const breakEvenAlunos = arpu>0 ? Math.ceil(breakEven/arpu) : null;
       if(breakEvenAlunos!==null){
-        kpis.push(kpiCard('Ponto de equilíbrio (nº alunos)', breakEvenAlunos+' alunos', 'tens atualmente '+alunosAtivosMes, false, 'card-chart-ativos-mes', 'O ponto de equilíbrio em euros, traduzido para nº de alunos usando o ARPU deste mês.', 'financeiro:finPontoEquilibrioAlunos'));
+        kpisEquilibrio.push(kpiCard('Ponto de equilíbrio (nº alunos)', breakEvenAlunos+' alunos', 'tens atualmente '+alunosAtivosMes, false, 'card-chart-ativos-mes', 'O ponto de equilíbrio em euros, traduzido para nº de alunos usando o ARPU deste mês.', 'financeiro:finPontoEquilibrioAlunos'));
       }
     }
     const arpuMensal = {};
@@ -5272,7 +5396,16 @@ function renderFinKPIs(){
       if(at && r>0) arpuMensal[m] = r/at;
     });
     const arpuMedia = mediaSerie(arpuMensal);
-    kpis.push(kpiCard('Receita média por aluno (ARPU) — média', arpuMedia!=null ? fmtEuro(arpuMedia) : '—', arpuMedia!=null ? ('média de '+real.months[0]+' a '+real.months[idx]) : 'ainda sem meses com dados suficientes este ano letivo', false, 'card-chart-ativos-mes', 'Receita Real de cada mês a dividir pelo nº de alunos ativos nesse mês, em média desde o início do ano letivo.', 'financeiro:finArpu'));
+    kpisReceita.push(kpiCard('Receita média por aluno (ARPU) — média', arpuMedia!=null ? fmtEuro(arpuMedia) : '—', arpuMedia!=null ? ('média de '+real.months[0]+' a '+real.months[idx]) : 'ainda sem meses com dados suficientes este ano letivo', false, 'card-chart-ativos-mes', 'Receita Real de cada mês a dividir pelo nº de alunos ativos nesse mês, em média desde o início do ano letivo.', 'financeiro:finArpu'));
+
+    // ARR estimado — ajustado à sazonalidade de 24/25 e 25/26 quando há histórico
+    const arrEst = estimarArrSazonal(real, idx);
+    if(arrEst){
+      const sub = arrEst.metodo==='sazonal'
+        ? 'ajustado à sazonalidade de '+arrEst.anos.join(' e ')
+        : 'com base na receita de '+real.months[idx]+' × 12 (sem histórico de 24/25 ou 25/26 suficiente)';
+      kpisReceita.push(kpiCard('ARR estimado', fmtEuro(arrEst.arr), sub, false, 'card-chart-receita-fin', 'Receita Anual Recorrente estimada. Quando há histórico de 24/25 e/ou 25/26 importado (ou inserido manualmente), a estimativa é ajustada à sazonalidade típica do negócio — a receita acumulada até agora é dividida pela % de um ano "típico" que, em média nesses anos, já tinha decorrido nesta altura. Mais realista do que MRR × 12 simples, já que a atividade tem meses fortes e fracos. Sem esse histórico, usa o cálculo simples (MRR × 12).', 'financeiro:finArr'));
+    }
 
     // CAC do mês anterior (para LTV/payback/RAOS) + média mensal para o cartão
     const marketingMes = MARKETING_LABELS.reduce((soma,lbl)=>{
@@ -5291,7 +5424,7 @@ function renderFinKPIs(){
       if(mkt>0 && n>0) cacMensal[m] = mkt/n;
     });
     const cacMedia = mediaSerie(cacMensal);
-    kpis.push(kpiCard('CAC — média', cacMedia!=null ? fmtEuro(cacMedia) : '—', cacMedia!=null ? ('média de '+real.months[0]+' a '+real.months[idx]) : 'ainda sem meses com dados suficientes este ano letivo', false, 'card-chart-cac', 'Gasto em marketing (Google Ads, Meta Ads, Lendarius, Fixando) a dividir pelo nº de alunos vindos de Fixando/Website/Redes Sociais, em média por mês, desde o início do ano letivo.', 'financeiro:finCac'));
+    kpisCac.push(kpiCard('CAC — média', cacMedia!=null ? fmtEuro(cacMedia) : '—', cacMedia!=null ? ('média de '+real.months[0]+' a '+real.months[idx]) : 'ainda sem meses com dados suficientes este ano letivo', false, 'card-chart-cac', 'Gasto em marketing (Google Ads, Meta Ads, Lendarius, Fixando) a dividir pelo nº de alunos vindos de Fixando/Website/Redes Sociais, em média por mês, desde o início do ano letivo.', 'financeiro:finCac'));
 
     // LTV : CAC
     if(arpu && lastRetencaoMediaMs){
@@ -5299,12 +5432,12 @@ function renderFinKPIs(){
       const ltv = arpu * retencaoMeses;
       if(cacMes>0){
         const racio = ltv/cacMes;
-        kpis.push(kpiCard('LTV : CAC', racio.toFixed(1)+' : 1', 'LTV ≈ '+fmtEuro(ltv)+' · CAC ≈ '+fmtEuro(cacMes), false, 'card-chart-cac', 'Valor de vida do aluno (ARPU × retenção média em meses) a dividir pelo CAC. Acima de 3 costuma ser saudável; abaixo de 1 é sinal de alerta — estás a pagar mais para conseguir um aluno do que ele vale.', 'financeiro:finLtvCac'));
+        kpisCac.push(kpiCard('LTV : CAC', racio.toFixed(1)+' : 1', 'LTV ≈ '+fmtEuro(ltv)+' · CAC ≈ '+fmtEuro(cacMes), false, 'card-chart-cac', 'Valor de vida do aluno (ARPU × retenção média em meses) a dividir pelo CAC. Acima de 3 costuma ser saudável; abaixo de 1 é sinal de alerta — estás a pagar mais para conseguir um aluno do que ele vale.', 'financeiro:finLtvCac', undefined, {aviso: racio<1}));
       }
       // Período de recuperação do CAC (payback, em meses)
       if(cacMes>0 && arpu>0){
         const payback = cacMes/arpu;
-        kpis.push(kpiCard('Período de recuperação do CAC', payback.toFixed(1)+' meses', 'tempo até o aluno "pagar" o custo de aquisição', false, 'card-chart-cac', 'CAC a dividir pelo ARPU — quantos meses de mensalidade de um aluno são precisos para recuperar o que custou angariá-lo.', 'financeiro:finPayback'));
+        kpisCac.push(kpiCard('Período de recuperação do CAC', payback.toFixed(1)+' meses', 'tempo até o aluno "pagar" o custo de aquisição', false, 'card-chart-cac', 'CAC a dividir pelo ARPU — quantos meses de mensalidade de um aluno são precisos para recuperar o que custou angariá-lo.', 'financeiro:finPayback'));
       }
     }
     // RAOS — retorno de marketing (aproximado): receita estimada dos alunos ativos vindos de Fixando/Website/Redes Sociais ÷ gasto em marketing do mês
@@ -5313,47 +5446,44 @@ function renderFinKPIs(){
       if(alunosMktAtivos>0){
         const receitaEstimadaMkt = alunosMktAtivos * arpu;
         const raos = receitaEstimadaMkt / marketingMes;
-        kpis.push(kpiCard('RAOS (retorno de marketing)', raos.toFixed(1)+'x', 'aprox.: '+alunosMktAtivos+' aluno(s) ativo(s) via Fixando/Website/Redes Sociais × ARPU', false, 'card-chart-cac', 'Estimativa: receita mensal gerada pelos alunos atualmente ativos vindos de Fixando, Website ou Redes Sociais, a dividir pelo gasto em marketing desse mês (inclui Fixando). Quanto retorna, em receita, cada euro investido em publicidade — é uma aproximação, já que não temos o valor de mensalidade exato por aluno.', 'financeiro:finRaos'));
+        kpisCac.push(kpiCard('RAOS (retorno de marketing)', raos.toFixed(1)+'x', 'aprox.: '+alunosMktAtivos+' aluno(s) ativo(s) via Fixando/Website/Redes Sociais × ARPU', false, 'card-chart-cac', 'Estimativa: receita mensal gerada pelos alunos atualmente ativos vindos de Fixando, Website ou Redes Sociais, a dividir pelo gasto em marketing desse mês (inclui Fixando). Quanto retorna, em receita, cada euro investido em publicidade — é uma aproximação, já que não temos o valor de mensalidade exato por aluno.', 'financeiro:finRaos', undefined, {aviso: raos<1}));
       }
     }
   }
   if(real && real.rendimento){
-    kpis.push(kpiCard('Rendimento acumulado (Real)', fmtEuro(real.rendimento.total), null, false, 'card-table-dr', 'Soma do Rendimento (Receita menos Gastos Fixos e Variáveis) em todos os meses reais até agora.', 'financeiro:finRendimentoAcumulado'));
+    kpisDestaque.push(kpiCard('Rendimento acumulado (Real)', fmtEuro(real.rendimento.total), null, true, 'card-table-dr', 'Soma do Rendimento (Receita menos Gastos Fixos e Variáveis) em todos os meses reais até agora.', 'financeiro:finRendimentoAcumulado', undefined, {destaque:true, aviso: real.rendimento.total<0}));
   }
   // Desvio acumulado Real vs Objetivo (Receita), até ao mês atual
   if(real && objetivo && idxAtual!==null){
     const desvio = real.receita.monthly.slice(0, idxAtual+1).reduce((a,v,i)=>a + (v - objetivo.receita.monthly[i]), 0);
     const cor = desvio>=0 ? '✅' : '⚠️';
-    kpis.push(kpiCard('Desvio acumulado vs Objetivo', fmtEuro(desvio), cor+' desde o início do ano letivo até '+real.months[idxAtual], false, 'card-chart-desvio', 'Soma, mês a mês desde o início do ano, da diferença entre a Receita Real e a Receita Objetivo. Positivo = estás à frente do objetivo; negativo = atrás.'));
+    kpisDestaque.push(kpiCard('Desvio acumulado vs Objetivo', fmtEuro(desvio), cor+' desde o início do ano letivo até '+real.months[idxAtual], true, 'card-chart-desvio', 'Soma, mês a mês desde o início do ano, da diferença entre a Receita Real e a Receita Objetivo. Positivo = estás à frente do objetivo; negativo = atrás.', undefined, undefined, {destaque:true, aviso: desvio<0}));
   }
-  // ARR estimado e rácio Gastos Fixos : Variáveis
+  // Rácio Gastos Fixos : Variáveis
   if(real && real.receita && idxAtual!==null){
-    const mrr = real.receita.monthly[idxAtual];
-    if(mrr>0){
-      kpis.push(kpiCard('ARR estimado', fmtEuro(mrr*12), 'com base na receita de '+real.months[idxAtual]+' × 12', false, 'card-chart-receita-fin', 'Receita Anual Recorrente estimada, assumindo que a receita do mês mais recente se mantém constante durante 12 meses (MRR × 12).', 'financeiro:finArr'));
-    }
     const fixosPctMensal = {};
     real.months.forEach((m,i)=>{ const soma = real.gastosFixosTotal.monthly[i]+real.gastosVariaveisTotal.monthly[i]; if(soma>0) fixosPctMensal[m] = 100*real.gastosFixosTotal.monthly[i]/soma; });
     const fixosPctMedia = mediaSerie(fixosPctMensal);
-    kpis.push(kpiCard('Fixos : Variáveis (média)', fixosPctMedia!=null ? (Math.round(fixosPctMedia)+'% : '+Math.round(100-fixosPctMedia)+'%') : '—', fixosPctMedia!=null ? ('média mensal de '+real.months[0]+' a '+real.months[idxAtual]) : 'ainda sem meses com dados suficientes este ano letivo', false, 'card-chart-peso-gastos', 'Proporção dos gastos reais que são fixos (não escalam com o negócio) versus variáveis (escalam com o nº de alunos/pedidos), em média por mês desde o início do ano letivo.', 'financeiro:finFixosVariaveis'));
+    kpisEquilibrio.push(kpiCard('Fixos : Variáveis (média)', fixosPctMedia!=null ? (Math.round(fixosPctMedia)+'% : '+Math.round(100-fixosPctMedia)+'%') : '—', fixosPctMedia!=null ? ('média mensal de '+real.months[0]+' a '+real.months[idxAtual]) : 'ainda sem meses com dados suficientes este ano letivo', false, 'card-chart-peso-gastos', 'Proporção dos gastos reais que são fixos (não escalam com o negócio) versus variáveis (escalam com o nº de alunos/pedidos), em média por mês desde o início do ano letivo.', 'financeiro:finFixosVariaveis'));
   }
+  let caixaAtual = null, gastosFixosMedios = null;
   if(cf && cf.Real && cf.Real.caixa.length){
-    const caixaAtual = cf.Real.caixa[cf.Real.caixa.length-1];
-    kpis.push(kpiCard('Caixa atual (Real)', fmtEuro(caixaAtual), null, false, 'card-chart-caixa', 'Saldo de caixa acumulado real, no último mês com dados.'));
+    caixaAtual = cf.Real.caixa[cf.Real.caixa.length-1];
+    gastosFixosMedios = real && real.gastosFixosItems.length ? real.gastosFixosTotal.monthly.filter(v=>v>0).reduce((a,b)=>a+b,0)/Math.max(1,real.gastosFixosTotal.monthly.filter(v=>v>0).length) : null;
+    const caixaAbaixoSeguranca = gastosFixosMedios && caixaAtual/gastosFixosMedios < mesesSeguranca;
+    kpisDestaque.push(kpiCard('Caixa atual (Real)', fmtEuro(caixaAtual), null, true, 'card-chart-caixa', 'Saldo de caixa acumulado real, no último mês com dados.', undefined, undefined, {destaque:true, aviso: caixaAbaixoSeguranca}));
     // burn rate médio (meses com CF negativo)
     const burnMonths = cf.Real.cf.filter(v=>v<0);
     const burnMedio = burnMonths.length ? burnMonths.reduce((a,b)=>a+b,0)/burnMonths.length : null;
     let runway = null;
     if(burnMedio){
       runway = caixaAtual>0 ? Math.max(0, caixaAtual/Math.abs(burnMedio)) : 0;
-      kpis.push(kpiCard('Runway estimado', runway.toFixed(1)+' meses', 'com base no burn rate médio real', false, 'card-chart-caixa', 'Quantos meses a caixa atual aguenta, ao ritmo médio de consumo (burn rate) dos meses reais em que o CF foi negativo.', 'financeiro:finRunway'));
+      kpisEquilibrio.push(kpiCard('Runway estimado', runway.toFixed(1)+' meses', 'com base no burn rate médio real', false, 'card-chart-caixa', 'Quantos meses a caixa atual aguenta, ao ritmo médio de consumo (burn rate) dos meses reais em que o CF foi negativo.', 'financeiro:finRunway', undefined, {aviso: runway<mesesSeguranca}));
     }
     // Alerta de segurança: caixa vs gastos fixos médios
-    const gastosFixosMedios = real && real.gastosFixosItems.length ? real.gastosFixosTotal.monthly.filter(v=>v>0).reduce((a,b)=>a+b,0)/Math.max(1,real.gastosFixosTotal.monthly.filter(v=>v>0).length) : null;
     const alertaEl = document.getElementById('fin-alerta-runway');
     if(alertaEl){
-      const mesesSeguranca = 3;
-      if(gastosFixosMedios && caixaAtual/gastosFixosMedios < mesesSeguranca){
+      if(caixaAbaixoSeguranca){
         alertaEl.style.display = 'block';
         alertaEl.innerHTML = `⚠️ <b>Atenção:</b> a caixa atual (${fmtEuro(caixaAtual)}) só cobre ${(caixaAtual/gastosFixosMedios).toFixed(1)} mês(es) de gastos fixos médios — abaixo do limite de segurança recomendado (${mesesSeguranca} meses).`;
       } else {
@@ -5361,7 +5491,12 @@ function renderFinKPIs(){
       }
     }
   }
-  document.getElementById('financeiro-kpis').innerHTML = kpis.join('');
+  document.getElementById('financeiro-kpis-destaque').innerHTML = kpisDestaque.join('');
+  document.getElementById('financeiro-kpis-receita').innerHTML = kpisReceita.join('');
+  document.getElementById('financeiro-kpis-equilibrio').innerHTML = kpisEquilibrio.join('');
+  document.getElementById('financeiro-kpis-cac').innerHTML = kpisCac.join('');
+  renderTabelaCacMensal(real);
+  renderTabelaRaosPlataforma(real, idxAtual, arpu);
 }
 document.getElementById('fin-dr-mes')?.addEventListener('change', renderDRTable);
 document.getElementById('fin-cf-mes')?.addEventListener('change', renderCFTable);

@@ -5432,7 +5432,7 @@ function calcularReceitaAcumuladaValor(real, objetivo, idxAtual){
   const sub = raModo==='total'
     ? ('todos os meses com dados até '+real.months[idxAtual])
     : raTipoMes==='unico'
-    ? ('receita de '+real.months[raMesIdx]+' apenas (não acumulada)')
+    ? ('Receita de '+real.months[raMesIdx]+' (não acumulada)')
     : ('acumulada de '+real.months[0]+' a '+real.months[raMesIdx]);
   return {valor, severidade, sub};
 }
@@ -5524,7 +5524,6 @@ function renderFinKPIs(){
     idxAtual = idx;
     const receitaReal = real.receita.monthly[idx];
     const receitaObj = objetivo ? objetivo.receita.monthly[idx] : null;
-    kpisReceita.push(kpiCard('Receita do mês ('+real.months[idx]+')', fmtEuro(receitaReal), receitaObj!==null? 'objetivo: '+fmtEuro(receitaObj) : null, true, 'card-table-dr', 'Receita real do mês anterior ao mês atual (o último mês já fechado), comparada com o objetivo para esse mesmo mês.', 'financeiro:finReceitaMes', undefined, {severidade: severidadePercentual(receitaReal, receitaObj, 0.15)}));
 
     // Ponto de equilíbrio do mês anterior (para os cálculos abaixo) + média mensal desde o início do ano letivo
     const custoFixoMes = real.gastosFixosTotal.monthly[idx];

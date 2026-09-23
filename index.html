@@ -436,8 +436,17 @@ table.data tr.row-media:hover td{background:var(--accent-light);}
 table.data tr.row-media td:first-child{border-left:1.5px solid var(--accent); border-radius:8px 0 0 8px;}
 table.data tr.row-media td:last-child{border-right:1.5px solid var(--accent); border-radius:0 8px 8px 0;}
 table.data th.col-real{color:var(--accent-dark); background:var(--sage-soft);}
-table.data td.col-real{font-weight:700; color:var(--accent-dark); background:var(--green-soft);}
-table.data tr:hover td.col-real{background:var(--sage-soft);}
+table.data td.col-real{
+  font-weight:700; color:var(--accent-dark);
+  background:
+    radial-gradient(circle, rgba(37,135,48,0.22) 1.3px, transparent 1.7px) 0 0/14px 14px,
+    var(--green-soft);
+}
+table.data tr:hover td.col-real{
+  background:
+    radial-gradient(circle, rgba(37,135,48,0.28) 1.3px, transparent 1.7px) 0 0/14px 14px,
+    var(--sage-soft);
+}
 #table-dr th:not(:first-child), #table-dr td:not(:first-child),
 #table-cf th:not(:first-child), #table-cf td:not(:first-child){text-align:center;}
 

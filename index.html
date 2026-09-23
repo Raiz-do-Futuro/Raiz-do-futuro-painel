@@ -341,16 +341,18 @@ input[type=file]{display:none;}
 }
 .kpi-ra-total-btn.dim{opacity:.4;}
 .kpi-ra-slider{
-  position:relative; display:flex; align-items:center; justify-content:space-between; gap:2px;
-  background:var(--card); border:1.5px solid var(--border); border-radius:999px; padding:4px 6px;
-  flex:1; min-width:0; user-select:none; transition:opacity .2s ease;
+  position:relative; width:90px; flex-shrink:0; overflow:hidden;
+  background:var(--card); border:1.5px solid var(--border); border-radius:999px; padding:4px 0;
+  user-select:none; transition:opacity .2s ease;
 }
 .kpi-ra-slider.dim{opacity:.4;}
+.kpi-ra-track{display:flex; transition:transform .32s cubic-bezier(.4,0,.2,1);}
 .kpi-ra-mes{
-  font-size:10px; font-weight:600; color:var(--muted); padding:3px 6px; border-radius:999px;
-  white-space:nowrap; cursor:pointer; transition:color .15s ease, font-weight .15s ease;
+  width:30px; flex-shrink:0; text-align:center; font-size:9.5px; font-weight:600; color:var(--muted);
+  padding:3px 0; border-radius:999px; white-space:nowrap; cursor:pointer;
+  transition:color .15s ease, font-weight .15s ease, background .15s ease;
 }
-.kpi-ra-mes.ativo{color:#fff; background:var(--accent); font-weight:700; padding:3px 9px;}
+.kpi-ra-mes.ativo{color:#fff; background:var(--accent); font-weight:700;}
 .kpi-ra-tipo-toggle{margin-top:8px; transition:opacity .2s ease;}
 .kpi-ra-tipo-toggle.dim{opacity:.4;}
 .kpi .label{font-size:12px; color:var(--muted); font-weight:600; line-height:1.35; min-height:32px;}
@@ -5408,8 +5410,8 @@ function janelaTresMeses(idx){
 }
 let raModo = 'total', raMesIdx = null, raTipoMes = 'acumulado';
 let _raCtx = null;
-function receitaAcumuladaCardHtml(real, objetivo, idxAtual){
-  if(raMesIdx==null) raMesIdx = idxAtual;
+const RA_ITEM_W = 30;
+function calcularReceitaAcumuladaValor(real, objetivo, idxAtual){
   let valor, valorObj;
   if(raModo==='total'){
     valor = receitaAcumuladaAteIdx(real.receita.monthly, idxAtual);
@@ -5422,22 +5424,29 @@ function receitaAcumuladaCardHtml(real, objetivo, idxAtual){
     valorObj = objetivo ? receitaAcumuladaAteIdx(objetivo.receita.monthly, raMesIdx) : null;
   }
   const severidade = valorObj!=null ? severidadePercentual(valor, valorObj, 0.15) : null;
-  const cor = corSeveridade(severidade);
-  const corStyle = cor ? ` style="background:${cor.bg} !important; border-top-color:${cor.border} !important;"` : '';
   const sub = raModo==='total'
     ? ('todos os meses com dados até '+real.months[idxAtual])
     : raTipoMes==='unico'
     ? ('receita de '+real.months[raMesIdx]+' apenas (não acumulada)')
     : ('acumulada de '+real.months[0]+' a '+real.months[raMesIdx]);
+  return {valor, severidade, sub};
+}
+function receitaAcumuladaCardHtml(real, objetivo, idxAtual){
+  if(raMesIdx==null) raMesIdx = idxAtual;
+  const {valor, severidade, sub} = calcularReceitaAcumuladaValor(real, objetivo, idxAtual);
+  const cor = corSeveridade(severidade);
+  const corStyle = cor ? ` style="background:${cor.bg} !important; border-top-color:${cor.border} !important;"` : '';
   const janela = janelaTresMeses(raMesIdx);
-  const mesesHtml = janela.map(i=>`<span class="kpi-ra-mes${raModo==='mes' && i===raMesIdx?' ativo':''}" data-mesidx="${i}">${real.months[i].slice(0,3)}</span>`).join('');
+  const trackHtml = real.months.map((m,i)=>`<span class="kpi-ra-mes${raModo==='mes' && i===raMesIdx?' ativo':''}" data-mesidx="${i}">${m.slice(0,3)}</span>`).join('');
   return `<div class="kpi destaque" id="kpi-receita-acumulada"${corStyle}>
     <div class="label" title="Soma da Receita Real. &quot;Total&quot; soma todos os meses com dados até agora; clica num mês para escolheres um período específico — acumulado desde Setembro, ou só esse mês.">Receita acumulada <span style="opacity:.5; font-size:11px;">ⓘ</span></div>
     <div class="value">${fmtEuro(valor)}</div>
     <div class="sub">${sub}</div>
     <div class="kpi-ra-filtro" onclick="event.stopPropagation();">
       <button type="button" class="kpi-ra-total-btn${raModo!=='total'?' dim':''}" id="kpi-ra-total-btn">Total</button>
-      <div class="kpi-ra-slider${raModo!=='mes'?' dim':''}" id="kpi-ra-slider">${mesesHtml}</div>
+      <div class="kpi-ra-slider${raModo!=='mes'?' dim':''}" id="kpi-ra-slider">
+        <div class="kpi-ra-track" id="kpi-ra-track" style="transform:translateX(-${janela[0]*RA_ITEM_W}px);">${trackHtml}</div>
+      </div>
     </div>
     <div class="chart-view-toggle two-way kpi-ra-tipo-toggle${raModo!=='mes'?' dim':''}" data-view="${raTipoMes}" id="kpi-ra-tipo-toggle" onclick="event.stopPropagation();">
       <div class="chart-view-slider"></div>
@@ -5453,18 +5462,37 @@ function atualizarReceitaAcumuladaCard(){
   el.outerHTML = receitaAcumuladaCardHtml(_raCtx.real, _raCtx.objetivo, _raCtx.idxAtual);
   bindReceitaAcumuladaCard();
 }
+// Só o conteúdo (valor/sub/cor/posição da faixa de meses) — mantém o DOM vivo para a faixa deslizar com transição CSS.
+function atualizarReceitaAcumuladaConteudo(){
+  if(!_raCtx) return;
+  const { real, objetivo, idxAtual } = _raCtx;
+  const card = document.getElementById('kpi-receita-acumulada');
+  const track = document.getElementById('kpi-ra-track');
+  if(!card || !track) return;
+  const {valor, severidade, sub} = calcularReceitaAcumuladaValor(real, objetivo, idxAtual);
+  const cor = corSeveridade(severidade);
+  if(cor){ card.style.setProperty('background', cor.bg, 'important'); card.style.setProperty('border-top-color', cor.border, 'important'); }
+  else { card.style.removeProperty('background'); card.style.removeProperty('border-top-color'); }
+  card.querySelector('.value').textContent = fmtEuro(valor);
+  card.querySelector('.sub').textContent = sub;
+  track.querySelectorAll('.kpi-ra-mes').forEach(span=> span.classList.toggle('ativo', Number(span.dataset.mesidx)===raMesIdx));
+  const janela = janelaTresMeses(raMesIdx);
+  track.style.transform = `translateX(-${janela[0]*RA_ITEM_W}px)`;
+}
+function selecionarMesReceitaAcumulada(idx){
+  const primeiraVezEmModoMes = raModo!=='mes';
+  raModo = 'mes'; raMesIdx = idx;
+  if(primeiraVezEmModoMes){ atualizarReceitaAcumuladaCard(); return; }
+  atualizarReceitaAcumuladaConteudo();
+}
 function bindReceitaAcumuladaCard(){
   const totalBtn = document.getElementById('kpi-ra-total-btn');
-  const slider = document.getElementById('kpi-ra-slider');
+  const track = document.getElementById('kpi-ra-track');
   const tipoToggle = document.getElementById('kpi-ra-tipo-toggle');
   if(totalBtn) totalBtn.addEventListener('click', (e)=>{ e.stopPropagation(); raModo='total'; atualizarReceitaAcumuladaCard(); });
-  if(slider){
-    slider.querySelectorAll('.kpi-ra-mes').forEach(span=>{
-      span.addEventListener('click', (e)=>{
-        e.stopPropagation();
-        raModo = 'mes'; raMesIdx = Number(span.dataset.mesidx);
-        atualizarReceitaAcumuladaCard();
-      });
+  if(track){
+    track.querySelectorAll('.kpi-ra-mes').forEach(span=>{
+      span.addEventListener('click', (e)=>{ e.stopPropagation(); selecionarMesReceitaAcumulada(Number(span.dataset.mesidx)); });
     });
   }
   if(tipoToggle){

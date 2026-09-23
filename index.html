@@ -435,6 +435,9 @@ table.data tr.row-media td{
 table.data tr.row-media:hover td{background:var(--accent-light);}
 table.data tr.row-media td:first-child{border-left:1.5px solid var(--accent); border-radius:8px 0 0 8px;}
 table.data tr.row-media td:last-child{border-right:1.5px solid var(--accent); border-radius:0 8px 8px 0;}
+table.data th.col-real{color:var(--accent); font-weight:800;}
+table.data td.col-real{font-weight:700; color:var(--accent); background:var(--accent-soft);}
+table.data tr:hover td.col-real{background:var(--accent-light);}
 
 .empty-state{
   border:1.5px dashed var(--accent-light); border-radius:16px; padding:40px 20px; text-align:center; color:var(--muted); transition:border-color .3s ease;
@@ -1487,7 +1490,7 @@ table.data tr.row-media td:last-child{border-right:1.5px solid var(--accent); bo
           <div class="chart-card" id="card-table-dr">
             <div style="overflow-x:auto;">
             <table class="data" id="table-dr">
-              <thead><tr><th>Linha da DR</th><th title="Cenário pessimista para este mês/total.">Pessimista</th><th title="Cenário objetivo para este mês/total.">Objetivo</th><th title="Valores reais registados (aba DR).">Real</th><th title="Cenário otimista para este mês/total.">Otimista</th><th title="Como o Real compara com o Objetivo.">Face ao objetivo</th><th title="Este valor Real como percentagem da Receita Real do mesmo período.">% da Receita</th></tr></thead>
+              <thead><tr><th>Linha da DR</th><th class="col-real" title="Valores reais registados (aba DR).">Real</th><th title="Cenário pessimista para este mês/total.">Pessimista</th><th title="Cenário objetivo para este mês/total.">Objetivo</th><th title="Cenário otimista para este mês/total.">Otimista</th><th title="Como o Real compara com o Objetivo.">Face ao objetivo</th><th title="Este valor Real como percentagem da Receita Real do mesmo período.">% da Receita</th></tr></thead>
               <tbody></tbody>
             </table>
             </div>
@@ -1505,7 +1508,7 @@ table.data tr.row-media td:last-child{border-right:1.5px solid var(--accent); bo
           <div class="chart-card" id="card-table-cf">
             <div style="overflow-x:auto;">
             <table class="data" id="table-cf">
-              <thead><tr><th>Linha do CF</th><th>Pessimista</th><th>Objetivo</th><th>Real</th><th>Otimista</th><th>Face ao objetivo</th></tr></thead>
+              <thead><tr><th>Linha do CF</th><th class="col-real">Real</th><th>Pessimista</th><th>Objetivo</th><th>Otimista</th><th>Face ao objetivo</th></tr></thead>
               <tbody></tbody>
             </table>
             </div>
@@ -5182,7 +5185,7 @@ function renderDRTable(){
     const vP = l.get(pessimista), vO = l.get(objetivo), vR = l.get(real), vOt = l.get(otimista);
     const style = l.destaque ? ' style="font-weight:700; background:var(--sage-soft);"' : '';
     const pctReceita = (l.label!=='Receita' && vR!==null && vR!==undefined && receitaRealPeriodo) ? (100*vR/receitaRealPeriodo).toFixed(0)+'%' : '—';
-    return `<tr${style}><td>${l.label}</td><td>${fmtEuro(vP)}</td><td>${fmtEuro(vO)}</td><td>${fmtEuro(vR)}</td><td>${fmtEuro(vOt)}</td><td>${faceAoObjetivo(vR, vO, l.maiorMelhor)}</td><td>${pctReceita}</td></tr>`;
+    return `<tr${style}><td>${l.label}</td><td class="col-real">${fmtEuro(vR)}</td><td>${fmtEuro(vP)}</td><td>${fmtEuro(vO)}</td><td>${fmtEuro(vOt)}</td><td>${faceAoObjetivo(vR, vO, l.maiorMelhor)}</td><td>${pctReceita}</td></tr>`;
   }).join('');
 }
 function renderCFTable(){
@@ -5203,7 +5206,7 @@ function renderCFTable(){
     const gv = (sec)=> secs[sec] ? (l.semTotal && monthIdx==='total' ? secs[sec][l.key][secs[sec][l.key].length-1] : at(secs[sec][l.key])) : null;
     const vP=gv('Pessimista'), vO=gv('Objetivo'), vR=gv('Real'), vOt=gv('Otimista');
     const style = l.destaque ? ' style="font-weight:700; background:var(--sage-soft);"' : '';
-    return `<tr${style}><td>${l.label}${l.semTotal && monthIdx==='total'? ' (fim de período)':''}</td><td>${fmtEuro(vP)}</td><td>${fmtEuro(vO)}</td><td>${fmtEuro(vR)}</td><td>${fmtEuro(vOt)}</td><td>${faceAoObjetivo(vR, vO, l.maiorMelhor)}</td></tr>`;
+    return `<tr${style}><td>${l.label}${l.semTotal && monthIdx==='total'? ' (fim de período)':''}</td><td class="col-real">${fmtEuro(vR)}</td><td>${fmtEuro(vP)}</td><td>${fmtEuro(vO)}</td><td>${fmtEuro(vOt)}</td><td>${faceAoObjetivo(vR, vO, l.maiorMelhor)}</td></tr>`;
   }).join('');
 }
 function renderFinCharts(){

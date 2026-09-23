@@ -316,6 +316,8 @@ input[type=file]{display:none;}
 .kpi-grid{display:grid; grid-template-columns:repeat(3, 1fr); gap:14px; margin-bottom:10px;}
 @media (max-width:760px){.kpi-grid{grid-template-columns:repeat(2, 1fr);}}
 @media (max-width:480px){.kpi-grid{grid-template-columns:1fr;}}
+.kpi-grid.kpi-grid-2col{grid-template-columns:repeat(2, 1fr);}
+@media (max-width:480px){.kpi-grid.kpi-grid-2col{grid-template-columns:1fr;}}
 .kpi{
   background:var(--card); border:1.5px solid var(--border); border-top:5px solid var(--green);
   padding:16px 16px 14px 16px;
@@ -331,8 +333,25 @@ input[type=file]{display:none;}
 .kpi.destaque{border-top-width:7px; box-shadow:0 6px 18px rgba(37,135,48,0.16);}
 .kpi.destaque .label{font-size:13px;}
 .kpi.destaque .value{font-size:32px;}
-.kpi.aviso{background:var(--rust-soft) !important; border-top-color:var(--rust) !important; border-color:var(--rust-soft);}
-.kpi.aviso .value{color:var(--rust);}
+.kpi-ra-filtro{display:flex; align-items:center; gap:6px; margin-top:10px;}
+.kpi-ra-total-btn{
+  font-family:'Bahnschrift','Poppins',sans-serif; font-size:10.5px; font-weight:700; border:1.5px solid var(--border);
+  background:var(--card); color:var(--ink); border-radius:999px; padding:5px 11px; cursor:pointer;
+  transition:opacity .2s ease; flex-shrink:0;
+}
+.kpi-ra-total-btn.dim{opacity:.4;}
+.kpi-ra-slider{
+  position:relative; display:flex; align-items:center; justify-content:space-between; gap:2px;
+  background:var(--card); border:1.5px solid var(--border); border-radius:999px; padding:4px 6px;
+  flex:1; min-width:0; cursor:grab; user-select:none; transition:opacity .2s ease;
+}
+.kpi-ra-slider.dim{opacity:.4;}
+.kpi-ra-slider:active{cursor:grabbing;}
+.kpi-ra-mes{
+  font-size:10px; font-weight:600; color:var(--muted); padding:3px 6px; border-radius:999px;
+  white-space:nowrap; cursor:pointer; transition:color .15s ease, font-weight .15s ease;
+}
+.kpi-ra-mes.ativo{color:#fff; background:var(--accent); font-weight:700; padding:3px 9px;}
 .kpi .label{font-size:12px; color:var(--muted); font-weight:600; line-height:1.35; min-height:32px;}
 .kpi .value{
   font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:26px; color:var(--ink);
@@ -707,11 +726,12 @@ table.data tr.row-media td:last-child{border-right:1.5px solid var(--accent); bo
         <div class="gloss-item"><b>LTV : CAC</b><span>Valor de vida do aluno (ARPU × retenção média em meses) a dividir pelo CAC, ambos do mês anterior. Acima de 3 costuma ser saudável; abaixo de 1 é sinal de alerta.</span></div>
         <div class="gloss-item"><b>Período de recuperação do CAC</b><span>CAC a dividir pelo ARPU (do mês anterior) — quantos meses de mensalidade de um aluno são precisos para recuperar o que custou angariá-lo.</span></div>
         <div class="gloss-item"><b>RAOS (retorno de marketing)</b><span>Estimativa: receita mensal gerada pelos alunos atualmente ativos vindos de Fixando, Website ou Redes Sociais, a dividir pelo gasto em marketing do mês anterior.</span></div>
-        <div class="gloss-item"><b>Rendimento acumulado (Real)</b><span>Soma do Rendimento (Receita menos Gastos Fixos e Variáveis) em todos os meses reais até agora.</span></div>
+        <div class="gloss-item"><b>Rendimento acumulado</b><span>Soma do Rendimento (Receita menos Gastos Fixos e Variáveis) em todos os meses reais até agora.</span></div>
         <div class="gloss-item"><b>Desvio acumulado vs Objetivo</b><span>Soma, mês a mês desde o início do ano, da diferença entre a Receita Real e a Receita Objetivo. Positivo = à frente do objetivo; negativo = atrás. Não tem comparação com anos anteriores.</span></div>
         <div class="gloss-item"><b>ARR estimado</b><span>Receita Anual Recorrente estimada, assumindo que a receita do mês anterior se mantém constante durante 12 meses (MRR × 12).</span></div>
         <div class="gloss-item"><b>Fixos : Variáveis (média)</b><span>Proporção entre gastos fixos e variáveis reais, em média por mês desde o início do ano letivo (não a mesma conta do Ponto de equilíbrio — aqui entram todos os gastos, incluindo "Professores" e "IfThenPay").</span></div>
-        <div class="gloss-item"><b>Caixa atual (Real)</b><span>Saldo de caixa acumulado real, no último mês com dados (aba CF). Não tem comparação com anos anteriores.</span></div>
+        <div class="gloss-item"><b>Caixa atual</b><span>Saldo de caixa acumulado real, no último mês com dados (aba CF). Não tem comparação com anos anteriores.</span></div>
+        <div class="gloss-item"><b>Receita acumulada</b><span>Soma da Receita Real, mês a mês. O botão "Total" soma todos os meses com dados até agora; o slider ao lado deixa escolher um mês específico e mostra a soma acumulada até esse mês (Setembro → esse mês).</span></div>
         <div class="gloss-item"><b>Runway estimado</b><span>Quantos meses a caixa atual aguenta, ao ritmo médio de consumo (burn rate) dos meses reais em que o Cash Flow foi negativo.</span></div>
       </div>
     </div>
@@ -1413,7 +1433,7 @@ table.data tr.row-media td:last-child{border-right:1.5px solid var(--accent); bo
 
         <hr class="divider">
 
-        <div class="kpi-grid" id="financeiro-kpis-cac"></div>
+        <div class="kpi-grid kpi-grid-2col" id="financeiro-kpis-cac"></div>
 
         <div class="section">
           <h3>🎯 CAC — evolução mensal</h3>
@@ -2299,8 +2319,24 @@ function doughnutChart(id, labels, data){
   });
 }
 
+// Mistura duas cores RGB (arrays [r,g,b]) numa fração 0..1 do primeiro para o segundo.
+function misturarRgb(a, b, frac){ return a.map((c,i)=> Math.round(c + (b[i]-c)*frac)); }
+// score entre -1 (péssimo) e +1 (ótimo), 0/neutro = sem tingir. Devolve {bg, border} em rgb() ou null.
+function corSeveridade(score){
+  if(score==null || isNaN(score)) return null;
+  const s = Math.max(-1, Math.min(1, score));
+  if(Math.abs(s) < 0.05) return null;
+  const BRANCO = [255,255,255];
+  const alvo = s<0 ? [139,74,61] : [37,135,48]; // --rust / --green
+  const t = Math.abs(s);
+  const bg = misturarRgb(BRANCO, alvo, 0.08 + t*0.24);
+  const border = misturarRgb(BRANCO, alvo, 0.45 + t*0.55);
+  return { bg:`rgb(${bg.join(',')})`, border:`rgb(${border.join(',')})` };
+}
 function kpiCard(label, value, sub, circled, targetId, definicao, compareKey, alt, opts){
-  const { destaque, aviso } = opts || {};
+  const { destaque, severidade } = opts || {};
+  const cor = severidade!=null ? corSeveridade(severidade) : null;
+  const corStyle = cor ? ` style="background:${cor.bg} !important; border-top-color:${cor.border} !important;"` : '';
   const clickable = targetId ? ` onclick="scrollToSection('${targetId}')"` : '';
   const goLabel = targetId && targetId.includes('table') ? 'Ver tabela →' : 'Ver gráfico →';
   const labelAttr = definicao ? ` title="${definicao.replace(/"/g,'&quot;')}"` : '';
@@ -2320,8 +2356,8 @@ function kpiCard(label, value, sub, circled, targetId, definicao, compareKey, al
     </div>`;
   }
   const temSub = sub || (alt && alt.sub);
-  const classes = 'kpi'+(destaque?' destaque':'')+(aviso?' aviso':'');
-  return `<div class="${classes}"${clickable}><div class="label"${labelAttr}>${label}${helpIcon}${compareBtn}</div><div class="value${circled?' circled':''}">${value}</div>${temSub?`<div class="sub">${sub||''}</div>`:''}${altHtml}${targetId?`<div class="go">${goLabel}</div>`:''}</div>`;
+  const classes = 'kpi'+(destaque?' destaque':'');
+  return `<div class="${classes}"${corStyle}${clickable}><div class="label"${labelAttr}>${label}${helpIcon}${compareBtn}</div><div class="value${circled?' circled':''}">${value}</div>${temSub?`<div class="sub">${sub||''}</div>`:''}${altHtml}${targetId?`<div class="go">${goLabel}</div>`:''}</div>`;
 }
 function kpiAltSwitch(btn){
   const toggle = btn.closest('.kpi-alt-toggle');
@@ -2995,7 +3031,7 @@ const HIST_FIN_METRICAS = {
   finLtvCac: { label:'LTV : CAC', field:'ltvCac', fmt:v=>v.toFixed(1)+' : 1' },
   finPayback: { label:'Período de recuperação do CAC', field:'payback', fmt:v=>v.toFixed(1)+' meses' },
   finRaos: { label:'RAOS (retorno de marketing)', field:'raos', fmt:v=>v.toFixed(1)+'x' },
-  finRendimentoAcumulado: { label:'Rendimento acumulado (Real)', field:'rendimentoAcumulado', fmt:v=>fmtEuro(v), mensalField:'rendimentoMensal' },
+  finRendimentoAcumulado: { label:'Rendimento acumulado', field:'rendimentoAcumulado', fmt:v=>fmtEuro(v), mensalField:'rendimentoMensal' },
   finArr: { label:'ARR estimado', field:'arr', fmt:v=>fmtEuro(v) },
   finFixosVariaveis: { label:'Fixos : Variáveis', field:'fixosPct', fmt:v=>v.fixos+'% : '+v.variaveis+'%', mensalField:'fixosPctMensal', fmtMensal:v=>Math.round(v)+'% fixos', mediaNoTotal:true, fmtMedia:v=>Math.round(v)+'% : '+Math.round(100-v)+'%' },
   finRunway: { label:'Runway estimado', field:'runway', fmt:v=>v.toFixed(1)+' meses' }
@@ -5353,10 +5389,86 @@ function renderTabelaCacMensal(real){
   }).filter(r=>r.mkt>0 || r.n>0);
   tbody.innerHTML = rows.length ? rows.map(r=>`<tr><td>${r.m}</td><td>${fmtEuro(r.mkt)}</td><td>${r.n}</td><td>${r.cac!=null?fmtEuro(r.cac):'—'}</td></tr>`).join('') : '<tr><td colspan="4" style="text-align:center; color:var(--muted);">Ainda sem dados suficientes.</td></tr>';
 }
+// score entre -1 e +1 a partir de um desvio percentual de valorReal face a valorRef, saturando em ±margem.
+function severidadePercentual(valorReal, valorRef, margem){
+  if(valorRef==null || valorRef===0) return null;
+  return Math.max(-1, Math.min(1, (valorReal-valorRef)/Math.abs(valorRef)/margem));
+}
+// score entre -1 e +1 a partir de um rácio, com "neutro" (score 0) e "escala" (distância até ±1).
+function severidadeRacio(racio, neutro, escala){
+  if(racio==null || isNaN(racio)) return null;
+  return Math.max(-1, Math.min(1, (racio-neutro)/escala));
+}
+function receitaAcumuladaAteIdx(monthly, idx){ return monthly.slice(0, idx+1).reduce((a,b)=>a+b, 0); }
+function janelaTresMeses(idx){
+  if(idx<=0) return [0,1,2];
+  if(idx>=11) return [9,10,11];
+  return [idx-1, idx, idx+1];
+}
+let raModo = 'total', raMesIdx = null;
+let _raCtx = null;
+function receitaAcumuladaCardHtml(real, objetivo, idxAtual){
+  if(raMesIdx==null) raMesIdx = idxAtual;
+  const idxParaValor = raModo==='total' ? idxAtual : raMesIdx;
+  const valor = receitaAcumuladaAteIdx(real.receita.monthly, idxParaValor);
+  let severidade = null;
+  if(objetivo){
+    const valorObj = receitaAcumuladaAteIdx(objetivo.receita.monthly, idxParaValor);
+    severidade = severidadePercentual(valor, valorObj, 0.15);
+  }
+  const cor = corSeveridade(severidade);
+  const corStyle = cor ? ` style="background:${cor.bg} !important; border-top-color:${cor.border} !important;"` : '';
+  const sub = raModo==='total'
+    ? ('todos os meses com dados até '+real.months[idxAtual])
+    : ('acumulada de '+real.months[0]+' a '+real.months[raMesIdx]);
+  const janela = janelaTresMeses(raMesIdx);
+  const mesesHtml = janela.map(i=>`<span class="kpi-ra-mes${raModo==='mes' && i===raMesIdx?' ativo':''}" data-mesidx="${i}">${real.months[i].slice(0,3)}</span>`).join('');
+  return `<div class="kpi destaque" id="kpi-receita-acumulada"${corStyle}>
+    <div class="label" title="Soma da Receita Real. &quot;Total&quot; soma todos os meses com dados até agora; o slider ao lado deixa escolher um mês e mostra a soma acumulada até esse mês.">Receita acumulada <span style="opacity:.5; font-size:11px;">ⓘ</span></div>
+    <div class="value">${fmtEuro(valor)}</div>
+    <div class="sub">${sub}</div>
+    <div class="kpi-ra-filtro" onclick="event.stopPropagation();">
+      <button type="button" class="kpi-ra-total-btn${raModo!=='total'?' dim':''}" id="kpi-ra-total-btn">Total</button>
+      <div class="kpi-ra-slider${raModo!=='mes'?' dim':''}" id="kpi-ra-slider">${mesesHtml}</div>
+    </div>
+  </div>`;
+}
+function atualizarReceitaAcumuladaCard(){
+  if(!_raCtx) return;
+  const el = document.getElementById('kpi-receita-acumulada');
+  if(!el) return;
+  el.outerHTML = receitaAcumuladaCardHtml(_raCtx.real, _raCtx.objetivo, _raCtx.idxAtual);
+  bindReceitaAcumuladaCard();
+}
+function bindReceitaAcumuladaCard(){
+  const totalBtn = document.getElementById('kpi-ra-total-btn');
+  const slider = document.getElementById('kpi-ra-slider');
+  if(totalBtn) totalBtn.addEventListener('click', (e)=>{ e.stopPropagation(); raModo='total'; atualizarReceitaAcumuladaCard(); });
+  if(!slider) return;
+  slider.querySelectorAll('.kpi-ra-mes').forEach(span=>{
+    span.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      raModo = 'mes'; raMesIdx = Number(span.dataset.mesidx);
+      atualizarReceitaAcumuladaCard();
+    });
+  });
+  let startX = null;
+  slider.addEventListener('pointerdown', (e)=>{ startX = e.clientX; try{ slider.setPointerCapture(e.pointerId); }catch(err){} });
+  slider.addEventListener('pointerup', (e)=>{
+    if(startX==null) return;
+    const dx = e.clientX - startX;
+    startX = null;
+    if(Math.abs(dx) < 26) return;
+    const dir = dx < 0 ? 1 : -1; // arrastar para a esquerda avança no tempo (meses seguintes)
+    const novo = Math.max(0, Math.min(11, raMesIdx + dir));
+    raModo = 'mes'; raMesIdx = novo;
+    atualizarReceitaAcumuladaCard();
+  });
+}
 function renderFinKPIs(){
   const real = fin.dr.real, objetivo = fin.dr.objetivo;
   const cf = fin.cf;
-  const kpisDestaque = [], kpisReceita = [], kpisEquilibrio = [], kpisCac = [];
+  const kpisReceita = [], kpisEquilibrio = [], kpisCac = [];
   let idxAtual = null, arpu = null;
   const mesesSeguranca = 3;
 
@@ -5366,8 +5478,7 @@ function renderFinKPIs(){
     idxAtual = idx;
     const receitaReal = real.receita.monthly[idx];
     const receitaObj = objetivo ? objetivo.receita.monthly[idx] : null;
-    const receitaAbaixoObjetivo = receitaObj!==null && receitaReal < receitaObj;
-    kpisReceita.push(kpiCard('Receita do mês ('+real.months[idx]+')', fmtEuro(receitaReal), receitaObj!==null? 'objetivo: '+fmtEuro(receitaObj) : null, true, 'card-table-dr', 'Receita real do mês anterior ao mês atual (o último mês já fechado), comparada com o objetivo para esse mesmo mês.', 'financeiro:finReceitaMes', undefined, {aviso:receitaAbaixoObjetivo}));
+    kpisReceita.push(kpiCard('Receita do mês ('+real.months[idx]+')', fmtEuro(receitaReal), receitaObj!==null? 'objetivo: '+fmtEuro(receitaObj) : null, true, 'card-table-dr', 'Receita real do mês anterior ao mês atual (o último mês já fechado), comparada com o objetivo para esse mesmo mês.', 'financeiro:finReceitaMes', undefined, {severidade: severidadePercentual(receitaReal, receitaObj, 0.15)}));
 
     // Ponto de equilíbrio do mês anterior (para os cálculos abaixo) + média mensal desde o início do ano letivo
     const custoFixoMes = real.gastosFixosTotal.monthly[idx];
@@ -5377,7 +5488,7 @@ function renderFinKPIs(){
     const pontoEquilibrioMensal = {};
     real.months.forEach((m,i)=>{ const v = real.gastosFixosTotal.monthly[i]+real.gastosVariaveisTotal.monthly[i]-gastoExcluidoPontoEquilibrio(real, i); if(real.receita.monthly[i]>0 || v>0) pontoEquilibrioMensal[m]=v; });
     const breakEvenMedia = mediaSerie(pontoEquilibrioMensal);
-    kpisEquilibrio.push(kpiCard('Ponto de equilíbrio (média)', breakEvenMedia!=null ? fmtEuro(breakEvenMedia) : '—', breakEvenMedia!=null ? ('média de '+real.months[0]+' a '+real.months[idx]+' · '+(acimaBreakEven?'✅ receita de '+real.months[idx]+' acima do ponto de equilíbrio desse mês':'⚠️ receita de '+real.months[idx]+' ainda abaixo do ponto de equilíbrio desse mês')) : 'ainda sem meses com dados suficientes este ano letivo', false, 'card-table-dr', 'Receita necessária, em média por mês (desde o início do ano letivo), para cobrir todos os gastos (fixos + variáveis reais) e ficar com Rendimento = 0.', 'financeiro:finPontoEquilibrioMes', undefined, {aviso: breakEvenMedia!=null && !acimaBreakEven}));
+    kpisEquilibrio.push(kpiCard('Ponto de equilíbrio (média)', breakEvenMedia!=null ? fmtEuro(breakEvenMedia) : '—', breakEvenMedia!=null ? ('média de '+real.months[0]+' a '+real.months[idx]+' · '+(acimaBreakEven?'✅ receita de '+real.months[idx]+' acima do ponto de equilíbrio desse mês':'⚠️ receita de '+real.months[idx]+' ainda abaixo do ponto de equilíbrio desse mês')) : 'ainda sem meses com dados suficientes este ano letivo', false, 'card-table-dr', 'Receita necessária, em média por mês (desde o início do ano letivo), para cobrir todos os gastos (fixos + variáveis reais) e ficar com Rendimento = 0.', 'financeiro:finPontoEquilibrioMes', undefined, {severidade: breakEvenMedia!=null ? severidadePercentual(receitaReal, breakEven, 0.15) : null}));
 
     // ARPU (cruza com Alunos: nº ativos nesse mês) — mês anterior para os cálculos derivados, média mensal para o cartão
     const chaveMes = drMonthToKey(real.months[idx], idx);
@@ -5407,6 +5518,15 @@ function renderFinKPIs(){
       kpisReceita.push(kpiCard('ARR estimado', fmtEuro(arrEst.arr), sub, false, 'card-chart-receita-fin', 'Receita Anual Recorrente estimada. Quando há histórico de 24/25 e/ou 25/26 importado (ou inserido manualmente), a estimativa é ajustada à sazonalidade típica do negócio — a receita acumulada até agora é dividida pela % de um ano "típico" que, em média nesses anos, já tinha decorrido nesta altura. Mais realista do que MRR × 12 simples, já que a atividade tem meses fortes e fracos. Sem esse histórico, usa o cálculo simples (MRR × 12).', 'financeiro:finArr'));
     }
 
+    // Desvio acumulado Real vs Objetivo (Receita), até ao mês atual — junto ao ARPU/ARR
+    if(objetivo){
+      const receitaAcumRef = receitaAcumuladaAteIdx(real.receita.monthly, idx);
+      const objetivoAcumRef = receitaAcumuladaAteIdx(objetivo.receita.monthly, idx);
+      const desvio = receitaAcumRef - objetivoAcumRef;
+      const corTxt = desvio>=0 ? '✅' : '⚠️';
+      kpisReceita.push(kpiCard('Desvio acumulado vs Objetivo', fmtEuro(desvio), corTxt+' desde o início do ano letivo até '+real.months[idx], false, 'card-chart-desvio', 'Soma, mês a mês desde o início do ano, da diferença entre a Receita Real e a Receita Objetivo. Positivo = estás à frente do objetivo; negativo = atrás.', undefined, undefined, {severidade: severidadePercentual(receitaAcumRef, objetivoAcumRef, 0.15)}));
+    }
+
     // CAC do mês anterior (para LTV/payback/RAOS) + média mensal para o cartão
     const marketingMes = MARKETING_LABELS.reduce((soma,lbl)=>{
       const item = real.gastosFixosItems.find(x=>x.label===lbl) || real.gastosVariaveisItems.find(x=>x.label===lbl);
@@ -5432,7 +5552,7 @@ function renderFinKPIs(){
       const ltv = arpu * retencaoMeses;
       if(cacMes>0){
         const racio = ltv/cacMes;
-        kpisCac.push(kpiCard('LTV : CAC', racio.toFixed(1)+' : 1', 'LTV ≈ '+fmtEuro(ltv)+' · CAC ≈ '+fmtEuro(cacMes), false, 'card-chart-cac', 'Valor de vida do aluno (ARPU × retenção média em meses) a dividir pelo CAC. Acima de 3 costuma ser saudável; abaixo de 1 é sinal de alerta — estás a pagar mais para conseguir um aluno do que ele vale.', 'financeiro:finLtvCac', undefined, {aviso: racio<1}));
+        kpisCac.push(kpiCard('LTV : CAC', racio.toFixed(1)+' : 1', 'LTV ≈ '+fmtEuro(ltv)+' · CAC ≈ '+fmtEuro(cacMes), false, 'card-chart-cac', 'Valor de vida do aluno (ARPU × retenção média em meses) a dividir pelo CAC. Acima de 3 costuma ser saudável; abaixo de 1 é sinal de alerta — estás a pagar mais para conseguir um aluno do que ele vale.', 'financeiro:finLtvCac', undefined, {severidade: severidadeRacio(racio, 2, 2)}));
       }
       // Período de recuperação do CAC (payback, em meses)
       if(cacMes>0 && arpu>0){
@@ -5446,18 +5566,9 @@ function renderFinKPIs(){
       if(alunosMktAtivos>0){
         const receitaEstimadaMkt = alunosMktAtivos * arpu;
         const raos = receitaEstimadaMkt / marketingMes;
-        kpisCac.push(kpiCard('RAOS (retorno de marketing)', raos.toFixed(1)+'x', 'aprox.: '+alunosMktAtivos+' aluno(s) ativo(s) via Fixando/Website/Redes Sociais × ARPU', false, 'card-chart-cac', 'Estimativa: receita mensal gerada pelos alunos atualmente ativos vindos de Fixando, Website ou Redes Sociais, a dividir pelo gasto em marketing desse mês (inclui Fixando). Quanto retorna, em receita, cada euro investido em publicidade — é uma aproximação, já que não temos o valor de mensalidade exato por aluno.', 'financeiro:finRaos', undefined, {aviso: raos<1}));
+        kpisCac.push(kpiCard('RAOS (retorno de marketing)', raos.toFixed(1)+'x', 'aprox.: '+alunosMktAtivos+' aluno(s) ativo(s) via Fixando/Website/Redes Sociais × ARPU', false, 'card-chart-cac', 'Estimativa: receita mensal gerada pelos alunos atualmente ativos vindos de Fixando, Website ou Redes Sociais, a dividir pelo gasto em marketing desse mês (inclui Fixando). Quanto retorna, em receita, cada euro investido em publicidade — é uma aproximação, já que não temos o valor de mensalidade exato por aluno.', 'financeiro:finRaos', undefined, {severidade: severidadeRacio(raos, 2, 2)}));
       }
     }
-  }
-  if(real && real.rendimento){
-    kpisDestaque.push(kpiCard('Rendimento acumulado (Real)', fmtEuro(real.rendimento.total), null, true, 'card-table-dr', 'Soma do Rendimento (Receita menos Gastos Fixos e Variáveis) em todos os meses reais até agora.', 'financeiro:finRendimentoAcumulado', undefined, {destaque:true, aviso: real.rendimento.total<0}));
-  }
-  // Desvio acumulado Real vs Objetivo (Receita), até ao mês atual
-  if(real && objetivo && idxAtual!==null){
-    const desvio = real.receita.monthly.slice(0, idxAtual+1).reduce((a,v,i)=>a + (v - objetivo.receita.monthly[i]), 0);
-    const cor = desvio>=0 ? '✅' : '⚠️';
-    kpisDestaque.push(kpiCard('Desvio acumulado vs Objetivo', fmtEuro(desvio), cor+' desde o início do ano letivo até '+real.months[idxAtual], true, 'card-chart-desvio', 'Soma, mês a mês desde o início do ano, da diferença entre a Receita Real e a Receita Objetivo. Positivo = estás à frente do objetivo; negativo = atrás.', undefined, undefined, {destaque:true, aviso: desvio<0}));
   }
   // Rácio Gastos Fixos : Variáveis
   if(real && real.receita && idxAtual!==null){
@@ -5470,28 +5581,43 @@ function renderFinKPIs(){
   if(cf && cf.Real && cf.Real.caixa.length){
     caixaAtual = cf.Real.caixa[cf.Real.caixa.length-1];
     gastosFixosMedios = real && real.gastosFixosItems.length ? real.gastosFixosTotal.monthly.filter(v=>v>0).reduce((a,b)=>a+b,0)/Math.max(1,real.gastosFixosTotal.monthly.filter(v=>v>0).length) : null;
-    const caixaAbaixoSeguranca = gastosFixosMedios && caixaAtual/gastosFixosMedios < mesesSeguranca;
-    kpisDestaque.push(kpiCard('Caixa atual (Real)', fmtEuro(caixaAtual), null, true, 'card-chart-caixa', 'Saldo de caixa acumulado real, no último mês com dados.', undefined, undefined, {destaque:true, aviso: caixaAbaixoSeguranca}));
+    const mesesCobertura = gastosFixosMedios ? caixaAtual/gastosFixosMedios : null;
+    const caixaAbaixoSeguranca = mesesCobertura!=null && mesesCobertura < mesesSeguranca;
     // burn rate médio (meses com CF negativo)
     const burnMonths = cf.Real.cf.filter(v=>v<0);
     const burnMedio = burnMonths.length ? burnMonths.reduce((a,b)=>a+b,0)/burnMonths.length : null;
     let runway = null;
     if(burnMedio){
       runway = caixaAtual>0 ? Math.max(0, caixaAtual/Math.abs(burnMedio)) : 0;
-      kpisEquilibrio.push(kpiCard('Runway estimado', runway.toFixed(1)+' meses', 'com base no burn rate médio real', false, 'card-chart-caixa', 'Quantos meses a caixa atual aguenta, ao ritmo médio de consumo (burn rate) dos meses reais em que o CF foi negativo.', 'financeiro:finRunway', undefined, {aviso: runway<mesesSeguranca}));
+      kpisEquilibrio.push(kpiCard('Runway estimado', runway.toFixed(1)+' meses', 'com base no burn rate médio real', false, 'card-chart-caixa', 'Quantos meses a caixa atual aguenta, ao ritmo médio de consumo (burn rate) dos meses reais em que o CF foi negativo.', 'financeiro:finRunway', undefined, {severidade: severidadeRacio(runway, mesesSeguranca, mesesSeguranca)}));
     }
     // Alerta de segurança: caixa vs gastos fixos médios
     const alertaEl = document.getElementById('fin-alerta-runway');
     if(alertaEl){
       if(caixaAbaixoSeguranca){
         alertaEl.style.display = 'block';
-        alertaEl.innerHTML = `⚠️ <b>Atenção:</b> a caixa atual (${fmtEuro(caixaAtual)}) só cobre ${(caixaAtual/gastosFixosMedios).toFixed(1)} mês(es) de gastos fixos médios — abaixo do limite de segurança recomendado (${mesesSeguranca} meses).`;
+        alertaEl.innerHTML = `⚠️ <b>Atenção:</b> a caixa atual (${fmtEuro(caixaAtual)}) só cobre ${mesesCobertura.toFixed(1)} mês(es) de gastos fixos médios — abaixo do limite de segurança recomendado (${mesesSeguranca} meses).`;
       } else {
         alertaEl.style.display = 'none';
       }
     }
   }
+  // Destaque: Receita acumulada, Rendimento acumulado, Caixa atual
+  const kpisDestaque = [];
+  if(real && real.receita && objetivo && idxAtual!==null){
+    _raCtx = { real, objetivo, idxAtual };
+    kpisDestaque.push(receitaAcumuladaCardHtml(real, objetivo, idxAtual));
+  }
+  if(real && real.rendimento){
+    const margemPct = real.receita.total>0 ? 100*real.rendimento.total/real.receita.total : null;
+    kpisDestaque.push(kpiCard('Rendimento acumulado', fmtEuro(real.rendimento.total), null, true, 'card-table-dr', 'Soma do Rendimento (Receita menos Gastos Fixos e Variáveis) em todos os meses reais até agora.', 'financeiro:finRendimentoAcumulado', undefined, {destaque:true, severidade: severidadeRacio(margemPct, 0, 20)}));
+  }
+  if(caixaAtual!=null){
+    const mesesCobertura = gastosFixosMedios ? caixaAtual/gastosFixosMedios : null;
+    kpisDestaque.push(kpiCard('Caixa atual', fmtEuro(caixaAtual), null, true, 'card-chart-caixa', 'Saldo de caixa acumulado real, no último mês com dados.', undefined, undefined, {destaque:true, severidade: severidadeRacio(mesesCobertura, mesesSeguranca, mesesSeguranca)}));
+  }
   document.getElementById('financeiro-kpis-destaque').innerHTML = kpisDestaque.join('');
+  bindReceitaAcumuladaCard();
   document.getElementById('financeiro-kpis-receita').innerHTML = kpisReceita.join('');
   document.getElementById('financeiro-kpis-equilibrio').innerHTML = kpisEquilibrio.join('');
   document.getElementById('financeiro-kpis-cac').innerHTML = kpisCac.join('');

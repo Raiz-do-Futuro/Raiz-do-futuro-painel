@@ -1460,12 +1460,12 @@ table.data tr:hover .real-box{background:var(--sage-soft); border-color:var(--ac
 
         <div class="two-col">
           <div class="section">
-            <h3>🎯 CAC por mês</h3>
-            <p class="desc">Gasto de marketing, alunos angariados e CAC, mês a mês</p>
+            <h3>🎯 CAC por plataforma</h3>
+            <p class="desc">Gasto e alunos angariados por plataforma de origem, no mês mais recente com dados</p>
             <div class="chart-card" id="card-table-cac">
               <div style="overflow-x:auto;">
-              <table class="data" id="table-cac-mensal">
-                <thead><tr><th>Mês</th><th>Gasto marketing</th><th>Alunos (Fixando/Website/Redes Sociais)</th><th>CAC</th></tr></thead>
+              <table class="data" id="table-cac-plataforma">
+                <thead><tr><th>Plataforma</th><th>Alunos angariados</th><th>Gasto (mês)</th><th>CAC</th></tr></thead>
                 <tbody></tbody>
               </table>
               </div>
@@ -5392,19 +5392,30 @@ function renderTabelaRaosPlataforma(real, idx, arpu){
   });
   tbody.innerHTML = rows.map(r=>`<tr${r.raos!=null && r.raos<1 ? ' style="background:var(--rust-soft);"' : ''}><td>${r.nome}</td><td>${r.alunosAtivos}</td><td>${fmtEuro(r.gastoMes)}</td><td>${fmtEuro(r.receitaEstimada)}</td><td>${r.raos!=null ? r.raos.toFixed(1)+'x' : '—'}</td></tr>`).join('');
 }
-function renderTabelaCacMensal(real){
-  const tbody = document.querySelector('#table-cac-mensal tbody');
+function renderTabelaCacPlataforma(real, idx){
+  const tbody = document.querySelector('#table-cac-plataforma tbody');
   if(!tbody) return;
-  if(!real){ tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--muted);">Ainda sem dados suficientes.</td></tr>'; return; }
-  const alunosMktPorMesMap = alunosMarketingPorMes();
-  const rows = real.months.map((m,i)=>{
-    const k = drMonthToKey(m,i);
-    const mkt = MARKETING_LABELS.reduce((soma,lbl)=>{ const item = real.gastosFixosItems.find(x=>x.label===lbl) || real.gastosVariaveisItems.find(x=>x.label===lbl); return soma + (item ? item.monthly[i] : 0); }, 0);
-    const n = alunosMktPorMesMap[k] || 0;
-    const cac = (mkt>0 && n>0) ? mkt/n : null;
-    return {m, mkt, n, cac};
-  }).filter(r=>r.mkt>0 || r.n>0);
-  tbody.innerHTML = rows.length ? rows.map(r=>`<tr><td>${r.m}</td><td>${fmtEuro(r.mkt)}</td><td>${r.n}</td><td>${r.cac!=null?fmtEuro(r.cac):'—'}</td></tr>`).join('') : '<tr><td colspan="4" style="text-align:center; color:var(--muted);">Ainda sem dados suficientes.</td></tr>';
+  if(!real || idx==null){ tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--muted);">Ainda sem dados suficientes.</td></tr>'; return; }
+  const chaveMes = drMonthToKey(real.months[idx], idx);
+  const rows = PLATAFORMAS_RAOS.map(p=>{
+    const gastoMes = p.gastoLabels.reduce((soma,lbl)=>{
+      const item = real.gastosFixosItems.find(x=>x.label===lbl) || real.gastosVariaveisItems.find(x=>x.label===lbl);
+      return soma + (item ? item.monthly[idx] : 0);
+    }, 0);
+    const vistos = new Set();
+    let alunosAngariados = 0;
+    (crm.efetivos||[]).forEach(a=>{
+      const k = normKey(a.nome);
+      if(vistos.has(k) || !a.dataInicio) return;
+      if(!normStr(a.plataforma).toLowerCase().includes(p.origem)) return;
+      if(monthKey(a.dataInicio)!==chaveMes) return;
+      vistos.add(k);
+      alunosAngariados++;
+    });
+    const cac = (gastoMes>0 && alunosAngariados>0) ? gastoMes/alunosAngariados : null;
+    return {nome:p.nome, alunosAngariados, gastoMes, cac};
+  });
+  tbody.innerHTML = rows.map(r=>`<tr><td>${r.nome}</td><td>${r.alunosAngariados}</td><td>${fmtEuro(r.gastoMes)}</td><td>${r.cac!=null?fmtEuro(r.cac):'—'}</td></tr>`).join('');
 }
 // score entre -1 e +1 a partir de um desvio percentual de valorReal face a valorRef, saturando em ±margem.
 function severidadePercentual(valorReal, valorRef, margem){
@@ -5675,7 +5686,7 @@ function renderFinKPIs(){
   document.getElementById('financeiro-kpis-receita').innerHTML = kpisReceita.join('');
   document.getElementById('financeiro-kpis-equilibrio').innerHTML = kpisEquilibrio.join('');
   document.getElementById('financeiro-kpis-cac').innerHTML = kpisCac.join('');
-  renderTabelaCacMensal(real);
+  renderTabelaCacPlataforma(real, idxAtual);
   renderTabelaRaosPlataforma(real, idxAtual, arpu);
 }
 document.getElementById('fin-dr-mes')?.addEventListener('change', renderDRTable);

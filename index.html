@@ -289,6 +289,12 @@ body{
 .kpi-alt-toggle.kpi-alt-second .kpi-alt-slider{transform:translateX(100%);}
 .kpi-alt-btn{position:relative; z-index:1; border:none; background:none; cursor:pointer; padding:4px 11px; font-size:10.5px; font-weight:600; font-family:'Bahnschrift','Poppins',sans-serif; color:var(--ink); transition:color .2s ease; border-radius:999px;}
 .kpi-alt-btn.active{color:#fff;}
+.chart-view-toggle{position:relative; display:inline-flex; background:var(--sage-soft); border:1px solid var(--border); border-radius:999px; padding:2px;}
+.chart-view-slider{position:absolute; top:2px; bottom:2px; left:2px; width:calc(33.333% - 2px); background:var(--accent); border-radius:999px; transition:transform .2s ease;}
+.chart-view-toggle[data-view="presencial"] .chart-view-slider{transform:translateX(100%);}
+.chart-view-toggle[data-view="online"] .chart-view-slider{transform:translateX(200%);}
+.chart-view-btn{position:relative; z-index:1; border:none; background:none; cursor:pointer; padding:5px 13px; font-size:11px; font-weight:600; font-family:'Bahnschrift','Poppins',sans-serif; color:var(--ink); transition:color .2s ease; border-radius:999px; white-space:nowrap;}
+.chart-view-btn.active{color:#fff;}
 input[type=file]{display:none;}
 
 .notice{
@@ -1165,46 +1171,49 @@ table.data tr.row-media td:last-child{border-right:1.5px solid var(--accent); bo
               </div>
               <button class="btn secondary" id="btn-limpar-periodo-mercado" style="padding:8px 14px; font-size:12px;">Limpar</button>
             </div>
+            <div style="display:flex; align-items:center; gap:10px; margin-top:12px;">
+              <label style="font-size:11px; color:var(--muted);">Ver:</label>
+              <div class="chart-view-toggle" id="mercado-view-toggle" data-view="total">
+                <div class="chart-view-slider"></div>
+                <button type="button" class="chart-view-btn active" data-view="total">Total</button>
+                <button type="button" class="chart-view-btn" data-view="presencial">Presencial</button>
+                <button type="button" class="chart-view-btn" data-view="online">Online</button>
+              </div>
+              <span style="font-size:11px; color:var(--muted);">Passa o rato numa barra para ver a % de pedidos online nessa categoria</span>
+            </div>
           </div>
         </div>
 
         <div class="two-col">
           <div class="section">
             <h3>📍 Localidades com mais procura</h3>
-            <p class="desc">Todos os pedidos, por localidade</p>
-            <div class="chart-card" id="card-chart-loc-total"><div class="chart-wrap"><canvas id="chart-loc-total"></canvas></div></div>
+            <p class="desc">Pedidos por localidade — usa o seletor "Ver" acima</p>
+            <div class="chart-card" id="card-chart-loc"><div class="chart-wrap"><canvas id="chart-loc"></canvas></div></div>
           </div>
-          <div class="section">
-            <h3>💻 Localidades — procura online</h3>
-            <p class="desc">Apenas pedidos de explicações online</p>
-            <div class="chart-card" id="card-chart-loc-online"><div class="chart-wrap"><canvas id="chart-loc-online"></canvas></div></div>
-          </div>
-        </div>
-
-        <div class="two-col">
           <div class="section">
             <h3>🕐 Momento do dia</h3>
             <p class="desc">Pedidos por período (madrugada / manhã / tarde / noite)</p>
             <div class="chart-card" id="card-chart-periodo"><div class="chart-wrap"><canvas id="chart-periodo"></canvas></div></div>
           </div>
+        </div>
+
+        <div class="two-col">
           <div class="section">
             <h3>📅 Dia da semana</h3>
             <p class="desc">Pedidos por dia da semana</p>
             <div class="chart-card" id="card-chart-dia-semana"><div class="chart-wrap"><canvas id="chart-dia-semana"></canvas></div></div>
           </div>
-        </div>
-
-        <div class="two-col">
           <div class="section">
             <h3>📖 Disciplinas mais requisitadas</h3>
             <p class="desc">Contagem de pedidos por disciplina</p>
             <div class="chart-card" id="card-chart-disc-mercado"><div class="chart-wrap"><canvas id="chart-disc-mercado"></canvas></div></div>
           </div>
-          <div class="section">
-            <h3>🎓 Anos de ensino mais requisitados</h3>
-            <p class="desc">Contagem de pedidos por ano de ensino</p>
-            <div class="chart-card" id="card-chart-ano-mercado"><div class="chart-wrap"><canvas id="chart-ano-mercado"></canvas></div></div>
-          </div>
+        </div>
+
+        <div class="section">
+          <h3>🎓 Anos de ensino mais requisitados</h3>
+          <p class="desc">Contagem de pedidos por ano de ensino</p>
+          <div class="chart-card" id="card-chart-ano-mercado"><div class="chart-wrap"><canvas id="chart-ano-mercado"></canvas></div></div>
         </div>
 
         <hr class="divider">
@@ -1214,7 +1223,7 @@ table.data tr.row-media td:last-child{border-right:1.5px solid var(--accent); bo
           <p class="desc">Entre os pedidos de cada distrito, quantos abordámos e quantos ficaram alunos</p>
           <div class="chart-card" id="card-table-penetracao">
             <table class="data" id="table-penetracao">
-              <thead><tr><th>Distrito</th><th>Pedidos</th><th>Abordámos</th><th>Ficámos</th><th title="Ficámos ÷ Pedidos — o quanto do potencial de mercado dessa região já é nosso.">% Penetração</th></tr></thead>
+              <thead><tr><th>Distrito</th><th>Pedidos</th><th>% Online</th><th>Abordámos</th><th>Ficámos</th><th title="Ficámos ÷ Pedidos — o quanto do potencial de mercado dessa região já é nosso.">% Penetração</th></tr></thead>
               <tbody></tbody>
             </table>
           </div>
@@ -4400,7 +4409,7 @@ function renderFixando(){
 
   document.getElementById('fixando-kpis').innerHTML = [
     kpiCard('Pedidos / mês (média)', mediaMes, total+' pedidos registados no total', true, 'card-chart-evolucao-mensal', 'Total de pedidos registados dividido pelo número de meses diferentes em que há pelo menos um pedido.'),
-    kpiCard('Pedidos online / mês (média)', mediaMesOnline, online.length+' pedidos online no total'+(pctOnlineDoTotal!=null?' ('+pctOnlineDoTotal.toFixed(0)+'% de todos os pedidos)':''), false, 'card-chart-loc-online', 'O mesmo cálculo que "Pedidos / mês", mas contando só os pedidos com Modalidade = Online. A percentagem é o nº de pedidos online ÷ nº total de pedidos.'),
+    kpiCard('Pedidos online / mês (média)', mediaMesOnline, online.length+' pedidos online no total'+(pctOnlineDoTotal!=null?' ('+pctOnlineDoTotal.toFixed(0)+'% de todos os pedidos)':''), false, 'card-chart-loc', 'O mesmo cálculo que "Pedidos / mês", mas contando só os pedidos com Modalidade = Online. A percentagem é o nº de pedidos online ÷ nº total de pedidos.'),
     kpiCard('% abordados sobre pedidos online', pctAbordAmosOnline!==null? pctAbordAmosOnline.toFixed(0)+'%':'—', abordadosArr.length+' abordados (associação automática por telemóvel)', false, 'card-chart-evolucao-mensal', 'Entre os pedidos com Modalidade = Online, a percentagem em que clicaste em "Marcar abordámos" (ou seja, o telemóvel do cliente já é conhecido).', undefined, {
       label:'Sem AL',
       value: pctAbordAmosOnlineSemAL!=null? pctAbordAmosOnlineSemAL.toFixed(0)+'%':'—',
@@ -4430,19 +4439,21 @@ function renderPenetracaoTable(resolved){
   resolved.forEach(({p, ficamos})=>{
     const {distrito} = classifyLocalidade(p.localidade);
     const key = distrito || 'Não classificado';
-    porDistrito[key] = porDistrito[key] || {total:0, abordados:0, ficamos:0};
+    porDistrito[key] = porDistrito[key] || {total:0, online:0, abordados:0, ficamos:0};
     porDistrito[key].total++;
+    if(p.modalidade==='Online') porDistrito[key].online++;
     if(isAbordado(p)) porDistrito[key].abordados++;
     if(ficamos.value) porDistrito[key].ficamos++;
   });
   const rows = Object.entries(porDistrito).filter(([,d])=>d.total>0).sort((a,b)=>b[1].total-a[1].total);
   tbody.innerHTML = rows.length ? rows.map(([nome,d])=>{
     const pct = (100*d.ficamos/d.total).toFixed(0);
+    const pctOnline = (100*d.online/d.total).toFixed(0);
     const nomeCell = nome==='Não classificado'
       ? `⚠️ ${nome} <span class="linha-classificar-mercado" style="cursor:pointer; text-decoration:underline; color:var(--green); font-size:11px;">(classificar)</span>`
       : nome;
-    return `<tr><td>${nomeCell}</td><td>${d.total}</td><td>${d.abordados}</td><td>${d.ficamos}</td><td>${pct}%</td></tr>`;
-  }).join('') : '<tr><td colspan="5" style="text-align:center; color:var(--muted);">Sem pedidos classificados por distrito ainda.</td></tr>';
+    return `<tr><td>${nomeCell}</td><td>${d.total}</td><td>${pctOnline}%</td><td>${d.abordados}</td><td>${d.ficamos}</td><td>${pct}%</td></tr>`;
+  }).join('') : '<tr><td colspan="6" style="text-align:center; color:var(--muted);">Sem pedidos classificados por distrito ainda.</td></tr>';
   const linkClassificar = tbody.querySelector('.linha-classificar-mercado');
   if(linkClassificar){
     linkClassificar.addEventListener('click', ()=>{
@@ -4472,29 +4483,70 @@ function getPedidosNoPeriodoMercado(){
   if(mes && mes!=='total') return pedidos.filter(p=>monthKey(p.data)===mes);
   return pedidos;
 }
+let mercadoChartView = 'total';
+function atualizarMercadoViewToggle(){
+  const wrap = document.getElementById('mercado-view-toggle');
+  if(!wrap) return;
+  wrap.dataset.view = mercadoChartView;
+  wrap.querySelectorAll('.chart-view-btn').forEach(b=>b.classList.toggle('active', b.dataset.view===mercadoChartView));
+}
+document.getElementById('mercado-view-toggle')?.addEventListener('click', (e)=>{
+  const btn = e.target.closest('.chart-view-btn');
+  if(!btn || btn.dataset.view===mercadoChartView) return;
+  mercadoChartView = btn.dataset.view;
+  renderMercadoCharts();
+});
+function pctOnlinePorCategoria(pedidosArr, keyFn, multi){
+  const totalMap = multi ? groupCountMulti(pedidosArr, keyFn) : groupCount(pedidosArr, keyFn);
+  const onlineArr = pedidosArr.filter(p=>p.modalidade==='Online');
+  const onlineMap = multi ? groupCountMulti(onlineArr, keyFn) : groupCount(onlineArr, keyFn);
+  const out = {};
+  Object.keys(totalMap).forEach(k=>{ out[k] = totalMap[k] ? Math.round(100*(onlineMap[k]||0)/totalMap[k]) : null; });
+  return out;
+}
+function barChartComPct(id, labels, data, pctMap, color, horizontal){
+  destroyChart(id);
+  const ctx = document.getElementById(id);
+  if(!ctx) return;
+  charts[id] = new Chart(ctx, {
+    type:'bar',
+    data:{labels, datasets:[{data, backgroundColor: color||'#258730', borderRadius:8, maxBarThickness:34}]},
+    options: baseOpts(Object.assign(horizontal? {indexAxis:'y'} : {}, {
+      plugins:{legend:{display:false}, tooltip:{callbacks:{afterLabel:(ctx)=>{
+        const pct = pctMap ? pctMap[ctx.label] : null;
+        return (pct!=null) ? `${pct}% destes pedidos são online` : '';
+      }}}}
+    }))
+  });
+}
 function renderMercadoCharts(){
   popularSeletorPeriodoMercado();
+  atualizarMercadoViewToggle();
   const pedidosPeriodo = getPedidosNoPeriodoMercado();
-  const onlinePeriodo = pedidosPeriodo.filter(p=>p.modalidade==='Online');
+  const pedidosVista = mercadoChartView==='online' ? pedidosPeriodo.filter(p=>p.modalidade==='Online')
+    : mercadoChartView==='presencial' ? pedidosPeriodo.filter(p=>p.modalidade==='Presencial')
+    : pedidosPeriodo;
 
-  const locTotal = sortedEntries(groupCount(pedidosPeriodo, p=>p.localidade), 10);
-  barChart('chart-loc-total', locTotal.map(e=>e[0]), locTotal.map(e=>e[1]), '#4C7C63', true);
-
-  const locOnline = sortedEntries(groupCount(onlinePeriodo, p=>p.localidade), 10);
-  barChart('chart-loc-online', locOnline.map(e=>e[0]), locOnline.map(e=>e[1]), '#258730', true);
+  const pctLoc = pctOnlinePorCategoria(pedidosPeriodo, p=>p.localidade);
+  const locE = sortedEntries(groupCount(pedidosVista, p=>p.localidade), 10);
+  barChartComPct('chart-loc', locE.map(e=>e[0]), locE.map(e=>e[1]), pctLoc, '#4C7C63', true);
 
   const periodos = ['0h–8h','8h–12h','12h–15h','15h–18h','18h–21h','21h–24h'];
-  const perCount = groupCount(pedidosPeriodo, p=>periodo(p.hora));
-  barChart('chart-periodo', periodos, periodos.map(p=>perCount[p]||0), '#8C9C3B');
+  const pctPeriodo = pctOnlinePorCategoria(pedidosPeriodo, p=>periodo(p.hora));
+  const perCount = groupCount(pedidosVista, p=>periodo(p.hora));
+  barChartComPct('chart-periodo', periodos, periodos.map(p=>perCount[p]||0), pctPeriodo, '#8C9C3B');
 
-  const diaCount = groupCount(pedidosPeriodo, p=>weekdayLabel(p.data));
-  barChart('chart-dia-semana', DIAS_SEMANA, DIAS_SEMANA.map(d=>diaCount[d]||0), '#8B4A3D');
+  const pctDia = pctOnlinePorCategoria(pedidosPeriodo, p=>weekdayLabel(p.data));
+  const diaCount = groupCount(pedidosVista, p=>weekdayLabel(p.data));
+  barChartComPct('chart-dia-semana', DIAS_SEMANA, DIAS_SEMANA.map(d=>diaCount[d]||0), pctDia, '#8B4A3D');
 
-  const discE = sortedEntries(groupCountMulti(pedidosPeriodo, p=>p.disciplina), 10);
-  barChart('chart-disc-mercado', discE.map(e=>e[0]), discE.map(e=>e[1]), '#4C7C63');
+  const pctDisc = pctOnlinePorCategoria(pedidosPeriodo, p=>p.disciplina, true);
+  const discE = sortedEntries(groupCountMulti(pedidosVista, p=>p.disciplina), 10);
+  barChartComPct('chart-disc-mercado', discE.map(e=>e[0]), discE.map(e=>e[1]), pctDisc, '#4C7C63');
 
-  const anoE = sortedEntries(groupCount(pedidosPeriodo, p=>p.ano), 10);
-  barChart('chart-ano-mercado', anoE.map(e=>e[0]), anoE.map(e=>e[1]), '#258730');
+  const pctAno = pctOnlinePorCategoria(pedidosPeriodo, p=>p.ano);
+  const anoE = sortedEntries(groupCount(pedidosVista, p=>p.ano), 10);
+  barChartComPct('chart-ano-mercado', anoE.map(e=>e[0]), anoE.map(e=>e[1]), pctAno, '#258730');
 }
 document.getElementById('mercado-periodo-mes')?.addEventListener('change', ()=>{
   document.getElementById('mercado-periodo-de').value = '';

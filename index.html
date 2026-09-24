@@ -888,16 +888,40 @@ table.data tr:hover .real-box{background:var(--sage-soft); border-color:var(--ac
 
       <div id="alunos-content" style="display:none;">
 
-        <div class="kpi-grid" id="alunos-kpis"></div>
+        <!-- 1º — cartões principais -->
+        <div class="kpi-grid" id="alunos-kpis-top"></div>
 
         <hr class="divider">
 
-        <div class="three-col">
+        <!-- 2º — Alunos ativos por mês / Entradas e Saídas + Funil -->
+        <div class="two-col">
           <div class="section">
-            <h3>🗺️ Distribuição geográfica</h3>
-            <p class="desc">Alunos efetivos por localidade</p>
-            <div class="chart-card" id="card-chart-geo"><div class="chart-wrap"><canvas id="chart-geo"></canvas></div></div>
+            <h3>👥 Alunos ativos por mês</h3>
+            <p class="desc">Total de alunos em acompanhamento em cada mês</p>
+            <div class="chart-card" id="card-chart-ativos-mes"><div class="chart-wrap"><canvas id="chart-ativos-mes"></canvas></div></div>
           </div>
+          <div class="section">
+            <h3>📈 Entradas e Saídas de alunos (por mês)</h3>
+            <p class="desc">Nº de alunos que começam e que desistem, por mês</p>
+            <div class="chart-card" id="card-chart-inicio-fim"><div class="chart-wrap"><canvas id="chart-inicio-fim"></canvas></div></div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h3>🔻 Funil de pendentes → efetivação</h3>
+          <p class="desc">Estado atual de todos os "Clientes pendentes" registados</p>
+          <div class="chart-card" id="card-chart-funil"><div class="chart-wrap"><canvas id="chart-funil"></canvas></div></div>
+        </div>
+
+        <hr class="divider">
+
+        <!-- 3º — cartões de operação diária -->
+        <div class="kpi-grid" id="alunos-kpis-mid"></div>
+
+        <hr class="divider">
+
+        <!-- 4º — distribuição de alunos + mapa -->
+        <div class="three-col">
           <div class="section">
             <h3>📚 Alunos por disciplina</h3>
             <p class="desc">Contagem de alunos efetivos</p>
@@ -907,6 +931,25 @@ table.data tr:hover .real-box{background:var(--sage-soft); border-color:var(--ac
             <h3>🎓 Alunos por Ano de Ensino</h3>
             <p class="desc">Distribuição por ano/nível de ensino</p>
             <div class="chart-card" id="card-chart-ano-ensino"><div class="chart-wrap"><canvas id="chart-ano-ensino"></canvas></div></div>
+          </div>
+          <div class="section">
+            <h3>📚 Repartição de alunos por nº de aulas por mês</h3>
+            <p class="desc">Abaixo do esperado (&lt;4), dentro (4-9) e acima (&gt;9), no mês mais recente com dados</p>
+            <button class="btn secondary" onclick="abrirComparacao('alunos','aulasPorMes')" style="padding:6px 12px; font-size:11px; margin-bottom:8px;">📊 Comparar com anos letivos anteriores</button>
+            <div class="chart-card" id="card-chart-faixa-aulas"><div class="chart-wrap"><canvas id="chart-faixa-aulas"></canvas></div></div>
+          </div>
+        </div>
+
+        <div class="two-col">
+          <div class="section">
+            <h3>📚 Nº de aulas por mês, por ano de ensino</h3>
+            <p class="desc">Média de aulas por aluno em cada mês (só alunos com aulas nesse mês), a partir de "Pagamentos Alunos".</p>
+            <div id="tabela-aulas-ano-ensino"></div>
+          </div>
+          <div class="section">
+            <h3>🗺️ Distribuição geográfica</h3>
+            <p class="desc">Alunos efetivos por localidade</p>
+            <div class="chart-card" id="card-chart-geo"><div class="chart-wrap"><canvas id="chart-geo"></canvas></div></div>
           </div>
         </div>
 
@@ -926,20 +969,16 @@ table.data tr:hover .real-box{background:var(--sage-soft); border-color:var(--ac
           </div>
         </div>
 
-        <div class="two-col">
-          <div class="section">
-            <h3>📈 Início vs. desistência por mês</h3>
-            <p class="desc">Nº de alunos que começam e que desistem, por mês</p>
-            <div class="chart-card" id="card-chart-inicio-fim"><div class="chart-wrap"><canvas id="chart-inicio-fim"></canvas></div></div>
-          </div>
-          <div class="section">
-            <h3>👥 Alunos ativos por mês</h3>
-            <p class="desc">Total de alunos em acompanhamento em cada mês</p>
-            <div class="chart-card" id="card-chart-ativos-mes"><div class="chart-wrap"><canvas id="chart-ativos-mes"></canvas></div></div>
-          </div>
-        </div>
+        <hr class="divider">
 
-        <div class="two-col">
+        <!-- 5º — efetivos perdidos, desistências, retenção curta, potencial de renovação -->
+        <div class="kpi-grid" id="alunos-kpis-retencao"></div>
+        <div class="kpi-grid kpi-grid-2col" id="alunos-kpis-renovacao" style="margin-top:14px;"></div>
+
+        <hr class="divider">
+
+        <!-- 6º — origem + retenção por mês/ano -->
+        <div class="three-col">
           <div class="section">
             <h3>🔗 Origem dos alunos</h3>
             <p class="desc">Percentagem por plataforma de origem (inclui alunos transitados de anos anteriores)</p>
@@ -947,105 +986,31 @@ table.data tr:hover .real-box{background:var(--sage-soft); border-color:var(--ac
             <div class="chart-card" id="card-chart-plataforma"><div class="chart-wrap"><canvas id="chart-plataforma"></canvas></div></div>
           </div>
           <div class="section">
-            <h3>🍎 Alunos por professor</h3>
-            <p class="desc">Nº de matrículas (aluno+disciplina) atribuídas a cada professor</p>
-            <div class="chart-card" id="card-chart-professor"><div class="chart-wrap"><canvas id="chart-professor"></canvas></div></div>
+            <h3>🎯 Retenção consoante o mês de entrada</h3>
+            <p class="desc">Média de meses que o aluno fica e % que chegou ao fim do ano letivo (30 de junho) ou ainda está ativo.</p>
+            <div id="tabela-retencao-mes"></div>
+          </div>
+          <div class="section">
+            <h3>🎯 Retenção consoante o ano de ensino</h3>
+            <p class="desc">Média de meses de permanência, por ano de ensino.</p>
+            <div id="tabela-retencao-ano"></div>
           </div>
         </div>
 
         <hr class="divider">
 
-        <div class="section">
-          <h3>🔻 Funil de pendentes → efetivação</h3>
-          <p class="desc">Estado atual de todos os "Clientes pendentes" registados</p>
-          <div class="chart-card" id="card-chart-funil"><div class="chart-wrap"><canvas id="chart-funil"></canvas></div></div>
-        </div>
+        <!-- 7º — renovação e reingressão -->
+        <div class="three-col" id="tabelas-renovacao"></div>
+        <div id="tabela-top-combinacoes" style="margin-top:14px;"></div>
 
-        <div class="two-col">
-          <div class="section">
-            <h3>💶 Receita por aluno (Total)</h3>
-            <p class="desc">Top 10 alunos por valor pago, com base na aba "Pagamentos Alunos"</p>
-            <div class="chart-card" id="card-table-receita-aluno">
-              <table class="data" id="table-receita-aluno">
-                <thead><tr><th>Aluno</th><th>Nº de aulas (total)</th><th>Valor pago (total)</th></tr></thead>
-                <tbody></tbody>
-              </table>
-            </div>
-          </div>
-          <div class="section">
-            <h3>📚 Alunos por nº de aulas/mês</h3>
-            <p class="desc">Abaixo do esperado (&lt;4), dentro (4-9) e acima (&gt;9), no mês mais recente com dados</p>
-            <button class="btn secondary" onclick="abrirComparacao('alunos','aulasPorMes')" style="padding:6px 12px; font-size:11px; margin-bottom:8px;">📊 Comparar com anos letivos anteriores</button>
-            <div class="chart-card" id="card-chart-faixa-aulas"><div class="chart-wrap"><canvas id="chart-faixa-aulas"></canvas></div></div>
-          </div>
-        </div>
+        <hr class="divider">
 
-        <div class="section" id="sec-retencao">
-          <h3>🎯 Retenção, permanência e renovação</h3>
-          <p class="desc">Quanto tempo os alunos ficam, quantos passam pelo centro e quantos regressam no ano letivo seguinte.</p>
-          <div class="kpi-grid" id="alunos-ret-kpis"></div>
-          <div id="alunos-ret-tabelas"></div>
-        </div>
+        <!-- 8º — conversão -->
+        <div class="kpi-grid kpi-grid-2col" id="alunos-kpis-conversao"></div>
 
-        <div class="section">
-          <h3>🅰️ Aulas por professor (Amélia)</h3>
-          <p class="desc">Fonte dos dados de "Nº de aulas dadas", "Nº de aulas / aluno" e "Lucro (sem gastos)" da tabela abaixo</p>
+        <hr class="divider">
 
-          <details class="fold">
-            <summary>ℹ️ Ainda sem ligação automática à Amélia</summary>
-            <div class="fold-body">
-            <p style="font-size:13px; color:var(--body); line-height:1.55; margin:0;">
-            Assim que ligares a Amélia, o nº de aulas por professor (e a respetiva combinação de Ano de Ensino + Plano/Singular) passa a vir de lá automaticamente. Até lá, regista aqui manualmente ou importa em lote — o resto do painel (aulas dadas, aulas/aluno e lucro sem gastos) calcula-se sozinho a partir destes registos.
-            </p>
-            </div>
-          </details>
-
-          <div class="toolbar">
-            <button class="btn secondary" id="btn-template-amelia">↓ Descarregar modelo Excel</button>
-            <button class="btn secondary" id="btn-upload-amelia">↑ Importar em lote</button>
-            <input type="file" id="file-amelia" accept=".xlsx,.xls,.csv">
-            <button class="btn danger" id="btn-clear-amelia">Limpar dados</button>
-          </div>
-
-          <div class="entry-form" id="amelia-form">
-            <div class="field"><label>Professor</label><input type="text" id="am-professor" list="am-professores-list" placeholder="ex: Ana Martins"></div>
-            <datalist id="am-professores-list"></datalist>
-            <div class="field"><label>Mês</label><input type="month" id="am-mes"></div>
-            <div class="field"><label>Ano de ensino</label>
-              <select id="am-ano">
-                <option>2º Ciclo</option>
-                <option>3º Ciclo</option>
-                <option>Secundário</option>
-                <option>Exame +23</option>
-                <option>Universidade</option>
-              </select>
-            </div>
-            <div class="field"><label>Plano / Singular</label>
-              <select id="am-plano">
-                <option>Singular</option>
-                <option>Plano 9 aulas</option>
-                <option>Plano 13 aulas</option>
-                <option>Plano 17 aulas</option>
-                <option>Plano 22 aulas</option>
-                <option>Plano 27 aulas</option>
-                <option>Plano 31 aulas</option>
-                <option>Plano 35 aulas</option>
-              </select>
-            </div>
-            <div class="field"><label>Nº de aulas</label><input type="number" id="am-naulas" min="0" step="1" placeholder="ex: 13"></div>
-            <div class="field" style="align-self:end;"><button class="btn" id="btn-add-amelia" style="width:100%;">+ Adicionar registo</button></div>
-          </div>
-
-          <div class="chart-card" id="card-table-amelia" style="margin-top:14px;">
-            <div style="overflow-x:auto;">
-            <table class="data" id="table-amelia">
-              <thead><tr><th>Professor</th><th>Mês</th><th>Ano de ensino</th><th>Plano</th><th>Nº de aulas</th><th></th></tr></thead>
-              <tbody></tbody>
-            </table>
-            </div>
-          </div>
-        </div>
-
+        <!-- 9º — desempenho de professores -->
         <div class="section">
           <h3>🏆 Desempenho por professor</h3>
           <p class="desc">Retenção, tempo médio em conversações e entre aula experimental (AE) e efetivação, com base na aba "AEs" — as colunas "Nº de aulas dadas", "Nº de aulas / aluno" e "Lucro (sem gastos)" respeitam o período escolhido abaixo. Os totais da empresa (todos os professores) estão nos cartões "Nº de aulas dadas", "Efetivos perdidos" e "Nº de aulas / aluno" no topo da página.</p>
@@ -1092,8 +1057,63 @@ table.data tr:hover .real-box{background:var(--sage-soft); border-color:var(--ac
             </table>
             </div>
           </div>
+        </div>
 
-          <details class="fold" style="margin-top:14px;">
+        <!-- 10º — Aulas por professor, apresentado como o Histórico de alterações -->
+        <div class="two-col">
+          <details class="fold">
+            <summary>🅰️ Aulas por professor (Amélia)</summary>
+            <div class="fold-body">
+            <p style="font-size:13px; color:var(--body); line-height:1.55; margin:0 0 12px 0;">Fonte dos dados de "Nº de aulas dadas", "Nº de aulas / aluno" e "Lucro (sem gastos)" da tabela de desempenho por professor. Ainda sem ligação automática à Amélia — regista aqui manualmente ou importa em lote.</p>
+
+            <div class="toolbar">
+              <button class="btn secondary" id="btn-template-amelia">↓ Descarregar modelo Excel</button>
+              <button class="btn secondary" id="btn-upload-amelia">↑ Importar em lote</button>
+              <input type="file" id="file-amelia" accept=".xlsx,.xls,.csv">
+              <button class="btn danger" id="btn-clear-amelia">Limpar dados</button>
+            </div>
+
+            <div class="entry-form" id="amelia-form">
+              <div class="field"><label>Professor</label><input type="text" id="am-professor" list="am-professores-list" placeholder="ex: Ana Martins"></div>
+              <datalist id="am-professores-list"></datalist>
+              <div class="field"><label>Mês</label><input type="month" id="am-mes"></div>
+              <div class="field"><label>Ano de ensino</label>
+                <select id="am-ano">
+                  <option>2º Ciclo</option>
+                  <option>3º Ciclo</option>
+                  <option>Secundário</option>
+                  <option>Exame +23</option>
+                  <option>Universidade</option>
+                </select>
+              </div>
+              <div class="field"><label>Plano / Singular</label>
+                <select id="am-plano">
+                  <option>Singular</option>
+                  <option>Plano 9 aulas</option>
+                  <option>Plano 13 aulas</option>
+                  <option>Plano 17 aulas</option>
+                  <option>Plano 22 aulas</option>
+                  <option>Plano 27 aulas</option>
+                  <option>Plano 31 aulas</option>
+                  <option>Plano 35 aulas</option>
+                </select>
+              </div>
+              <div class="field"><label>Nº de aulas</label><input type="number" id="am-naulas" min="0" step="1" placeholder="ex: 13"></div>
+              <div class="field" style="align-self:end;"><button class="btn" id="btn-add-amelia" style="width:100%;">+ Adicionar registo</button></div>
+            </div>
+
+            <div class="chart-card" id="card-table-amelia" style="margin-top:14px;">
+              <div style="overflow-x:auto;">
+              <table class="data" id="table-amelia">
+                <thead><tr><th>Professor</th><th>Mês</th><th>Ano de ensino</th><th>Plano</th><th>Nº de aulas</th><th></th></tr></thead>
+                <tbody></tbody>
+              </table>
+              </div>
+            </div>
+            </div>
+          </details>
+
+          <details class="fold">
             <summary>🔄 Histórico de alterações de professor <span id="prof-history-count" style="color:var(--muted); font-weight:400;"></span></summary>
             <div class="fold-body">
             <div style="overflow-x:auto;">
@@ -2625,9 +2645,42 @@ function calcRenovacaoReingressao(){
   });
   return { labelPrev, linhas };
 }
+let lastRetBuckets = {};
+function retSubMesesCardHtml(){
+  return `<div class="kpi" id="kpi-ret-sub"><div class="label" title="Alunos com Data Fim preenchida cuja permanência foi inferior ao nº de meses escolhido. Alunos ainda ativos não contam — podem ainda ficar mais tempo.">Alunos com retenção menor que <span id="kpi-ret-sub-n">1</span> mês(es) <span style="opacity:.5; font-size:11px;">ⓘ</span></div>
+    <div class="chart-view-toggle" id="kpi-ret-sub-toggle" data-n="1" style="max-width:220px; margin:6px 0 10px 0;">
+      <div class="chart-view-slider"></div>
+      <button type="button" class="chart-view-btn active" data-n="1">1 mês</button>
+      <button type="button" class="chart-view-btn" data-n="3">3 meses</button>
+      <button type="button" class="chart-view-btn" data-n="6">6 meses</button>
+    </div>
+    <div class="value" id="kpi-ret-sub-value">—</div>
+    <div class="sub" id="kpi-ret-sub-sub"></div></div>`;
+}
+function atualizarRetSubMesesCard(){
+  const wrap = document.getElementById('kpi-ret-sub-toggle');
+  if(!wrap) return;
+  const n = Number(wrap.dataset.n) || 1;
+  const b = lastRetBuckets[n] || {valor:'—', sub:''};
+  document.getElementById('kpi-ret-sub-n').textContent = n;
+  document.getElementById('kpi-ret-sub-value').textContent = b.valor;
+  document.getElementById('kpi-ret-sub-sub').textContent = b.sub;
+  wrap.querySelectorAll('.chart-view-btn').forEach(btn=>btn.classList.toggle('active', Number(btn.dataset.n)===n));
+  posicionarChartViewSlider(wrap);
+}
+let retSubMesesBound = false;
+function bindRetSubMesesCard(){
+  if(retSubMesesBound) return;
+  retSubMesesBound = true;
+  document.getElementById('alunos-kpis-retencao')?.addEventListener('click', (e)=>{
+    const btn = e.target.closest('#kpi-ret-sub-toggle .chart-view-btn');
+    if(!btn) return;
+    document.getElementById('kpi-ret-sub-toggle').dataset.n = btn.dataset.n;
+    atualizarRetSubMesesCard();
+  });
+}
 function renderAlunosRetencao(){
-  const kEl = document.getElementById('alunos-ret-kpis'), tEl = document.getElementById('alunos-ret-tabelas');
-  if(!kEl || !tEl) return;
+  if(!document.getElementById('tabela-retencao-mes')) return {};
   const anoIni = anoLetivoInicioAtual();
   const alunos = agregarAlunosUnicos(crm.efetivos);
   const pct = (n,d)=> d ? Math.round(100*n/d)+'%' : '—';
@@ -2640,31 +2693,32 @@ function renderAlunosRetencao(){
   (crm.pagamentos||[]).forEach(p=>{ const k=normKey(p.aluno); somaAulas.set(k, (somaAulas.get(k)||0)+(p.nAulas||0)); });
   const comAulas = Array.from(somaAulas.values()).filter(v=>v>0);
   const oneTimers = comAulas.filter(v=>Math.abs(v-1)<1e-9).length;
-  const kpis = [
-    kpiCard('Total de alunos singulares', alunos.length, historicoAlunos.some(y=>y.source==='excel') ? historicoNomes.size+' no total histórico (todos os anos importados)' : 'ativos e não ativos, este ano letivo', false, null, 'Todos os alunos individuais que passaram pelo centro neste ano letivo — ativos e já saídos (cada aluno conta uma só vez, mesmo com várias disciplinas).'),
-    kpiCard('% de one-timers', comAulas.length ? pct(oneTimers, comAulas.length) : '—', comAulas.length ? oneTimers+' de '+comAulas.length+' alunos com aulas tiveram só 1 aula' : 'sem dados em "Pagamentos Alunos"', false, null, 'Alunos com exatamente 1 aula em todo o ano letivo (soma do "Nº de aulas" em "Pagamentos Alunos") ÷ alunos com pelo menos 1 aula.')
-  ];
-  [1,3,6,10].forEach(n=>{
+
+  const totalSingularesCard = kpiCard('Total de alunos singulares', alunos.length, historicoAlunos.some(y=>y.source==='excel') ? historicoNomes.size+' no total histórico (todos os anos importados)' : 'ativos e não ativos, este ano letivo', false, null, 'Todos os alunos individuais que passaram pelo centro neste ano letivo — ativos e já saídos (cada aluno conta uma só vez, mesmo com várias disciplinas).');
+  const oneTimersCard = kpiCard('1-timers', comAulas.length ? pct(oneTimers, comAulas.length) : '—', comAulas.length ? oneTimers+' de '+comAulas.length+' alunos com aulas tiveram só 1 aula' : 'sem dados em "Pagamentos Alunos"', false, null, 'Alunos com exatamente 1 aula em todo o ano letivo (soma do "Nº de aulas" em "Pagamentos Alunos") ÷ alunos com pelo menos 1 aula.');
+
+  lastRetBuckets = {};
+  [1,3,6].forEach(n=>{
     const c = alunos.filter(a=>a.dataFim && retMesesAluno(a, anoIni)<n).length;
-    kpis.push(kpiCard('Saíram com menos de '+n+(n===1?' mês':' meses'), c, pct(c, alunos.length)+' dos alunos singulares', false, null, 'Alunos com Data Fim preenchida cuja permanência (Data Fim − Data Início) foi inferior a '+n+(n===1?' mês':' meses')+'. Alunos ainda ativos não contam — podem ainda ficar mais tempo.'));
+    lastRetBuckets[n] = { valor:c, sub: pct(c, alunos.length)+' dos alunos singulares' };
   });
-  kEl.innerHTML = kpis.join('');
+  atualizarRetSubMesesCard();
 
   // --- tabelas ---
-  const tabela = (titulo, nota, cabecalhos, linhas)=> `<h4 style="margin:18px 0 4px 0; font-size:13px; color:var(--ink);">${titulo}</h4>${nota?`<p class="desc" style="margin:0 0 6px 0;">${nota}</p>`:''}<div class="chart-card" style="overflow-x:auto; padding:8px 12px;"><table class="data"><thead><tr>${cabecalhos.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>${linhas.length?linhas.map(l=>`<tr>${l.map(c=>`<td>${c}</td>`).join('')}</tr>`).join(''):`<tr><td colspan="${cabecalhos.length}" style="color:var(--muted);">Sem dados.</td></tr>`}</tbody></table></div>`;
+  const tabela = (cabecalhos, linhas, nota)=> `${nota?`<p class="desc" style="margin:0 0 6px 0;">${nota}</p>`:''}<div class="chart-card" style="overflow-x:auto; padding:8px 12px;"><table class="data"><thead><tr>${cabecalhos.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>${linhas.length?linhas.map(l=>`<tr>${l.map(c=>`<td>${c}</td>`).join('')}</tr>`).join(''):`<tr><td colspan="${cabecalhos.length}" style="color:var(--muted);">Sem dados.</td></tr>`}</tbody></table></div>`;
   const media = arr => arr.length ? (arr.reduce((a,b)=>a+b,0)/arr.length).toFixed(1) : '—';
-  let html = '';
 
   // A) retenção por mês de entrada
   const ordemMeses = ['Antes do ano letivo', ...MESES_LETIVOS, 'Sem data'];
   const porMes = {}; alunos.forEach(a=>{ (porMes[mesEntradaAluno(a, anoIni)] = porMes[mesEntradaAluno(a, anoIni)]||[]).push(a); });
-  html += tabela('Retenção consoante o mês de entrada', 'Média de meses que o aluno fica e % que chegou ao fim do ano letivo (30 de junho) ou ainda está ativo.',
+  document.getElementById('tabela-retencao-mes').innerHTML = tabela(
     ['Mês de entrada','Alunos','Média de meses','% chegaram ao fim'],
     ordemMeses.filter(m=>porMes[m]).map(m=>{ const g = porMes[m]; return [m, g.length, media(g.map(a=>retMesesAluno(a,anoIni)).filter(v=>v!=null)), pct(g.filter(a=>!a.dataFim || a.dataFim>=fimAno).length, g.length)]; }));
 
   // B) retenção média por ano de ensino
   const porAno = {}; alunos.forEach(a=>{ (porAno[a.ano] = porAno[a.ano]||[]).push(a); });
-  html += tabela('Retenção média por ano de ensino', null, ['Ano de ensino','Alunos','Média de meses'],
+  document.getElementById('tabela-retencao-ano').innerHTML = tabela(
+    ['Ano de ensino','Alunos','Média de meses'],
     Object.entries(porAno).sort((x,y)=>y[1].length-x[1].length).map(([ano,g])=>[ano, g.length, media(g.map(a=>retMesesAluno(a,anoIni)).filter(v=>v!=null))]));
 
   // C) aulas por mês × ano de ensino (média de aulas por aluno)
@@ -2673,26 +2727,54 @@ function renderAlunosRetencao(){
   (crm.pagamentos||[]).forEach(p=>{ if(!(p.nAulas>0)) return; const ano = anoDe.get(normKey(p.aluno)) || 'Não especificado'; mesesAulas.add(p.mes);
     const c = (celulas[ano] = celulas[ano]||{}); const x = (c[p.mes] = c[p.mes]||{soma:0,n:0}); x.soma += p.nAulas; x.n++; });
   const colsMeses = MESES_LETIVOS.filter(m=>mesesAulas.has(m));
-  html += tabela('Nº de aulas por mês, por ano de ensino', 'Média de aulas por aluno em cada mês (só alunos com aulas nesse mês), a partir de "Pagamentos Alunos".',
+  document.getElementById('tabela-aulas-ano-ensino').innerHTML = tabela(
     ['Ano de ensino', ...colsMeses],
     Object.keys(celulas).sort().map(ano=>[ano, ...colsMeses.map(m=>{ const x = celulas[ano][m]; return x ? (x.soma/x.n).toFixed(1)+' <span style="color:var(--muted); font-size:10px;">('+x.n+')</span>' : '—'; })]));
 
-  // D–F) renovação e reingressão
+  // D–F) renovação e reingressão + top-3 combinações
   const rr = calcRenovacaoReingressao();
+  const rrEl = document.getElementById('tabelas-renovacao');
+  const combEl = document.getElementById('tabela-top-combinacoes');
   if(rr.semDados){
-    html += `<p class="desc" style="margin-top:18px;">Para calcular a taxa de renovação e de reingressão, importa o Excel de <b>${rr.labelPrev}</b> na barra "Anos letivos" no topo da página.</p>`;
+    rrEl.innerHTML = `<div class="section"><p class="desc">Para calcular a taxa de renovação e de reingressão, importa o Excel de <b>${rr.labelPrev}</b> na barra "Anos letivos" no topo da página.</p></div>`;
+    combEl.innerHTML = '';
   } else {
     const L = rr.linhas;
     const linha = (nome, g)=> [nome, g.length, g.filter(x=>x.renovou).length, pct(g.filter(x=>x.renovou).length, g.length), g.filter(x=>x.reingressou).length, pct(g.filter(x=>x.reingressou).length, g.length)];
     const cab = g=>[g,'Alunos '+rr.labelPrev,'Renovaram','Taxa de renovação','Reingressaram','Taxa de reingressão'];
     const agrupar = (chave, ordem)=>{ const m = {}; L.forEach(x=>{ (m[x[chave]] = m[x[chave]]||[]).push(x); }); return (ordem || Object.keys(m).sort((a,b)=>m[b].length-m[a].length)).filter(k=>m[k]).map(k=>linha(k, m[k])); };
     const notaRR = 'Renovação = aluno de '+rr.labelPrev+' que voltou a entrar em setembro deste ano letivo. Reingressão = aluno de '+rr.labelPrev+' que voltou em qualquer momento deste ano letivo (inclui as renovações).';
-    html += `<h4 style="margin:22px 0 0 0; font-size:14px; color:var(--ink);">Renovação e reingressão (alunos de ${rr.labelPrev})</h4>`;
-    html += tabela('Consoante o mês de entrada', notaRR, cab('Mês de entrada em '+rr.labelPrev), [linha('Total', L), ...agrupar('mes', ordemMeses)]);
-    html += tabela('Consoante o tempo de retenção', null, cab('Tempo em '+rr.labelPrev), agrupar('ret', [...BUCKETS_RET.map(b=>b.label),'Sem data']));
-    html += tabela('Consoante o ano de ensino', L.length && L.every(x=>x.ano==='Não especificado') ? 'O ano de ensino não veio no Excel de '+rr.labelPrev+' importado antes — reimporta-o (clica em "'+rr.labelPrev+' 📄" no topo) para preencher este quadro.' : null, cab('Ano de ensino'), agrupar('ano'));
+    const secRR = (titulo, linhas)=> `<div class="section"><h3>🔁 Renovação e reingressão — ${titulo}</h3><p class="desc" style="margin:0 0 6px 0;">${notaRR}</p>${tabela(cab(titulo), linhas)}</div>`;
+    rrEl.innerHTML =
+      secRR('Mês de entrada', [linha('Total', L), ...agrupar('mes', ordemMeses)]) +
+      secRR('Ano de ensino', L.length && L.every(x=>x.ano==='Não especificado') ? [] : agrupar('ano')) +
+      secRR('Tempo de retenção', agrupar('ret', [...BUCKETS_RET.map(b=>b.label),'Sem data']));
+
+    // top-3 combinações mais prováveis de renovar/reingressar (mês × ano × tempo de retenção), mín. 10 alunos
+    const porCombo = {};
+    L.forEach(x=>{
+      const chave = x.mes+' | '+x.ano+' | '+x.ret;
+      (porCombo[chave] = porCombo[chave] || {mes:x.mes, ano:x.ano, ret:x.ret, itens:[]}).itens.push(x);
+    });
+    const combos = Object.values(porCombo)
+      .filter(c=>c.itens.length>=10)
+      .map(c=>({
+        ...c,
+        n: c.itens.length,
+        pctRenov: 100*c.itens.filter(x=>x.renovou).length/c.itens.length,
+        pctReing: 100*c.itens.filter(x=>x.reingressou).length/c.itens.length
+      }))
+      .sort((a,b)=>b.pctRenov-a.pctRenov)
+      .slice(0,3);
+    combEl.innerHTML = `<div class="section"><h3>🎯 Combinações mais prováveis de renovar/reingressar</h3><p class="desc" style="margin:0 0 6px 0;">Cruza mês de entrada, ano de ensino e tempo de retenção em ${rr.labelPrev} — só combinações com pelo menos 10 alunos.</p>${
+      combos.length
+        ? tabela(['Mês de entrada','Ano de ensino','Tempo de retenção','Alunos','Taxa de renovação','Taxa de reingressão'],
+            combos.map(c=>[c.mes, c.ano, c.ret, c.n, c.pctRenov.toFixed(0)+'%', c.pctReing.toFixed(0)+'%']))
+        : '<p class="desc">Sem combinações com alunos suficientes (mínimo 10).</p>'
+    }</div>`;
   }
-  tEl.innerHTML = html;
+
+  return { totalSingularesCard, oneTimersCard };
 }
 function liveAlunosSnapshot(){
   const seen = new Set(); const ativos = [];
@@ -3584,21 +3666,7 @@ document.getElementById('btn-clear-alunos').addEventListener('click', ()=>{
 
 let lastProfRows = [];
 let profSort = { key: 'nAlunos', dir: 'desc' };
-function renderReceitaPorAluno(pagamentos){
-  const tbody = document.querySelector('#table-receita-aluno tbody');
-  if(tbody){
-    const porAluno = {};
-    pagamentos.forEach(pg=>{
-      const k = normKey(pg.aluno);
-      porAluno[k] = porAluno[k] || {nome:pg.aluno, nAulas:0, valor:0};
-      porAluno[k].nAulas += pg.nAulas;
-      porAluno[k].valor += pg.valor;
-    });
-    const top = Object.values(porAluno).sort((a,b)=>b.valor-a.valor).slice(0,10);
-    tbody.innerHTML = top.length ? top.map(a=>`<tr><td>${a.nome}</td><td>${a.nAulas}</td><td>${fmtEuro(a.valor)}</td></tr>`).join('')
-      : '<tr><td colspan="3" style="text-align:center; color:var(--muted);">Sem dados na aba "Pagamentos Alunos" ainda.</td></tr>';
-  }
-
+function renderFaixasAulas(pagamentos){
   // faixas de nº de aulas no mês mais recente com dados
   const mesesComDados = Array.from(new Set(pagamentos.map(pg=>pg.mes)));
   let mesRecente = null, maxKey = '';
@@ -3721,6 +3789,10 @@ function renderAlunos(){
   const convDur = aes.filter(a=>a.tiConv && a.tfConv).map(a=> a.tfConv - a.tiConv);
   const convMedGlobal = convDur.length ? convDur.reduce((x,y)=>x+y,0)/convDur.length : null;
 
+  // tempo médio de efetivação (aba AEs, empresa toda): do T/i de conversações ao T/f de AE, só para quem ficou "Efetivo"
+  const efetivacaoDurGlobal = aes.filter(a=> isAEEstadoEfetivo(a) && a.tiConv && a.tfAE).map(a=> a.tfAE - a.tiConv);
+  const tempoEfetivacaoGlobal = efetivacaoDurGlobal.length ? efetivacaoDurGlobal.reduce((x,y)=>x+y,0)/efetivacaoDurGlobal.length : null;
+
   // potencial de renovação: 10º ano ou menos, OU pelo menos 1 disciplina fora da lista "sem renovação"
   const comPotencialRenovacao = unicosValidos.filter(a=>{
     const discsDoAluno = efetivos.filter(e=>normKey(e.nome)===normKey(a.nome)).map(e=>e.disciplina);
@@ -3735,20 +3807,42 @@ function renderAlunos(){
   const efetivosPerdidosCalc = calcEfetivosPerdidos(liveSnap, anoAtualIni);
   const aulasPorAlunoCalc = calcAulasPorAluno(liveSnap, anoAtualIni);
 
-  document.getElementById('alunos-kpis').innerHTML = [
+  const ret = renderAlunosRetencao();
+
+  // 1º — cartões principais
+  document.getElementById('alunos-kpis-top').innerHTML = [
     kpiCard('Alunos efetivos', unicosValidos.length, unicosValidos.length+' sem data de fim e com pagamento confirmado · '+efetivos.length+' matrículas no total (histórico)', true, 'card-chart-ativos-mes', 'Alunos únicos sem Data Fim preenchida e com "Sim" na coluna Pagamento da folha "Clientes Efetivos" — o headcount real de alunos a pagar neste momento.', 'alunos:alunosEfetivos'),
-    kpiCard('Potencial de renovação', comPotencialRenovacao.length, pctPotencialRenovacao!==null? pctPotencialRenovacao.toFixed(0)+'% dos alunos efetivos' : '—', false, 'card-chart-ano-ensino', 'Alunos efetivos no 10º ano ou menos, mais os que têm pelo menos 1 disciplina fora da lista "sem renovação" (Biologia, Físico-Química, Geometria Descritiva, Economia, Geografia, Filosofia, História, Cultura das Artes). % = este nº ÷ total de alunos efetivos.'),
-    kpiCard('Taxa de conversão AE → Efetivo', taxaConversaoAE!==null? taxaConversaoAE.toFixed(0)+'%' : '— (sem AEs marcadas)', aesComTiAE.length+' aulas experimentais com data/hora marcada em "T/i AE"', false, 'card-table-professores', 'Linhas da aba "AEs" com data e hora preenchidas em "T/i AE" (aula experimental efetivamente marcada) cuja coluna "Estado" está marcada como "Efetivo", a dividir pelo total de linhas com "T/i AE" preenchido, em %.'),
-    kpiCard('Reservam AE diretamente', aeDiretas.length, pctAeDiretas!==null? pctAeDiretas.toFixed(0)+'% do total de AEs — sem passar pela fase de conversações' : 'sem AEs registadas', false, 'card-table-professores', 'Alunos com T/i de Aula Experimental preenchido mas sem qualquer T/i ou T/f de conversações — avançaram diretamente para a AE.'),
-    kpiCard('Retenção média', fmtDuration(retencaoMedia), duracoesFim.length? 'com base em '+duracoesFim.length+' aluno(s) já com Data Fim' : 'ainda sem "Data Fim" preenchida', false, 'card-table-professores', 'Tempo médio entre a Data de Início e a Data de Fim dos alunos que já saíram — quanto tempo, em média, um aluno fica connosco.', 'alunos:retencaoMedia'),
-    kpiCard('Desistência antes do fim do ano', taxaDesistAntes!==null? taxaDesistAntes.toFixed(0)+'%' : '— (sem "Data Fim" suficiente)', saidos.length+' aluno(s) já com data de saída registada', false, 'card-chart-inicio-fim', 'Entre os alunos que já saíram, a percentagem cuja Data de Fim foi antes de 30 de junho do respetivo ano letivo — ou seja, que desistiram a meio do ano em vez de terminarem naturalmente.', 'alunos:desistenciasMeioAno'),
-    kpiCard('Tempo médio em conversações', fmtDuration(convMedGlobal), 'do 1º contacto do professor até marcar AE', false, 'card-table-professores', 'Tempo médio entre o início e o fim das conversações (aba "AEs") — do primeiro contacto do professor com o aluno até se marcar a aula experimental.'),
-    kpiCard('Média de disciplinas por aluno', unicos.length? (efetivos.length/unicos.length).toFixed(1) : '—', efetivos.length+' matrículas / '+unicos.length+' alunos', false, 'card-chart-disciplina', 'Nº total de matrículas (aluno + disciplina) a dividir pelo nº de alunos únicos — mostra quantas disciplinas, em média, cada aluno tem connosco.'),
-    kpiCard('Nº de aulas dadas', aulasProfCalc.total, 'total da empresa, todos os professores, este ano letivo', false, 'card-table-professores', 'Soma do "Nº de aulas" de todos os registos da tabela "Aulas por professor (Amélia)", de todos os professores, no ano letivo corrente.', 'alunos:aulasPorProfessor'),
-    kpiCard('Efetivos perdidos', efetivosPerdidosCalc.total, 'total da empresa, todos os professores, este ano letivo', false, 'card-table-professores', 'Alunos efetivos (todos os professores) que já têm "Data Fim" preenchida, neste ano letivo.', 'alunos:efetivosPerdidos'),
-    kpiCard('Nº de aulas / aluno', aulasPorAlunoCalc.total!=null? aulasPorAlunoCalc.total.toFixed(1) : '—', 'média da empresa, todos os professores, este ano letivo', false, 'card-table-professores', 'Nº de aulas dadas (todos os professores) a dividir pelo nº de alunos ativos em cada mês, somado ao longo do ano letivo corrente.', 'alunos:aulasPorAluno')
+    ret.totalSingularesCard,
+    kpiCard('Total de aulas dadas', aulasProfCalc.total, 'total da empresa, todos os professores, este ano letivo', false, 'card-table-professores', 'Soma do "Nº de aulas" de todos os registos da tabela "Aulas por professor (Amélia)", de todos os professores, no ano letivo corrente.', 'alunos:aulasPorProfessor')
   ].join('');
-  renderAlunosRetencao();
+
+  // 3º — operação diária
+  document.getElementById('alunos-kpis-mid').innerHTML = [
+    kpiCard('Nº de aulas por aluno', aulasPorAlunoCalc.total!=null? aulasPorAlunoCalc.total.toFixed(1) : '—', 'média da empresa, todos os professores, este ano letivo', false, 'card-table-professores', 'Nº de aulas dadas (todos os professores) a dividir pelo nº de alunos ativos em cada mês, somado ao longo do ano letivo corrente.', 'alunos:aulasPorAluno'),
+    ret.oneTimersCard,
+    kpiCard('Média de disciplinas por aluno', unicos.length? (efetivos.length/unicos.length).toFixed(1) : '—', efetivos.length+' matrículas / '+unicos.length+' alunos', false, 'card-chart-disciplina', 'Nº total de matrículas (aluno + disciplina) a dividir pelo nº de alunos únicos — mostra quantas disciplinas, em média, cada aluno tem connosco.')
+  ].join('');
+
+  // 5º — efetivos perdidos, desistências, retenção curta + potencial de renovação
+  document.getElementById('alunos-kpis-retencao').innerHTML = [
+    kpiCard('Efetivos perdidos', efetivosPerdidosCalc.total, 'total da empresa, todos os professores, este ano letivo', false, 'card-table-professores', 'Alunos efetivos (todos os professores) que já têm "Data Fim" preenchida, neste ano letivo.', 'alunos:efetivosPerdidos'),
+    kpiCard('Desistência antes do fim do ano', taxaDesistAntes!==null? taxaDesistAntes.toFixed(0)+'%' : '— (sem "Data Fim" suficiente)', saidos.length+' aluno(s) já com data de saída registada', false, 'card-chart-inicio-fim', 'Entre os alunos que já saíram, a percentagem cuja Data de Fim foi antes de 30 de junho do respetivo ano letivo — ou seja, que desistiram a meio do ano em vez de terminarem naturalmente.', 'alunos:desistenciasMeioAno'),
+    retSubMesesCardHtml()
+  ].join('');
+  bindRetSubMesesCard();
+  atualizarRetSubMesesCard();
+  document.getElementById('alunos-kpis-renovacao').innerHTML = [
+    kpiCard('Potencial de renovação', comPotencialRenovacao.length, pctPotencialRenovacao!==null? pctPotencialRenovacao.toFixed(0)+'% dos alunos efetivos' : '—', false, 'card-chart-ano-ensino', 'Alunos efetivos no 10º ano ou menos, mais os que têm pelo menos 1 disciplina fora da lista "sem renovação" (Biologia, Físico-Química, Geometria Descritiva, Economia, Geografia, Filosofia, História, Cultura das Artes). % = este nº ÷ total de alunos efetivos.'),
+    kpiCard('Retenção média', fmtDuration(retencaoMedia), duracoesFim.length? 'com base em '+duracoesFim.length+' aluno(s) já com Data Fim' : 'ainda sem "Data Fim" preenchida', false, 'card-table-professores', 'Tempo médio entre a Data de Início e a Data de Fim dos alunos que já saíram — quanto tempo, em média, um aluno fica connosco.', 'alunos:retencaoMedia')
+  ].join('');
+
+  // 8º — conversão
+  document.getElementById('alunos-kpis-conversao').innerHTML = [
+    kpiCard('Tempo de efetivação (Média)', fmtDuration(tempoEfetivacaoGlobal), 'do início das conversações até efetivar, empresa toda', false, 'card-table-professores', 'Tempo médio entre o T/i de conversações e o T/f de Aula Experimental (aba "AEs"), só para alunos com Estado = Efetivo — de todos os professores.'),
+    kpiCard('Tempo em conversações (Média)', fmtDuration(convMedGlobal), 'do 1º contacto do professor até marcar AE', false, 'card-table-professores', 'Tempo médio entre o início e o fim das conversações (aba "AEs") — do primeiro contacto do professor com o aluno até se marcar a aula experimental.'),
+    kpiCard('Taxa de conversão AE → Efetivo', taxaConversaoAE!==null? taxaConversaoAE.toFixed(0)+'%' : '— (sem AEs marcadas)', aesComTiAE.length+' aulas experimentais com data/hora marcada em "T/i AE"', false, 'card-table-professores', 'Linhas da aba "AEs" com data e hora preenchidas em "T/i AE" (aula experimental efetivamente marcada) cuja coluna "Estado" está marcada como "Efetivo", a dividir pelo total de linhas com "T/i AE" preenchido, em %.'),
+    kpiCard('Reservam diretamente AE', aeDiretas.length, pctAeDiretas!==null? pctAeDiretas.toFixed(0)+'% do total de AEs — sem passar pela fase de conversações' : 'sem AEs registadas', false, 'card-table-professores', 'Alunos com T/i de Aula Experimental preenchido mas sem qualquer T/i ou T/f de conversações — avançaram diretamente para a AE.')
+  ].join('');
 
   // geo (localização — normalmente ainda por preencher)
   const geoE = sortedEntries(groupCount(unicos, a=>a.localizacao), 10);
@@ -3790,10 +3884,6 @@ function renderAlunos(){
   // plataforma (nível aluno único — alunos transitados do ano letivo anterior aparecem como "Renovações")
   const platE = sortedEntries(groupCount(unicos, a=>origemPlataformaLabel(a.plataforma)));
   doughnutChart('chart-plataforma', platE.map(e=>e[0]), platE.map(e=>e[1]));
-
-  // professor (nível matrícula)
-  const profE = sortedEntries(groupCount(efetivos, a=>a.professor), 12);
-  barChart('chart-professor', profE.map(e=>e[0]), profE.map(e=>e[1]), '#9FC7AA', true);
 
   // funil de pendentes — "Estado" é lido sem distinguir maiúsculas/minúsculas ("Pendente"/"PENDENTE"/"pendente" contam juntos)
   const ORDEM_FUNIL = ['Sem Resposta','Conversações','AE'];
@@ -3870,7 +3960,7 @@ function renderAlunos(){
       tempoEfetivacao, tempoMarcarAE, disciplinaPrincipal, aulasDadas, aulasPorAluno, lucroSemGastos };
   });
   renderProfTable();
-  renderReceitaPorAluno(pagamentos);
+  renderFaixasAulas(pagamentos);
   renderAmeliaAulas();
   renderProfHistory();
 

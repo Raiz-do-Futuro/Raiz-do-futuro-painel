@@ -1190,7 +1190,8 @@ table.data tr:hover .real-box{background:var(--sage-soft); border-color:var(--ac
 
       <div id="fixando-content" style="display:none;">
 
-        <div class="kpi-grid" id="fixando-kpis"></div>
+        <div class="kpi-grid kpi-grid-2col" id="fixando-kpis-top" style="margin-bottom:14px;"></div>
+        <div class="kpi-grid" id="fixando-kpis-bottom"></div>
 
         <hr class="divider">
 
@@ -4544,9 +4545,12 @@ function renderFixando(){
   const pctAbordAmosOnlineSemAL = onlineResolvedSemAL.length? 100*onlineResolvedSemAL.filter(x=>x.abordamos.value).length/onlineResolvedSemAL.length : null;
   const pctFicamosOnlineSemAL = onlineResolvedSemAL.length? 100*onlineResolvedSemAL.filter(x=>x.ficamos.value).length/onlineResolvedSemAL.length : null;
 
-  document.getElementById('fixando-kpis').innerHTML = [
+  document.getElementById('fixando-kpis-top').innerHTML = [
     kpiCard('Pedidos / mês (média)', mediaMes, total+' pedidos registados no total', true, 'card-chart-evolucao-mensal', 'Total de pedidos registados dividido pelo número de meses diferentes em que há pelo menos um pedido.'),
-    kpiCard('Pedidos online / mês (média)', mediaMesOnline, online.length+' pedidos online no total'+(pctOnlineDoTotal!=null?' ('+pctOnlineDoTotal.toFixed(0)+'% de todos os pedidos)':''), false, 'card-chart-loc', 'O mesmo cálculo que "Pedidos / mês", mas contando só os pedidos com Modalidade = Online. A percentagem é o nº de pedidos online ÷ nº total de pedidos.'),
+    kpiCard('Pedidos online / mês (média)', mediaMesOnline, online.length+' pedidos online no total'+(pctOnlineDoTotal!=null?' ('+pctOnlineDoTotal.toFixed(0)+'% de todos os pedidos)':''), false, 'card-chart-loc', 'O mesmo cálculo que "Pedidos / mês", mas contando só os pedidos com Modalidade = Online. A percentagem é o nº de pedidos online ÷ nº total de pedidos.')
+  ].join('');
+
+  document.getElementById('fixando-kpis-bottom').innerHTML = [
     kpiCard('% abordados sobre pedidos online', pctAbordAmosOnline!==null? pctAbordAmosOnline.toFixed(0)+'%':'—', abordadosArr.length+' abordados (associação automática por telemóvel)', false, 'card-chart-evolucao-mensal', 'Entre os pedidos com Modalidade = Online, a percentagem em que clicaste em "Marcar abordámos" (ou seja, o telemóvel do cliente já é conhecido).', undefined, {
       label:'Sem AL',
       value: pctAbordAmosOnlineSemAL!=null? pctAbordAmosOnlineSemAL.toFixed(0)+'%':'—',

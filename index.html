@@ -394,6 +394,11 @@ input[type=file]{display:none;}
 .chart-card .chart-wrap{position:relative; height:280px;}
 .two-col{display:grid; grid-template-columns:1fr 1fr; gap:18px;}
 .three-col{display:grid; grid-template-columns:1fr 1fr 1fr; gap:18px;}
+.two-col > .section, .three-col > .section{display:flex; flex-direction:column; height:100%;}
+.two-col > .section > :last-child, .three-col > .section > :last-child{flex:1 1 auto; min-height:0;}
+.two-col > .section .chart-card, .three-col > .section .chart-card{height:100%; margin-bottom:0; box-sizing:border-box; display:flex; flex-direction:column;}
+.two-col > .fold, .three-col > .fold{align-self:start;}
+.two-col > .section > .desc, .three-col > .section > .desc{min-height:29px;}
 @media (max-width:900px){.two-col{grid-template-columns:1fr;} .three-col{grid-template-columns:1fr;} .app{flex-direction:column;} .rail{width:100%;}}
 @media (min-width:901px) and (max-width:1180px){.three-col{grid-template-columns:1fr 1fr;}}
 
@@ -935,8 +940,10 @@ table.data tr:hover .real-box{background:var(--sage-soft); border-color:var(--ac
           <div class="section">
             <h3>📚 Repartição de alunos por nº de aulas por mês</h3>
             <p class="desc">Abaixo do esperado (&lt;4), dentro (4-9) e acima (&gt;9), no mês mais recente com dados</p>
-            <button class="btn secondary" onclick="abrirComparacao('alunos','aulasPorMes')" style="padding:6px 12px; font-size:11px; margin-bottom:8px;">📊 Comparar com anos letivos anteriores</button>
-            <div class="chart-card" id="card-chart-faixa-aulas"><div class="chart-wrap"><canvas id="chart-faixa-aulas"></canvas></div></div>
+            <div class="chart-card" id="card-chart-faixa-aulas">
+              <button class="btn secondary" onclick="abrirComparacao('alunos','aulasPorMes')" style="padding:6px 12px; font-size:11px; margin-bottom:8px;">📊 Comparar com anos letivos anteriores</button>
+              <div class="chart-wrap"><canvas id="chart-faixa-aulas"></canvas></div>
+            </div>
           </div>
         </div>
 
@@ -982,8 +989,10 @@ table.data tr:hover .real-box{background:var(--sage-soft); border-color:var(--ac
           <div class="section">
             <h3>🔗 Origem dos alunos</h3>
             <p class="desc">Percentagem por plataforma de origem (inclui alunos transitados de anos anteriores)</p>
-            <button class="btn secondary" onclick="abrirComparacao('alunos','origemAlunos')" style="padding:6px 12px; font-size:11px; margin-bottom:8px;">📊 Comparar com anos letivos anteriores</button>
-            <div class="chart-card" id="card-chart-plataforma"><div class="chart-wrap"><canvas id="chart-plataforma"></canvas></div></div>
+            <div class="chart-card" id="card-chart-plataforma">
+              <button class="btn secondary" onclick="abrirComparacao('alunos','origemAlunos')" style="padding:6px 12px; font-size:11px; margin-bottom:8px;">📊 Comparar com anos letivos anteriores</button>
+              <div class="chart-wrap"><canvas id="chart-plataforma"></canvas></div>
+            </div>
           </div>
           <div class="section">
             <h3>🎯 Retenção consoante o mês de entrada</h3>

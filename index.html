@@ -394,9 +394,9 @@ input[type=file]{display:none;}
 .chart-card .chart-wrap{position:relative; height:280px;}
 .two-col{display:grid; grid-template-columns:1fr 1fr; gap:18px;}
 .three-col{display:grid; grid-template-columns:1fr 1fr 1fr; gap:18px;}
-.two-col > .section, .three-col > .section{display:flex; flex-direction:column; height:100%;}
-.two-col > .section > :last-child, .three-col > .section > :last-child{flex:1 1 auto; min-height:0;}
-.two-col > .section .chart-card, .three-col > .section .chart-card{height:100%; margin-bottom:0; box-sizing:border-box; display:flex; flex-direction:column;}
+.two-col > .section, .three-col > .section{display:flex; flex-direction:column; height:100%; min-width:0;}
+.two-col > .section > :last-child, .three-col > .section > :last-child{flex:1 1 auto; min-height:0; min-width:0;}
+.two-col > .section .chart-card, .three-col > .section .chart-card{height:100%; margin-bottom:0; box-sizing:border-box; display:flex; flex-direction:column; min-width:0;}
 .two-col > .fold, .three-col > .fold{align-self:start;}
 .two-col > .section > .desc, .three-col > .section > .desc{min-height:29px;}
 @media (max-width:900px){.two-col{grid-template-columns:1fr;} .three-col{grid-template-columns:1fr;} .app{flex-direction:column;} .rail{width:100%;}}

@@ -1586,14 +1586,24 @@ table.data tr:hover .real-box{background:var(--sage-soft); border-color:var(--ac
           <div class="entry-form" id="prof-loc-form" style="grid-template-columns:2fr 1fr 1fr auto;">
             <div class="field"><label>Localização do aluno</label><input type="text" id="ploc-morada" placeholder="ex: Ovar"></div>
             <div class="field"><label>Disciplina</label><input type="text" id="ploc-disciplina" placeholder="ex: Biologia"></div>
-            <div class="field"><label>Ano de ensino</label><input type="text" id="ploc-ano" placeholder="ex: 12º"></div>
+            <div class="field"><label>Ciclo</label>
+              <select id="ploc-ano">
+                <option value="">Qualquer ciclo</option>
+                <option>2º Ciclo (5º e 6º)</option>
+                <option>3º Ciclo (7º a 9º)</option>
+                <option>Secundário (10º a 12º)</option>
+                <option>LNM</option>
+                <option>Exame +23</option>
+                <option>Superior</option>
+              </select>
+            </div>
             <div class="field" style="align-self:end;"><button class="btn" id="btn-ploc-procurar" style="width:100%;">Procurar</button></div>
           </div>
           <div id="ploc-status" style="font-size:12px; color:var(--muted); margin:-8px 0 16px 0;"></div>
           <div class="chart-card" id="card-ploc-resultados">
             <div style="overflow-x:auto;">
             <table class="data" id="table-ploc-resultados">
-              <thead><tr><th>Professor</th><th>Distância</th><th>Disciplinas</th><th>Anos</th><th>Morada</th></tr></thead>
+              <thead><tr><th>Professor</th><th>Distância</th><th>Disciplinas</th><th>Ciclos</th><th>Morada</th></tr></thead>
               <tbody></tbody>
             </table>
             </div>
@@ -1619,7 +1629,17 @@ table.data tr:hover .real-box{background:var(--sage-soft); border-color:var(--ac
               <p class="desc">Filtra por disciplina, ano e experiência mínima</p>
               <div class="entry-form" style="grid-template-columns:1fr 1fr 1fr;">
                 <div class="field"><label>Disciplina</label><input type="text" id="pexp-f-disciplina" placeholder="ex: Biologia"></div>
-                <div class="field"><label>Ano de ensino</label><input type="text" id="pexp-f-ano" placeholder="ex: 11º"></div>
+                <div class="field"><label>Ciclo</label>
+                  <select id="pexp-f-ano">
+                    <option value="">Qualquer ciclo</option>
+                    <option>2º Ciclo (5º e 6º)</option>
+                    <option>3º Ciclo (7º a 9º)</option>
+                    <option>Secundário (10º a 12º)</option>
+                    <option>LNM</option>
+                    <option>Exame +23</option>
+                    <option>Superior</option>
+                  </select>
+                </div>
                 <div class="field"><label>Experiência mín. (anos)</label><input type="number" id="pexp-f-anos" min="0" placeholder="ex: 5"></div>
               </div>
               <div id="prof-exp-lista" class="table-scroll" style="margin-top:12px;"></div>
@@ -1648,13 +1668,35 @@ table.data tr:hover .real-box{background:var(--sage-soft); border-color:var(--ac
         <div class="notice">
           <b>Ainda não ligado à Amelia.</b> A interface já está pronta — assim que tivermos a chave de API da Amelia e o URL do site WordPress, ligamos aqui e os resultados passam a ser em tempo real.
         </div>
+
+        <div class="section">
+          <h3>📝 Notas de disponibilidade</h3>
+          <p class="desc">Regista preferências/restrições de cada professor (ex: "não quer alunos de tarde") para consultares antes de marcar.</p>
+          <div class="entry-form" style="grid-template-columns:1fr 2fr auto;">
+            <div class="field"><label>Professor</label><select id="phor-nota-professor"></select></div>
+            <div class="field"><label>Nota</label><input type="text" id="phor-nota-texto" placeholder="ex: não quer alunos de tarde"></div>
+            <div class="field" style="align-self:end;"><button class="btn" id="btn-phor-nota-guardar" style="width:100%;">Guardar nota</button></div>
+          </div>
+          <div id="phor-notas-lista" style="margin-top:10px;"></div>
+        </div>
+
         <div class="entry-form" style="grid-template-columns:1fr 1fr 1fr 1fr auto;">
           <div class="field"><label>Dia da semana</label>
             <select id="phor-dia"><option>Segunda</option><option>Terça</option><option>Quarta</option><option>Quinta</option><option>Sexta</option><option>Sábado</option></select>
           </div>
-          <div class="field"><label>Hora</label><input type="time" id="phor-hora"></div>
+          <div class="field"><label>Hora</label><input type="time" id="phor-hora" step="1800"></div>
           <div class="field"><label>Disciplina</label><input type="text" id="phor-disciplina" placeholder="ex: Físico-Química"></div>
-          <div class="field"><label>Ano de ensino</label><input type="text" id="phor-ano" placeholder="ex: 9º"></div>
+          <div class="field"><label>Ciclo</label>
+            <select id="phor-ano">
+              <option value="">Qualquer ciclo</option>
+              <option>2º Ciclo (5º e 6º)</option>
+              <option>3º Ciclo (7º a 9º)</option>
+              <option>Secundário (10º a 12º)</option>
+              <option>LNM</option>
+              <option>Exame +23</option>
+              <option>Superior</option>
+            </select>
+          </div>
           <div class="field" style="align-self:end;"><button class="btn" id="btn-phor-procurar" style="width:100%;">Procurar</button></div>
         </div>
         <div id="phor-resultado" class="empty-state">
@@ -6144,6 +6186,7 @@ function distanciaProf(alunoCoords, p){
 function renderProfLoc(){
   const empty = document.getElementById('prof-loc-empty');
   const content = document.getElementById('prof-loc-content');
+  renderProfNotas();
   if(!profs.length){ empty.style.display = 'block'; content.style.display = 'none'; return; }
   empty.style.display = 'none'; content.style.display = 'block';
 }
@@ -6162,13 +6205,25 @@ document.getElementById('btn-ploc-procurar').addEventListener('click', async ()=
   let candidatos = profs.filter(p=>
     (!disciplina || !p.disciplinas.length || p.disciplinas.some(d=>d.toLowerCase().includes(disciplina))) &&
     (!ano || !p.anos.length || p.anos.some(a=>a.toLowerCase().includes(ano)))
-  ).map(p=>({...p, dist: distanciaProf(alunoCoords, p)}));
+  ).map(p=>{
+    const distsFisicas = p.locais.map(l=> haversineKm(alunoCoords, l)).filter(d=>d!=null);
+    const distFisica = distsFisicas.length ? Math.min(...distsFisicas) : null;
+    return {...p, distFisica, dist: distanciaProf(alunoCoords, p)};
+  });
+
+  // só mostra professores a menos de 50km de distância real; se nenhum estiver perto, mostra os disponíveis online
+  const RAIO_KM = 50;
+  const perto = candidatos.filter(p=> p.distFisica!=null && p.distFisica < RAIO_KM);
+  const semPerto = !perto.length;
+  candidatos = perto.length ? perto : candidatos.filter(p=>p.online);
   candidatos.sort((a,b)=>{
     if(a.dist===null) return 1;
     if(b.dist===null) return -1;
     return a.dist-b.dist;
   });
-  statusEl.textContent = candidatos.length ? candidatos.length+' professor(es) encontrado(s), dos mais próximos aos mais longe.' : '';
+  statusEl.textContent = candidatos.length
+    ? candidatos.length+' professor(es) encontrado(s)'+(semPerto ? ' — nenhum a menos de '+RAIO_KM+'km, a mostrar os disponíveis online.' : ', dos mais próximos aos mais longe.')
+    : 'Nenhum professor a menos de '+RAIO_KM+'km nem disponível online com esses critérios.';
   tbody.innerHTML = candidatos.length ? candidatos.map(p=>{
     const disc = p.disciplinas.length ? p.disciplinas.join(', ') : 'Por sincronizar (Amelia)';
     const anos = p.anos.length ? p.anos.join(', ') : 'Por sincronizar (Amelia)';
@@ -6231,11 +6286,42 @@ document.getElementById('btn-pexp-guardar').addEventListener('click', async ()=>
 });
 ['pexp-f-disciplina','pexp-f-ano','pexp-f-anos'].forEach(id=>{
   document.getElementById(id).addEventListener('input', renderProfExpLista);
+  document.getElementById(id).addEventListener('change', renderProfExpLista);
 });
 
 /* --- Módulo 3: Horários & Disponibilidade (interface pronta; Amelia por ligar) --- */
 document.getElementById('btn-phor-procurar').addEventListener('click', ()=>{
   document.getElementById('phor-resultado').innerHTML = '<b>Sem ligação à Amelia ainda</b>Assim que a API estiver ligada, os professores disponíveis nesse horário aparecem aqui automaticamente.';
+});
+
+function renderProfNotas(){
+  const sel = document.getElementById('phor-nota-professor');
+  const lista = document.getElementById('phor-notas-lista');
+  if(!sel || !lista) return;
+  const selecionado = sel.value;
+  sel.innerHTML = profs.map(p=>`<option value="${p.nome.replace(/"/g,'&quot;')}">${p.nome}</option>`).join('') || '<option value="">Sem professores importados</option>';
+  if(selecionado && profs.some(p=>p.nome===selecionado)) sel.value = selecionado;
+  const comNota = profs.filter(p=>p.notaDisponibilidade);
+  lista.innerHTML = comNota.length ? comNota.map(p=>`<div class="chart-card" style="padding:10px 14px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; gap:10px;">
+    <div><b>${p.nome}</b> — ${p.notaDisponibilidade}</div>
+    <span class="ano-toggle" style="cursor:pointer;" title="Remover nota" data-limpar="${p.nome.replace(/"/g,'&quot;')}">✕</span>
+  </div>`).join('') : '<p class="desc">Ainda sem notas registadas.</p>';
+  lista.querySelectorAll('[data-limpar]').forEach(el=>{
+    el.addEventListener('click', async ()=>{
+      const p = profs.find(x=>x.nome===el.dataset.limpar);
+      if(p){ delete p.notaDisponibilidade; await saveProfs(); renderProfNotas(); }
+    });
+  });
+}
+document.getElementById('btn-phor-nota-guardar').addEventListener('click', async ()=>{
+  const nome = document.getElementById('phor-nota-professor').value;
+  const texto = document.getElementById('phor-nota-texto').value.trim();
+  const p = profs.find(x=>x.nome===nome);
+  if(!p) return;
+  if(texto) p.notaDisponibilidade = texto; else delete p.notaDisponibilidade;
+  await saveProfs();
+  document.getElementById('phor-nota-texto').value = '';
+  renderProfNotas();
 });
 
 loadGeocodeCache();

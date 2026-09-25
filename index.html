@@ -391,6 +391,11 @@ input[type=file]{display:none;}
 }
 .two-col .section:nth-of-type(odd) .chart-card{border-top-color:var(--accent);}
 .two-col .section:nth-of-type(even) .chart-card{border-top-color:var(--accent-dark);}
+.section.destaque h3{font-size:19px;}
+.section.destaque .chart-card{
+  border-width:2px; border-color:var(--green); border-top-width:8px; border-top-color:var(--green) !important;
+  border-radius:20px; box-shadow:0 10px 28px rgba(37,135,48,0.22); background:var(--green-soft);
+}
 .chart-card .chart-wrap{position:relative; height:280px;}
 .two-col{display:grid; grid-template-columns:1fr 1fr; gap:18px;}
 .three-col{display:grid; grid-template-columns:1fr 1fr 1fr; gap:18px;}
@@ -1010,7 +1015,6 @@ table.data tr:hover .real-box{background:var(--sage-soft); border-color:var(--ac
 
         <!-- 7º — renovação e reingressão -->
         <div class="two-col" id="tabelas-renovacao"></div>
-        <div id="tabela-top-combinacoes" style="margin-top:14px;"></div>
 
         <hr class="divider">
 
@@ -2743,10 +2747,8 @@ function renderAlunosRetencao(){
   // D–F) renovação e reingressão + top-3 combinações
   const rr = calcRenovacaoReingressao();
   const rrEl = document.getElementById('tabelas-renovacao');
-  const combEl = document.getElementById('tabela-top-combinacoes');
   if(rr.semDados){
     rrEl.innerHTML = `<div class="section"><p class="desc">Para calcular a taxa de renovação e de reingressão, importa o Excel de <b>${rr.labelPrev}</b> na barra "Anos letivos" no topo da página.</p></div>`;
-    combEl.innerHTML = '';
   } else {
     const L = rr.linhas;
     const linha = (nome, g)=> [nome, g.length, g.filter(x=>x.renovou).length, pct(g.filter(x=>x.renovou).length, g.length), g.filter(x=>x.reingressou).length, pct(g.filter(x=>x.reingressou).length, g.length)];
@@ -2754,11 +2756,6 @@ function renderAlunosRetencao(){
     const agrupar = (chave, ordem)=>{ const m = {}; L.forEach(x=>{ (m[x[chave]] = m[x[chave]]||[]).push(x); }); return (ordem || Object.keys(m).sort((a,b)=>m[b].length-m[a].length)).filter(k=>m[k]).map(k=>linha(k, m[k])); };
     const notaRR = 'Renovação = aluno de '+rr.labelPrev+' que voltou a entrar em setembro deste ano letivo. Reingressão = aluno de '+rr.labelPrev+' que voltou em qualquer momento deste ano letivo (inclui as renovações).';
     const secRR = (titulo, linhas)=> `<div class="section"><h3>🔁 Renovação e reingressão — ${titulo}</h3><p class="desc" style="margin:0 0 6px 0;">${notaRR}</p>${tabela(cab(titulo), linhas)}</div>`;
-    rrEl.innerHTML =
-      secRR('Mês de entrada', [linha('Total', L), ...agrupar('mes', ordemMeses)]) +
-      secRR('Ano de ensino', L.length && L.every(x=>x.ano==='Não especificado') ? [] : agrupar('ano')) +
-      secRR('Tempo de retenção', agrupar('ret', [...BUCKETS_RET.map(b=>b.label),'Sem data']));
-
     // top-3 combinações mais prováveis de renovar/reingressar (mês × ano × tempo de retenção), mín. 10 alunos
     const porCombo = {};
     L.forEach(x=>{
@@ -2775,12 +2772,18 @@ function renderAlunosRetencao(){
       }))
       .sort((a,b)=>b.pctRenov-a.pctRenov)
       .slice(0,3);
-    combEl.innerHTML = `<div class="section"><h3>🎯 Combinações mais prováveis de renovar/reingressar</h3><p class="desc" style="margin:0 0 6px 0;">Cruza mês de entrada, ano de ensino e tempo de retenção em ${rr.labelPrev} — só combinações com pelo menos 10 alunos.</p>${
+    const secCombos = `<div class="section destaque"><h3>🎯 Combinações mais prováveis de renovar/reingressar</h3><p class="desc" style="margin:0 0 6px 0;">Cruza mês de entrada, ano de ensino e tempo de retenção em ${rr.labelPrev} — só combinações com pelo menos 10 alunos.</p>${
       combos.length
         ? tabela(['Mês de entrada','Ano de ensino','Tempo de retenção','Alunos','Taxa de renovação','Taxa de reingressão'],
             combos.map(c=>[c.mes, c.ano, c.ret, c.n, c.pctRenov.toFixed(0)+'%', c.pctReing.toFixed(0)+'%']))
         : '<p class="desc">Sem combinações com alunos suficientes (mínimo 10).</p>'
     }</div>`;
+
+    rrEl.innerHTML =
+      secRR('Mês de entrada', [linha('Total', L), ...agrupar('mes', ordemMeses)]) +
+      secRR('Ano de ensino', L.length && L.every(x=>x.ano==='Não especificado') ? [] : agrupar('ano')) +
+      secRR('Tempo de retenção', agrupar('ret', [...BUCKETS_RET.map(b=>b.label),'Sem data'])) +
+      secCombos;
   }
 
   return { totalSingularesCard, oneTimersCard };
